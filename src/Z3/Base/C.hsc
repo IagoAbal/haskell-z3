@@ -48,6 +48,10 @@ data Z3_model
 
 
 type Z3_bool = CInt
+#{ enum Z3_bool,
+ , z3_true  = Z3_TRUE
+ , z3_false = Z3_FALSE
+ }
 
 type Z3_string = CString
 
