@@ -79,7 +79,7 @@ foreign import ccall unsafe "Z3_mk_config"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e620acf5d55d0271097c9bb97219774>
 --
 foreign import ccall unsafe "Z3_del_config"
-    z3_mk_config :: Ptr Z3_Config -> IO ()
+    z3_del_config :: Ptr Z3_Config -> IO ()
 
 -- | Set a configuration parameter.
 --
