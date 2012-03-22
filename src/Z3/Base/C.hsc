@@ -17,7 +17,7 @@ import Foreign
 import Foreign.C.Types
 import Foreign.C.String
 
-#include "z3.h"
+#include <z3.h>
 
 
 ---------------------------------------------------------------------
