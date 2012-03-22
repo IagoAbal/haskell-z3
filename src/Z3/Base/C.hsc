@@ -24,13 +24,17 @@ import Foreign.C.String
 -- * Types
 
 -- | A configuration object used to initialize logical contexts.
-data Z3_context
+data Z3_config
 
 -- | Logical context. This is the main Z3 data-structure.
-data Z3_symbol
+data Z3_context
 
 -- | A Lisp-link symbol. It is used to name types, constants, and functions.
 -- A symbol can be created using string or integers.
+data Z3_symbol
+
+-- | abstract syntax tree node. That is, the data-structure used in Z3 to
+-- represent terms, formulas and types.
 data Z3_ast
 
 -- | A kind of AST used to represent types.
@@ -72,14 +76,14 @@ type Z3_string = CString
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d6c40d9b79fe8a8851cc8540970787f>
 --
 foreign import ccall unsafe "Z3_mk_config"
-    z3_mk_config :: IO (Ptr Z3_Config)
+    z3_mk_config :: IO (Ptr Z3_config)
 
 -- | Delete the given configuration object.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e620acf5d55d0271097c9bb97219774>
 --
 foreign import ccall unsafe "Z3_del_config"
-    z3_del_config :: Ptr Z3_Config -> IO ()
+    z3_del_config :: Ptr Z3_config -> IO ()
 
 -- | Set a configuration parameter.
 --
