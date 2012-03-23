@@ -1,0 +1,29 @@
+Name:                z3-haskell
+Version:             0.0.0
+Synopsis:            Bindings for the Z3 Theorem Prover
+Description:         
+    TODO
+Homepage:            
+License:             BSD3
+License-file:        LICENSE
+Author:              Iago Abal <iago.abal@gmail.com>
+                     David Castro <david.castro.dcp@gmail.com>
+Maintainer:          Iago Abal <iago.abal@gmail.com>
+                     David Castro <david.castro.dcp@gmail.com>
+Copyright:           2012, Iago Abal, David Castro
+Category:            Math, Theorem Provers, Formal Methods
+Build-type:          Simple
+Cabal-version:       >=1.2
+
+Library
+    Exposed-modules: 
+        Z3.Base.C 
+
+    ghc-options: -Wall
+
+    Build-depends:       base > 3 && < 5
+
+    Build-tools:         hsc2hs
+    Extensions:          ForeignFunctionInterface
+    includes:            z3.h
+    extra-libraries:     gomp z3
