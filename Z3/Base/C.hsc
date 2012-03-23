@@ -55,7 +55,7 @@ type Z3_lbool = CInt
 #{ enum Z3_lbool,
  , z3_l_true  = Z3_L_TRUE
  , z3_l_false = Z3_L_FALSE
- , z3_l_undef = Z3_L_FALSE
+ , z3_l_undef = Z3_L_UNDEF
  }
 
  -- | Boolean type. It is just an alias for int.
