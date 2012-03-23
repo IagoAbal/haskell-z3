@@ -1,6 +1,5 @@
 {-# LANGUAGE EmptyDataDecls             #-}
 {-# LANGUAGE ForeignFunctionInterface   #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
 -- Module    : Z3.Base.C
@@ -58,7 +57,7 @@ type Z3_lbool = CInt
  , z3_l_undef = Z3_L_UNDEF
  }
 
- -- | Boolean type. It is just an alias for int.
+-- | Boolean type. It is just an alias for int.
 type Z3_bool = CInt
 #{ enum Z3_bool,
  , z3_true  = Z3_TRUE
@@ -66,7 +65,6 @@ type Z3_bool = CInt
  }
 
 type Z3_string = CString
-
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -118,6 +116,9 @@ foreign import ccall unsafe "Z3_mk_string_symbol"
 ---------------------------------------------------------------------
 -- * Sorts
 
+-- TODO Sorts: Z3_is_eq_sort
+-- TODO Sorts: Z3_mk_uninterpreted_sort
+
 -- | Create the Boolean type.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacdc73510b69a010b71793d429015f342>
@@ -131,7 +132,16 @@ foreign import ccall unsafe "Z3_mk_bool_sort"
 --
 foreign import ccall unsafe "Z3_mk_int_sort"
     z3_mk_int_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
- 
+
+-- | Create an real type.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
+--
+foreign import ccall unsafe "Z3_mk_real_sort"
+    z3_mk_real_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
+
+-- TODO Sorts: from Z3_mk_real_sort on
+
 
 ---------------------------------------------------------------------
 -- * Constants and Applications
@@ -299,7 +309,28 @@ foreign import ccall unsafe "Z3_mk_gt"
 foreign import ccall unsafe "Z3_mk_ge"
     z3_mk_ge :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast ->  IO (Ptr Z3_ast)
 
--- TODO Constants and applications: reals, bitvectors, arrays
+-- | Coerce an integer to a real.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7130641e614c7ebafd28ae16a7681a21>
+--
+foreign import ccall unsafe "Z3_mk_int2real"
+    z3_mk_int2real :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Coerce a real to an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga759b6563ba1204aae55289009a3fdc6d>
+--
+foreign import ccall unsafe "Z3_mk_real2int"
+    z3_mk_real2int :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Check if a real number is an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaac2ad0fb04e4900fdb4add438d137ad3>
+--
+foreign import ccall unsafe "Z3_mk_is_int"
+    z3_mk_is_int :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- TODO Constants and applications: bitvectors and arrays
 -- TODO Sets
 
 ---------------------------------------------------------------------
@@ -312,7 +343,12 @@ foreign import ccall unsafe "Z3_mk_ge"
 foreign import ccall unsafe "Z3_mk_numeral"
     z3_mk_numeral :: Ptr Z3_context -> Z3_string -> Ptr Z3_sort ->  IO (Ptr Z3_ast)
 
--- TODO Numerals: Z3_mk_real
+-- | Create a real from a fraction.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabe0bbc1e01a084a75506a62e5e6900b3>
+--
+foreign import ccall unsafe "Z3_mk_real"
+    z3_mk_real :: Ptr Z3_context -> CInt -> CInt -> IO (Ptr Z3_ast)
 
 -- | Create a numeral of a given sort.
 --
@@ -342,10 +378,7 @@ foreign import ccall unsafe "Z3_mk_int64"
 foreign import ccall unsafe "Z3_mk_unsigned_int64"
     z3_mk_unsigned_int64 :: Ptr Z3_context -> CULLong -> Ptr Z3_sort ->  IO (Ptr Z3_ast)
 
--- TODO Quantifiers
--- TODO Accessors
--- TODO Modifiers
--- TODO Coercions
+-- TODO Quantifiers, Accessors, Modifiers, Coercions
 
 ---------------------------------------------------------------------
 -- * Constraints
@@ -375,11 +408,4 @@ foreign import ccall unsafe "Z3_check"
 -- TODO Constraints: Z3_get_implied_equalities
 -- TODO Constraints: Z3_del_model
 
--- TODO Search control
--- TODO Labels
--- TODO Model navigation
--- TODO Interaction logging
--- TODO String conversion
--- TODO Parser interface
--- TODO Error handling
--- TODO Miscellaneous
+-- TODO From section 'Constraints' on.
