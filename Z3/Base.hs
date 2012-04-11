@@ -23,6 +23,11 @@ module Z3.Base (
     -- ** Utility types
     , Result(..)
     
+    -- * Sorts
+    , mkBoolSort
+    , mkIntSort
+    , mkRealSort
+    
     -- * Constants and Applications
     , mkConst
     , mkTrue
@@ -142,6 +147,39 @@ data Result
     | Unsatisfiable
     | Undefined
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
+
+
+---------------------------------------------------------------------
+-- * Sorts
+
+-- TODO Sorts: Z3_is_eq_sort
+-- TODO Sorts: Z3_mk_uninterpreted_sort
+
+-- | Create the Boolean type.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacdc73510b69a010b71793d429015f342>
+--
+mkBoolSort :: Context -> IO Sort
+mkBoolSort c = withForeignPtr (unContext c) $ \cptr ->
+  Sort <$> z3_mk_bool_sort cptr
+
+-- | Create an integer type.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6cd426ab5748653b77d389fd3eac1015>
+--
+mkIntSort :: Context -> IO Sort
+mkIntSort c = withForeignPtr (unContext c) $ \cptr ->
+  Sort <$> z3_mk_int_sort cptr
+
+-- | Create an real type.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
+--
+mkRealSort :: Context -> IO Sort
+mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
+  Sort <$> z3_mk_real_sort cptr
+
+-- TODO Sorts: from Z3_mk_real_sort on
 
 
 ---------------------------------------------------------------------
