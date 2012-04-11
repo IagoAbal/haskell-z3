@@ -64,7 +64,6 @@ newtype Context = Context { _unContext :: ForeignPtr Z3_context }
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype Symbol = Symbol { _unSymbol :: Ptr Z3_symbol }
     deriving (Eq, Ord, Show, Storable)
 
@@ -72,15 +71,15 @@ newtype Symbol = Symbol { _unSymbol :: Ptr Z3_symbol }
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype AST = AST { _unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
+
+    -- TODO Improve type-safety with phantom types.
 
 -- | Kind of Z3 AST representing /types/.
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype Sort = Sort { _unSort :: Ptr Z3_sort }
     deriving (Eq, Ord, Show, Storable)
 
@@ -88,7 +87,6 @@ newtype Sort = Sort { _unSort :: Ptr Z3_sort }
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype App = App { _unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
@@ -97,7 +95,6 @@ newtype App = App { _unApp :: Ptr Z3_app }
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
     deriving (Eq, Ord, Show, Storable)
 
@@ -105,15 +102,13 @@ newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
 -- 
 -- /Reference:/ < TODO >
 --
-
 newtype Model = Model { _unModel :: Ptr Z3_model }
     deriving (Eq, Ord, Show, Storable)
 
- -- | Lifted Boolean type.
- --
- -- /Reference:/ < TODO >
- --
-
+-- | Lifted Boolean type.
+--
+-- /Reference:/ < TODO >
+--
 data Result
     = Satisfiable
     | Unsatisfiable
