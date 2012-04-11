@@ -101,6 +101,13 @@ foreign import ccall unsafe "Z3_set_param_value"
 foreign import ccall unsafe "Z3_mk_context"
     z3_mk_context :: Ptr Z3_config -> IO (Ptr Z3_context)
 
+-- | Delete the given logical context.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga556eae80ed43ab13e1e7dc3b38c35200>
+--
+foreign import ccall unsafe "Z3_del_context"
+    z3_del_context :: Ptr Z3_context -> IO ()
+
 
 ---------------------------------------------------------------------
 -- * Symbols
