@@ -60,7 +60,9 @@ module Z3.Base (
 import Z3.Base.C
 
 import Control.Applicative ( (<$>) )
+import Data.Ratio ( Ratio, (%), numerator, denominator )
 import Foreign
+import Foreign.C
 
 ------------------------------------------------------------------------
 -- Types
@@ -416,3 +418,68 @@ mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
 
 -- TODO Constants and applications: bitvectors and arrays
 -- TODO Sets
+
+
+---------------------------------------------------------------------
+-- * Numerals
+
+-- | Create a numeral of a given sort.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8aca397e32ca33618d8024bff32948c>
+--
+mkNumeral :: Context -> String -> Sort -> IO AST
+mkNumeral c str s = withForeignPtr (unContext c) $ \cptr -> do
+  cstr <- newCString str
+  AST <$> z3_mk_numeral cptr cstr (unSort s)
+
+-- | TODO
+mkInt32 :: Context -> Int32 -> Sort -> IO AST
+mkInt32 c n s = withForeignPtr (unContext c) $ \cptr ->
+  AST <$> z3_mk_int cptr (CInt n) (unSort s)
+
+-- | TODO
+mkInt :: Integral a => Context -> a -> IO AST
+mkInt c n = do
+  int <- mkIntSort c
+  mkNumeral c n_str int
+  where n_str = show $ toInteger n
+
+{-# RULES "mkInt/Int32" mkInt = mkInt_Int32 #-}
+mkInt_Int32 :: Context -> Int32 -> IO AST
+mkInt_Int32 c n = do
+  int <- mkIntSort c
+  mkInt32 c n int
+
+{-# RULES "mkInt/CInt" mkInt = mkInt_CInt #-}
+mkInt_CInt :: Context -> CInt -> IO AST
+mkInt_CInt c (CInt n) = mkInt_Int32 c n
+  
+-- | TODO
+mkReal :: Real r => Context -> r -> IO AST
+mkReal c n = do
+  real <- mkRealSort c
+  mkNumeral c n_str real
+  where r = toRational n
+        n_str = show (numerator r) ++ " / " ++ show (denominator r)
+
+{-# RULES "mkReal/Int32" mkReal = mkReal_Int32 #-}
+mkReal_Int32 :: Context -> Int32 -> IO AST
+mkReal_Int32 c n = do
+  real <- mkRealSort c
+  mkInt32 c n real
+
+{-# RULES "mkReal/CInt" mkReal = mkReal_CInt #-}
+mkReal_CInt :: Context -> CInt -> IO AST
+mkReal_CInt c (CInt n) = mkReal_Int32 c n
+
+{-# RULES "mkReal/Ratio_Int32" mkReal = mkReal_Ratio_Int32 #-}
+mkReal_Ratio_Int32 :: Context -> Ratio Int32 -> IO AST
+mkReal_Ratio_Int32 c n = mkReal_Ratio_CInt c crat
+  where crat = (CInt $ numerator n) % (CInt $ denominator n)
+
+{-# RULES "mkReal/Ratio_CInt" mkReal = mkReal_Ratio_CInt #-}
+mkReal_Ratio_CInt :: Context -> Ratio CInt -> IO AST
+mkReal_Ratio_CInt c n = withForeignPtr (unContext c) $ \cptr -> do
+  AST <$> z3_mk_real cptr num den
+  where num = numerator n
+	den = denominator n
