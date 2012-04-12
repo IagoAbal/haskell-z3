@@ -22,12 +22,22 @@ module Z3.Base (
     
     -- ** Utility types
     , Result(..)
-    
+
+    -- * Config
+    , mkConfig
+    , setParamValue
+
+    -- * Context
+    , mkContext
+
+    -- * Symbols
+    , mkStringSymbol
+
     -- * Sorts
     , mkBoolSort
     , mkIntSort
     , mkRealSort
-    
+
     -- * Constants and Applications
     , mkConst
     , mkTrue
@@ -55,14 +65,19 @@ module Z3.Base (
     , mkReal2Int
     , mkIsInt
 
+    -- * Constraints
+    , assertCnstr
+    , check
+
     ) where
 
 import Z3.Base.C
 
 import Control.Applicative ( (<$>) )
 import Data.Ratio ( Ratio, (%), numerator, denominator )
-import Foreign
+import Foreign hiding ( newForeignPtr )
 import Foreign.C
+import Foreign.Concurrent ( newForeignPtr )
 
 ------------------------------------------------------------------------
 -- Types
@@ -78,7 +93,7 @@ import Foreign.C
 --
 -- /Reference:/ < TODO >
 --
-newtype Config = Config { _unConfig :: ForeignPtr Z3_config }
+newtype Config = Config { unConfig :: ForeignPtr Z3_config }
     deriving Eq
 
 -- | A Z3 /logical context/.
@@ -150,6 +165,62 @@ data Result
     | Undefined
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
+toResult :: Z3_lbool -> Result
+toResult lb
+    | lb == z3_l_true  = Satisfiable
+    | lb == z3_l_false = Unsatisfiable
+    | otherwise        = Undefined
+
+---------------------------------------------------------------------
+-- * Create configuration
+
+-- | Create a configuration.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d6c40d9b79fe8a8851cc8540970787f>
+--
+mkConfig :: IO Config
+mkConfig =
+    z3_mk_config                          >>= \ptr  ->
+    newForeignPtr ptr (z3_del_config ptr) >>= \fptr ->
+        return $! Config fptr
+
+-- | Set a configuration parameter.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga001ade87a1671fe77d7e53ed0f4f1ec3>
+--
+setParamValue :: Config -> String -> String -> IO ()
+setParamValue cfg s1 s2 =
+    withForeignPtr (unConfig cfg) $ \cfgPtr ->
+    withCString s1                $ \cs1 ->
+    withCString s2                $ \cs2 ->
+        z3_set_param_value cfgPtr cs1 cs2
+
+---------------------------------------------------------------------
+-- * Create context
+
+-- | Create a context using the given configuration.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0bd93cfab4d749dd3e2f2a4416820a46>
+--
+mkContext :: Config -> IO Context
+mkContext cfg =
+    withForeignPtr (unConfig cfg)              $ \cfgPtr ->
+    z3_mk_context cfgPtr                     >>= \pCtx   ->
+    newForeignPtr pCtx (z3_del_context pCtx) >>= \fptr   ->
+        return $! Context fptr
+
+---------------------------------------------------------------------
+-- * Symbols
+
+-- | Create a Z3 symbol using a C string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafebb0d3c212927cf7834c3a20a84ecae>
+--
+mkStringSymbol :: Context -> String -> IO Symbol
+mkStringSymbol ctx s =
+    withForeignPtr (unContext ctx) $ \ctxPtr ->
+    withCString s                  $ \cs     ->
+        Symbol <$> z3_mk_string_symbol ctxPtr cs
 
 ---------------------------------------------------------------------
 -- * Sorts
@@ -483,3 +554,37 @@ mkReal_Ratio_CInt c n = withForeignPtr (unContext c) $ \cptr -> do
   AST <$> z3_mk_real cptr num den
   where num = numerator n
 	den = denominator n
+
+---------------------------------------------------------------------
+-- * Constraints
+
+-- TODO Constraints: Z3_push
+-- TODO Constraints: Z3_pop
+-- TODO Constraints: Z3_get_num_scopes
+-- TODO Constraints: Z3_persist_ast
+
+-- | Assert a constraing into the logical context.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
+--
+assertCnstr :: Context -> AST -> IO ()
+assertCnstr ctx ast =
+    withForeignPtr (unContext ctx) $ \ctxPtr ->
+        z3_assert_cnstr ctxPtr (unAST ast)
+
+-- TODO Constraints: Z3_check_and_get_model
+
+-- | Check whether the given logical context is consistent or not. 
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
+--
+check :: Context -> IO Result
+check ctx =
+    toResult <$>
+        withForeignPtr (unContext ctx) z3_check
+
+-- TODO Constraints: Z3_check_assumptions
+-- TODO Constraints: Z3_get_implied_equalities
+-- TODO Constraints: Z3_del_model
+
+-- TODO From section 'Constraints' on.
