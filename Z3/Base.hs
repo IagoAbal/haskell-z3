@@ -65,6 +65,11 @@ module Z3.Base (
     , mkReal2Int
     , mkIsInt
 
+    -- * Numerals
+    , mkNumeral
+    , mkInt
+    , mkReal
+
     -- * Constraints
     , assertCnstr
     , check
@@ -74,7 +79,9 @@ module Z3.Base (
 import Z3.Base.C
 
 import Control.Applicative ( (<$>) )
-import Data.Ratio ( Ratio, (%), numerator, denominator )
+import Data.Int
+import Data.Ratio ( Ratio, numerator, denominator )
+import Data.Word
 import Foreign hiding ( newForeignPtr )
 import Foreign.C
 import Foreign.Concurrent ( newForeignPtr )
@@ -499,61 +506,91 @@ mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8aca397e32ca33618d8024bff32948c>
 --
 mkNumeral :: Context -> String -> Sort -> IO AST
-mkNumeral c str s = withForeignPtr (unContext c) $ \cptr -> do
-  cstr <- newCString str
-  AST <$> z3_mk_numeral cptr cstr (unSort s)
+mkNumeral c str s =
+    withForeignPtr (unContext c) $ \cptr ->
+    withCString str              $ \cstr->
+        AST <$> z3_mk_numeral cptr cstr (unSort s)
 
--- | TODO
-mkInt32 :: Context -> Int32 -> Sort -> IO AST
-mkInt32 c n s = withForeignPtr (unContext c) $ \cptr ->
-  AST <$> z3_mk_int cptr (CInt n) (unSort s)
-
--- | TODO
+-- | Create a numeral of sort /int/.
 mkInt :: Integral a => Context -> a -> IO AST
-mkInt c n = do
-  int <- mkIntSort c
-  mkNumeral c n_str int
-  where n_str = show $ toInteger n
+mkInt c n =
+    mkIntSort c >>=
+        mkNumeral c n_str
+    where n_str = show $ toInteger n
 
-{-# RULES "mkInt/Int32" mkInt = mkInt_Int32 #-}
-mkInt_Int32 :: Context -> Int32 -> IO AST
-mkInt_Int32 c n = do
-  int <- mkIntSort c
-  mkInt32 c n int
-
-{-# RULES "mkInt/CInt" mkInt = mkInt_CInt #-}
-mkInt_CInt :: Context -> CInt -> IO AST
-mkInt_CInt c (CInt n) = mkInt_Int32 c n
-  
--- | TODO
+-- | Create a numeral of sort /real/.
 mkReal :: Real r => Context -> r -> IO AST
-mkReal c n = do
-  real <- mkRealSort c
-  mkNumeral c n_str real
-  where r = toRational n
-        n_str = show (numerator r) ++ " / " ++ show (denominator r)
+mkReal c n =
+    mkRealSort c >>=
+        mkNumeral c n_str
+    where r = toRational n
+          r_n = toInteger $ numerator r
+          r_d = toInteger $ denominator r
+          n_str =    show r_n ++ " / " ++ show r_d
 
-{-# RULES "mkReal/Int32" mkReal = mkReal_Int32 #-}
-mkReal_Int32 :: Context -> Int32 -> IO AST
-mkReal_Int32 c n = do
-  real <- mkRealSort c
-  mkInt32 c n real
+{-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
+mkRealZ3 :: Context -> Ratio Int32 -> IO AST
+mkRealZ3 c r =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_real ctxPtr (CInt n) (CInt d)
+    where n = numerator r
+          d = denominator r
 
-{-# RULES "mkReal/CInt" mkReal = mkReal_CInt #-}
-mkReal_CInt :: Context -> CInt -> IO AST
-mkReal_CInt c (CInt n) = mkReal_Int32 c n
+{-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
+mkInt_IntZ3 :: Context -> Int32 -> IO AST
+mkInt_IntZ3 c n = mkIntSort c >>= mkIntZ3 c n
 
-{-# RULES "mkReal/Ratio_Int32" mkReal = mkReal_Ratio_Int32 #-}
-mkReal_Ratio_Int32 :: Context -> Ratio Int32 -> IO AST
-mkReal_Ratio_Int32 c n = mkReal_Ratio_CInt c crat
-  where crat = (CInt $ numerator n) % (CInt $ denominator n)
+{-# RULES "mkInt/mkInt_UnsignedIntZ3" mkInt = mkInt_UnsignedIntZ3 #-}
+mkInt_UnsignedIntZ3 :: Context -> Word32 -> IO AST
+mkInt_UnsignedIntZ3 c n = mkIntSort c >>= mkUnsignedIntZ3 c n
 
-{-# RULES "mkReal/Ratio_CInt" mkReal = mkReal_Ratio_CInt #-}
-mkReal_Ratio_CInt :: Context -> Ratio CInt -> IO AST
-mkReal_Ratio_CInt c n = withForeignPtr (unContext c) $ \cptr -> do
-  AST <$> z3_mk_real cptr num den
-  where num = numerator n
-	den = denominator n
+{-# RULES "mkInt/mkInt_Int64Z3" mkInt = mkInt_Int64Z3 #-}
+mkInt_Int64Z3 :: Context -> Int64 -> IO AST
+mkInt_Int64Z3 c n = mkIntSort c >>= mkInt64Z3 c n
+
+{-# RULES "mkInt/mkInt_UnsignedInt64Z3" mkInt = mkInt_UnsignedInt64Z3 #-}
+mkInt_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
+mkInt_UnsignedInt64Z3 c n = mkIntSort c >>= mkUnsignedInt64Z3 c n
+
+{-# RULES "mkReal/mkReal_IntZ3" mkReal = mkReal_IntZ3 #-}
+mkReal_IntZ3 :: Context -> Int32 -> IO AST
+mkReal_IntZ3 c n = mkRealSort c >>= mkIntZ3 c n
+
+{-# RULES "mkReal/mkReal_UnsignedIntZ3" mkReal = mkReal_UnsignedIntZ3 #-}
+mkReal_UnsignedIntZ3 :: Context -> Word32 -> IO AST
+mkReal_UnsignedIntZ3 c n = mkRealSort c >>= mkUnsignedIntZ3 c n
+
+{-# RULES "mkReal/mkReal_Int64Z3" mkReal = mkReal_Int64Z3 #-}
+mkReal_Int64Z3 :: Context -> Int64 -> IO AST
+mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
+
+{-# RULES "mkReal/mkReal_UnsignedInt64Z3" mkReal = mkReal_UnsignedInt64Z3 #-}
+mkReal_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
+mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
+
+{-# INLINE mkIntZ3 #-}
+mkIntZ3 :: Context -> Int32 -> Sort -> IO AST
+mkIntZ3 c n s =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_int ctxPtr (CInt n) (unSort s)
+
+{-# INLINE mkUnsignedIntZ3 #-}
+mkUnsignedIntZ3 :: Context -> Word32 -> Sort -> IO AST
+mkUnsignedIntZ3 c n s =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_unsigned_int ctxPtr (CUInt n) (unSort s)
+
+{-# INLINE mkInt64Z3 #-}
+mkInt64Z3 :: Context -> Int64 -> Sort -> IO AST
+mkInt64Z3 c n s =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_int64 ctxPtr (CLLong n) (unSort s)
+
+{-# INLINE mkUnsignedInt64Z3 #-}
+mkUnsignedInt64Z3 :: Context -> Word64 -> Sort -> IO AST
+mkUnsignedInt64Z3 c n s =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_unsigned_int64 ctxPtr (CULLong n) (unSort s)
 
 ---------------------------------------------------------------------
 -- * Constraints
