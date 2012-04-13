@@ -28,4 +28,4 @@ Library
     Build-tools:         hsc2hs
     Extensions:          ForeignFunctionInterface
     includes:            z3.h
-    extra-libraries:     gomp z3
+    extra-libraries:     gomp z3 gomp
