@@ -532,9 +532,9 @@ mkReal c n =
 mkRealZ3 :: Context -> Ratio Int32 -> IO AST
 mkRealZ3 c r =
     withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_real ctxPtr (CInt n) (CInt d)
-    where n = numerator r
-          d = denominator r
+        AST <$> z3_mk_real ctxPtr n d
+    where n = (fromIntegral $ numerator r)   :: CInt
+          d = (fromIntegral $ denominator r) :: CInt
 
 {-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
 mkInt_IntZ3 :: Context -> Int32 -> IO AST
@@ -572,25 +572,29 @@ mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 mkIntZ3 :: Context -> Int32 -> Sort -> IO AST
 mkIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_int ctxPtr (CInt n) (unSort s)
+        AST <$> z3_mk_int ctxPtr cn (unSort s)
+    where cn = (fromIntegral n) :: CInt
 
 {-# INLINE mkUnsignedIntZ3 #-}
 mkUnsignedIntZ3 :: Context -> Word32 -> Sort -> IO AST
 mkUnsignedIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_unsigned_int ctxPtr (CUInt n) (unSort s)
+        AST <$> z3_mk_unsigned_int ctxPtr cn (unSort s)
+    where cn = (fromIntegral n) :: CUInt
 
 {-# INLINE mkInt64Z3 #-}
 mkInt64Z3 :: Context -> Int64 -> Sort -> IO AST
 mkInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_int64 ctxPtr (CLLong n) (unSort s)
+        AST <$> z3_mk_int64 ctxPtr cn (unSort s)
+    where cn = (fromIntegral n) :: CLLong
 
 {-# INLINE mkUnsignedInt64Z3 #-}
 mkUnsignedInt64Z3 :: Context -> Word64 -> Sort -> IO AST
 mkUnsignedInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_unsigned_int64 ctxPtr (CULLong n) (unSort s)
+        AST <$> z3_mk_unsigned_int64 ctxPtr cn (unSort s)
+    where cn = (fromIntegral n) :: CULLong
 
 ---------------------------------------------------------------------
 -- * Constraints
