@@ -3,7 +3,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 -- |
--- Module    : Z3.Expr
+-- Module    : Z3.Exprs
 -- Copyright : (c) Iago Abal, 2011 
 --             (c) David Castro, 2011
 -- License   : BSD3
