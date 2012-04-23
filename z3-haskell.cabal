@@ -21,6 +21,7 @@ Library
         Z3.Base
         Z3.Base.C 
 
+        Z3.Exprs
         Z3.Types
 
     ghc-options: -Wall
