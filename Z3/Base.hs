@@ -77,6 +77,7 @@ module Z3.Base (
     ) where
 
 import Z3.Base.C
+import Z3.Types hiding ( Sort )
 
 import Control.Applicative ( (<$>) )
 import Data.Int
@@ -128,7 +129,7 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 -- 
 -- /Reference:/ < TODO >
 --
-newtype AST = AST { unAST :: Ptr Z3_ast }
+newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
     -- TODO Improve type-safety with phantom types.
@@ -137,7 +138,7 @@ newtype AST = AST { unAST :: Ptr Z3_ast }
 -- 
 -- /Reference:/ < TODO >
 --
-newtype Sort = Sort { unSort :: Ptr Z3_sort }
+newtype Sort a = Sort { unSort :: Ptr Z3_sort }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
@@ -239,7 +240,7 @@ mkStringSymbol ctx s =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacdc73510b69a010b71793d429015f342>
 --
-mkBoolSort :: Context -> IO Sort
+mkBoolSort :: Context -> IO (Sort Bool)
 mkBoolSort c = withForeignPtr (unContext c) $ \cptr ->
   Sort <$> z3_mk_bool_sort cptr
 
@@ -247,7 +248,7 @@ mkBoolSort c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6cd426ab5748653b77d389fd3eac1015>
 --
-mkIntSort :: Context -> IO Sort
+mkIntSort :: (Z3Int i) => Context -> IO (Sort i)
 mkIntSort c = withForeignPtr (unContext c) $ \cptr ->
   Sort <$> z3_mk_int_sort cptr
 
@@ -255,7 +256,7 @@ mkIntSort c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 --
-mkRealSort :: Context -> IO Sort
+mkRealSort :: (Z3Real r) => Context -> IO (Sort r)
 mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
   Sort <$> z3_mk_real_sort cptr
 
@@ -274,7 +275,7 @@ mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
 --
-mkConst :: Context -> Symbol -> Sort -> IO AST
+mkConst :: Context -> Symbol -> Sort a -> IO (AST a)
 mkConst c x s = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_const cptr (unSymbol x) (unSort s)
 
@@ -286,7 +287,7 @@ mkConst c x s = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae898e7380409bbc57b56cc5205ef1db7>
 --
-mkTrue :: Context -> IO AST
+mkTrue :: Context -> IO (AST Bool)
 mkTrue c = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_true cptr
 
@@ -294,7 +295,7 @@ mkTrue c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5952ac17671117a02001fed6575c778d>
 --
-mkFalse :: Context -> IO AST
+mkFalse :: Context -> IO (AST Bool)
 mkFalse c = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_false cptr
 
@@ -302,7 +303,7 @@ mkFalse c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 --
-mkEq :: Context -> AST -> AST -> IO AST
+mkEq :: Context -> AST a -> AST a -> IO (AST a)
 mkEq c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_eq cptr (unAST e1) (unAST e2)
 
@@ -310,7 +311,7 @@ mkEq c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3329538091996eb7b3dc677760a61072>
 --
-mkNot :: Context -> AST -> IO AST
+mkNot :: Context -> AST Bool -> IO (AST Bool)
 mkNot c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_not cptr (unAST e)
 
@@ -318,7 +319,7 @@ mkNot c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94417eed5c36e1ad48bcfc8ad6e83547>
 --
-mkIte :: Context -> AST -> AST -> AST -> IO AST
+mkIte :: Context -> AST Z3_bool -> AST a -> AST a -> IO (AST a)
 mkIte c g e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_ite cptr (unAST g) (unAST e1) (unAST e2)
 
@@ -326,7 +327,7 @@ mkIte c g e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga930a8e844d345fbebc498ac43a696042>
 --
-mkIff :: Context -> AST -> AST -> IO AST
+mkIff :: Context -> AST Bool -> AST Bool -> IO (AST Bool)
 mkIff c p q = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_iff cptr (unAST p) (unAST q)
 
@@ -334,7 +335,7 @@ mkIff c p q = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac829c0e25bbbd30343bf073f7b524517>
 --
-mkImplies :: Context -> AST -> AST -> IO AST
+mkImplies :: Context -> AST Bool -> AST Bool -> IO (AST Bool)
 mkImplies c p q = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_implies cptr (unAST p) (unAST q)
 
@@ -342,7 +343,7 @@ mkImplies c p q = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc6d1b848032dec0c4617b594d4229ec>
 --
-mkXor :: Context -> AST -> AST -> IO AST
+mkXor :: Context -> AST Bool -> AST Bool -> IO (AST Bool)
 mkXor c p q = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_xor cptr (unAST p) (unAST q)
 
@@ -350,7 +351,7 @@ mkXor c p q = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacde98ce4a8ed1dde50b9669db4838c61>
 --
-mkAnd :: Context -> [AST] -> IO AST
+mkAnd :: Context -> [AST Bool] -> IO (AST Bool)
 mkAnd _ [] = error "Z3.Base.mkAnd: empty list of expressions"
 mkAnd c es 
   = withArray es $ \aptr -> 
@@ -362,7 +363,7 @@ mkAnd c es
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 --
-mkOr :: Context -> [AST] -> IO AST
+mkOr :: Context -> [AST Bool] -> IO (AST Bool)
 mkOr _ [] = error "Z3.Base.mkOr: empty list of expressions"
 mkOr c es 
   = withArray es $ \aptr -> 
@@ -374,7 +375,7 @@ mkOr c es
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e4ac0a4e53eee0b4b0ef159ed7d0cd5>
 --
-mkAdd :: Context -> [AST] -> IO AST
+mkAdd :: (Z3Num a) => Context -> [AST a] -> IO (AST a)
 mkAdd _ [] = error "Z3.Base.mkAdd: empty list of expressions"
 mkAdd c es 
   = withArray es $ \aptr -> 
@@ -386,7 +387,7 @@ mkAdd c es
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab9affbf8401a18eea474b59ad4adc890>
 --
-mkMul :: Context -> [AST] -> IO AST
+mkMul :: (Z3Num a) => Context -> [AST a] -> IO (AST a)
 mkMul _ [] = error "Z3.Base.mkMul: empty list of expressions"
 mkMul c es 
   = withArray es $ \aptr -> 
@@ -398,7 +399,7 @@ mkMul c es
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4f5fea9b683f9e674fd8f14d676cc9a9>
 --
-mkSub :: Context -> [AST] -> IO AST
+mkSub ::(Z3Num a) => Context -> [AST a] -> IO (AST a)
 mkSub _ [] = error "Z3.Base.mkSub: empty list of expressions"
 mkSub c es 
   = withArray es $ \aptr -> 
@@ -410,7 +411,7 @@ mkSub c es
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadcd2929ad732937e25f34277ce4988ea>
 --
-mkUnaryMinus :: Context -> AST -> IO AST
+mkUnaryMinus :: (Z3Num a) => Context -> AST a -> IO (AST a)
 mkUnaryMinus c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_unary_minus cptr (unAST e)
 
@@ -418,7 +419,7 @@ mkUnaryMinus c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1ac60ee8307af8d0b900375914194ff3>
 --
-mkDiv :: Context -> AST -> AST -> IO AST
+mkDiv :: (Z3Num a) => Context -> AST a -> AST a -> IO (AST a)
 mkDiv c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_div cptr (unAST e1) (unAST e2)
 
@@ -426,7 +427,7 @@ mkDiv c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8e350ac77e6b8fe805f57efe196e7713>
 --
-mkMod :: Context -> AST -> AST -> IO AST
+mkMod :: (Z3Int a) => Context -> AST a -> AST a -> IO (AST a)
 mkMod c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_mod cptr (unAST e1) (unAST e2)
 
@@ -434,7 +435,7 @@ mkMod c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2fcdb17f9039bbdaddf8a30d037bd9ff>
 --
-mkRem :: Context -> AST -> AST -> IO AST
+mkRem :: (Z3Int a) => Context -> AST a -> AST a -> IO (AST a)
 mkRem c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_rem cptr (unAST e1) (unAST e2)
 
@@ -442,7 +443,7 @@ mkRem c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga58a3dc67c5de52cf599c346803ba1534>
 --
-mkLt :: Context -> AST -> AST -> IO AST
+mkLt :: (Z3Num a) => Context -> AST a -> AST a -> IO (AST Bool)
 mkLt c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_lt cptr (unAST e1) (unAST e2)
 
@@ -450,7 +451,7 @@ mkLt c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa9a33d11096841f4e8c407f1578bc0bf>
 --
-mkLe :: Context -> AST -> AST -> IO AST
+mkLe :: (Z3Num a) => Context -> AST a -> AST a -> IO (AST Bool)
 mkLe c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_le cptr (unAST e1) (unAST e2)
 
@@ -458,7 +459,7 @@ mkLe c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46167b86067586bb742c0557d7babfd3>
 --
-mkGt :: Context -> AST -> AST -> IO AST
+mkGt :: (Z3Num a) => Context -> AST a -> AST a -> IO (AST Bool)
 mkGt c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_gt cptr (unAST e1) (unAST e2)
 
@@ -466,7 +467,7 @@ mkGt c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad9245cbadb80b192323d01a8360fb942>
 --
-mkGe :: Context -> AST -> AST -> IO AST
+mkGe :: (Z3Num a) => Context -> AST a -> AST a -> IO (AST Bool)
 mkGe c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_ge cptr (unAST e1) (unAST e2)
 
@@ -474,7 +475,7 @@ mkGe c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7130641e614c7ebafd28ae16a7681a21>
 --
-mkInt2Real :: Context -> AST -> IO AST
+mkInt2Real :: (Z3Int a, Z3Real b) => Context -> AST a -> IO (AST b)
 mkInt2Real c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_int2real cptr (unAST e)
 
@@ -482,7 +483,7 @@ mkInt2Real c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga759b6563ba1204aae55289009a3fdc6d>
 --
-mkReal2Int :: Context -> AST -> IO AST
+mkReal2Int :: (Z3Real a, Z3Int b) => Context -> AST a -> IO (AST b)
 mkReal2Int c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_real2int cptr (unAST e)
 
@@ -490,7 +491,7 @@ mkReal2Int c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaac2ad0fb04e4900fdb4add438d137ad3>
 --
-mkIsInt :: Context -> AST -> IO AST
+mkIsInt :: (Z3Real a) => Context -> AST a -> IO (AST Bool)
 mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_is_int cptr (unAST e)
 
@@ -505,21 +506,21 @@ mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8aca397e32ca33618d8024bff32948c>
 --
-mkNumeral :: Context -> String -> Sort -> IO AST
+mkNumeral :: (Z3Num a) => Context -> String -> Sort a -> IO (AST a)
 mkNumeral c str s =
     withForeignPtr (unContext c) $ \cptr ->
     withCString str              $ \cstr->
         AST <$> z3_mk_numeral cptr cstr (unSort s)
 
 -- | Create a numeral of sort /int/.
-mkInt :: Integral a => Context -> a -> IO AST
+mkInt :: (Z3Int a) => Context -> a -> IO (AST a)
 mkInt c n =
     mkIntSort c >>=
         mkNumeral c n_str
     where n_str = show $ toInteger n
 
 -- | Create a numeral of sort /real/.
-mkReal :: Real r => Context -> r -> IO AST
+mkReal :: (Z3Real r) => Context -> r -> IO (AST r)
 mkReal c n =
     mkRealSort c >>=
         mkNumeral c n_str
@@ -529,7 +530,7 @@ mkReal c n =
           n_str =    show r_n ++ " / " ++ show r_d
 
 {-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
-mkRealZ3 :: Context -> Ratio Int32 -> IO AST
+mkRealZ3 :: (Z3Real a) => Context -> Ratio Int32 -> IO (AST a)
 mkRealZ3 c r =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_real ctxPtr n d
@@ -537,60 +538,60 @@ mkRealZ3 c r =
           d = (fromIntegral $ denominator r) :: CInt
 
 {-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
-mkInt_IntZ3 :: Context -> Int32 -> IO AST
+mkInt_IntZ3 :: (Z3Int a) => Context -> Int32 -> IO (AST a)
 mkInt_IntZ3 c n = mkIntSort c >>= mkIntZ3 c n
 
 {-# RULES "mkInt/mkInt_UnsignedIntZ3" mkInt = mkInt_UnsignedIntZ3 #-}
-mkInt_UnsignedIntZ3 :: Context -> Word32 -> IO AST
+mkInt_UnsignedIntZ3 :: (Z3Int a) => Context -> Word32 -> IO (AST a)
 mkInt_UnsignedIntZ3 c n = mkIntSort c >>= mkUnsignedIntZ3 c n
 
 {-# RULES "mkInt/mkInt_Int64Z3" mkInt = mkInt_Int64Z3 #-}
-mkInt_Int64Z3 :: Context -> Int64 -> IO AST
+mkInt_Int64Z3 :: (Z3Int a) => Context -> Int64 -> IO (AST a)
 mkInt_Int64Z3 c n = mkIntSort c >>= mkInt64Z3 c n
 
 {-# RULES "mkInt/mkInt_UnsignedInt64Z3" mkInt = mkInt_UnsignedInt64Z3 #-}
-mkInt_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
+mkInt_UnsignedInt64Z3 :: (Z3Int a)=> Context -> Word64 -> IO (AST a)
 mkInt_UnsignedInt64Z3 c n = mkIntSort c >>= mkUnsignedInt64Z3 c n
 
 {-# RULES "mkReal/mkReal_IntZ3" mkReal = mkReal_IntZ3 #-}
-mkReal_IntZ3 :: Context -> Int32 -> IO AST
+mkReal_IntZ3 :: (Z3Real r) => Context -> Int32 -> IO (AST r)
 mkReal_IntZ3 c n = mkRealSort c >>= mkIntZ3 c n
 
 {-# RULES "mkReal/mkReal_UnsignedIntZ3" mkReal = mkReal_UnsignedIntZ3 #-}
-mkReal_UnsignedIntZ3 :: Context -> Word32 -> IO AST
+mkReal_UnsignedIntZ3 :: (Z3Real r) => Context -> Word32 -> IO (AST r)
 mkReal_UnsignedIntZ3 c n = mkRealSort c >>= mkUnsignedIntZ3 c n
 
 {-# RULES "mkReal/mkReal_Int64Z3" mkReal = mkReal_Int64Z3 #-}
-mkReal_Int64Z3 :: Context -> Int64 -> IO AST
+mkReal_Int64Z3 :: (Z3Real r) => Context -> Int64 -> IO (AST r)
 mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
 
 {-# RULES "mkReal/mkReal_UnsignedInt64Z3" mkReal = mkReal_UnsignedInt64Z3 #-}
-mkReal_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
+mkReal_UnsignedInt64Z3 :: (Z3Real r) => Context -> Word64 -> IO (AST r)
 mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 
 {-# INLINE mkIntZ3 #-}
-mkIntZ3 :: Context -> Int32 -> Sort -> IO AST
+mkIntZ3 :: (Z3Num a) => Context -> Int32 -> Sort a -> IO (AST a)
 mkIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_int ctxPtr cn (unSort s)
     where cn = (fromIntegral n) :: CInt
 
 {-# INLINE mkUnsignedIntZ3 #-}
-mkUnsignedIntZ3 :: Context -> Word32 -> Sort -> IO AST
+mkUnsignedIntZ3 :: (Z3Num a) => Context -> Word32 -> Sort a -> IO (AST a)
 mkUnsignedIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_unsigned_int ctxPtr cn (unSort s)
     where cn = (fromIntegral n) :: CUInt
 
 {-# INLINE mkInt64Z3 #-}
-mkInt64Z3 :: Context -> Int64 -> Sort -> IO AST
+mkInt64Z3 :: (Z3Num a) => Context -> Int64 -> Sort a -> IO (AST a)
 mkInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_int64 ctxPtr cn (unSort s)
     where cn = (fromIntegral n) :: CLLong
 
 {-# INLINE mkUnsignedInt64Z3 #-}
-mkUnsignedInt64Z3 :: Context -> Word64 -> Sort -> IO AST
+mkUnsignedInt64Z3 :: (Z3Num a) => Context -> Word64 -> Sort a -> IO (AST a)
 mkUnsignedInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_unsigned_int64 ctxPtr cn (unSort s)
@@ -608,7 +609,7 @@ mkUnsignedInt64Z3 c n s =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 --
-assertCnstr :: Context -> AST -> IO ()
+assertCnstr :: Context -> AST a -> IO ()
 assertCnstr ctx ast =
     withForeignPtr (unContext ctx) $ \ctxPtr ->
         z3_assert_cnstr ctxPtr (unAST ast)
