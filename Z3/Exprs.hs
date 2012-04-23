@@ -39,9 +39,9 @@ data Expr :: * -> * where
   Neg :: Z3Num a => Expr a -> Expr a
   -- | Arithmetic expressions for commutative rings
   CRingArith :: Z3Num a => CRingOp -> Expr a -> Expr a -> Expr a
-  -- TODO IntArith: Integer arithmetic
+  -- | Integer arithmetic
   IntArith :: Z3Int a => IntOp -> Expr a -> Expr a -> Expr a
-  -- TODO RealArith: Real arithmetic
+  -- | Real arithmetic
   RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
   -- | Comparison expressions
   Cmp :: Z3Type a => CmpOp -> Expr a -> Expr a -> Expr Bool
