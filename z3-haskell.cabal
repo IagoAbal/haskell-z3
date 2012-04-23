@@ -21,6 +21,8 @@ Library
         Z3.Base
         Z3.Base.C 
 
+        Z3.Types
+
     ghc-options: -Wall
 
     Build-depends:       base > 3 && < 5
