@@ -26,7 +26,7 @@ type Uniq = Int
 
 data Expr :: * -> * where
   -- | Literals
-  Lit :: Lit a -> Expr a
+  Lit :: (Z3Scalar a) => a -> Expr a
   -- | Constants
   Const :: !Uniq -> Expr a
   -- | Logical negation
@@ -47,15 +47,6 @@ data Expr :: * -> * where
   Cmp :: Z3Type a => CmpOp -> Expr a -> Expr a -> Expr Bool
   -- | if-then-else expressions
   Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
-
-
-data Lit :: * -> * where
-  BoolLit :: Bool -> Lit Bool
-  NumLit  :: Z3Num a => Rational -> Lit a  
-
-deriving instance Eq (Lit a)
-deriving instance Show (Lit a)
-
 
 data BoolBinOp = Xor | Implies | Iff
     deriving (Eq,Show)
@@ -79,8 +70,8 @@ data CmpOp = Eq | Neq | Le | Lt | Ge | Gt
 -- * Constructing expressions
 
 true, false :: Expr Bool
-true = Lit $ BoolLit True
-false = Lit $ BoolLit False
+true = Lit True
+false = Lit False
 
 not_ :: Expr Bool -> Expr Bool
 not_ = Not
@@ -150,6 +141,9 @@ instance Eq (Expr a) where
   -- TODO Pretty-printing
 deriving instance Show (Expr a)
 
+literal :: (Z3Scalar a) => a -> Expr a
+literal = Lit
+
 instance Z3Num a => Num (Expr a) where
   (+) = CRingArith Add
   (*) = CRingArith Mul
@@ -157,8 +151,8 @@ instance Z3Num a => Num (Expr a) where
   negate = Neg
   abs e = ite (e >=* 0) e (-e)
   signum e = ite (e >* 0) 1 (ite (e ==* 0) 0 (-1))
-  fromInteger = Lit . NumLit . fromInteger
+  fromInteger = literal . fromInteger
 
 instance Z3Real a => Fractional (Expr a) where
   (/) = RealArith Div
-  fromRational = Lit . NumLit
+  fromRational = literal . fromRational
