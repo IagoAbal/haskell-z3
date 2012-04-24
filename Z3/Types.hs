@@ -16,6 +16,7 @@ module Z3.Types (
       TY(..)
     , Sort(..)
     , Z3Type(..)
+    , Z3Scalar
 
     -- * Haskell Z3 Numerals
     , Z3Num
@@ -53,12 +54,19 @@ instance Z3Type Integer where
 instance Z3Type Rational where
     sortZ3 _ = SReal
 
+-- | Z3 Scalars
+--
+class (Eq a, Show a, Z3Type a) => Z3Scalar a where
+instance Z3Scalar Bool where
+instance Z3Scalar Integer where
+instance Z3Scalar Rational where
+
 ------------------------------------------------------------------------
 -- * Haskell Z3 Numerals
 
 -- | Typeclass for Haskell Z3 numbers.
 --
-class (Z3Type a, Num a) => Z3Num a where
+class (Z3Scalar a, Num a) => Z3Num a where
 instance Z3Num Integer where
 instance Z3Num Rational where
 
@@ -70,5 +78,5 @@ instance Z3Int Integer where
 
 -- | Typeclass for Haskell Z3 numbers of 'real' sort in Z3.
 --
-class (Z3Num a, Real a) => Z3Real a where
+class (Z3Num a, Fractional a, Real a) => Z3Real a where
 instance Z3Real Rational where
