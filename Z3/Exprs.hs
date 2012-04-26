@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -39,6 +40,7 @@ module Z3.Exprs (
 
 import Z3.Types
 
+import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
 
 
@@ -73,6 +75,7 @@ data Expr :: * -> * where
   Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
 
 deriving instance Show (Expr a)
+deriving instance Typeable1 Expr
 
 instance Eq (Expr a) where
   (Lit l1) == (Lit l2) = l1 == l2
@@ -90,6 +93,7 @@ instance Eq (Expr a) where
   (RealArith op1 a1 b1) == (RealArith op2 a2 b2)
     = op1 == op2 && a1 == a2 && b1 == b2
   (Cmp op1 a1 b1) == (Cmp op2 a2 b2)
+    | typeOf a1 == typeOf a2
     = op1 == op2 && a1 == (unsafeCoerce a2) && b1 == (unsafeCoerce b2)
   (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
   _e1 == _e2 = False

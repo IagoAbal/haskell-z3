@@ -25,6 +25,8 @@ module Z3.Types (
 
     ) where
 
+import Data.Typeable ( Typeable (..) )
+
 ------------------------------------------------------------------------
 -- * Haskell Z3 Types 
 
@@ -42,7 +44,7 @@ data Sort = SBool
 
 -- | Typeclass for Haskell Z3 types, used in Z3 expressions.
 --
-class Z3Type a where
+class Typeable a => Z3Type a where
     sortZ3 :: TY a -> Sort
 
 instance Z3Type Bool where
