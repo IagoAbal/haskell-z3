@@ -1,6 +1,9 @@
+{-# OPTIONS_GHC -fno-warn-orphans
+                -fno-warn-warnings-deprecations
+#-}
+
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE GADTs              #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 -- |
@@ -38,41 +41,11 @@ module Z3.Exprs (
     ) where
 
 
+import Z3.Exprs.Internal
 import Z3.Types
 
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
-
-
-
--- * Abstract syntax
-
-type Uniq = Int
-
-
-data Expr :: * -> * where
-  -- | Literals
-  Lit :: Z3Scalar a => a -> Expr a
-  -- | Constants
-  Const :: !Uniq -> Expr a
-  -- | Logical negation
-  Not :: Expr Bool -> Expr Bool
-  -- | Binary boolean expressions
-  BoolBin :: BoolBinOp -> Expr Bool -> Expr Bool -> Expr Bool
-  -- | Variadic boolean expressions
-  BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
-  -- | Arithmetic negation
-  Neg :: Z3Num a => Expr a -> Expr a
-  -- | Arithmetic expressions for commutative rings
-  CRingArith :: Z3Num a => CRingOp -> [Expr a] -> Expr a
-  -- | Integer arithmetic
-  IntArith :: Z3Int a => IntOp -> Expr a -> Expr a -> Expr a
-  -- | Real arithmetic
-  RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
-  -- | Comparison expressions
-  Cmp :: Z3Type a => CmpOp -> Expr a -> Expr a -> Expr Bool
-  -- | if-then-else expressions
-  Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
 
 deriving instance Show (Expr a)
 deriving instance Typeable1 Expr
@@ -97,25 +70,6 @@ instance Eq (Expr a) where
     = op1 == op2 && a1 == (unsafeCoerce a2) && b1 == (unsafeCoerce b2)
   (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
   _e1 == _e2 = False
-
-
-data BoolBinOp = Xor | Implies | Iff
-    deriving (Eq,Show)
-
-data BoolMultiOp = And | Or
-    deriving (Eq,Show)
-
-data CRingOp = Add | Mul | Sub
-    deriving (Eq,Show)
-
-data IntOp = Quot | Mod | Rem
-    deriving (Eq,Show)
-
-data RealOp = Div
-    deriving (Eq,Show)
-
-data CmpOp = Eq | Neq | Le | Lt | Ge | Gt
-    deriving (Eq,Show)
 
 
 -- * Constructing expressions
