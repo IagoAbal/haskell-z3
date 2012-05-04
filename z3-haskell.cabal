@@ -22,11 +22,18 @@ Library
         Z3.Base.C 
 
         Z3.Exprs
+
+        Z3.Monad
+
         Z3.Types
+
+    Other-modules:
+        
+        Z3.Exprs.Internal
 
     ghc-options: -Wall
 
-    Build-depends:       base > 3 && < 5
+    Build-depends:       base > 3 && < 5, containers, mtl
 
     Build-tools:         hsc2hs
     Extensions:          ForeignFunctionInterface
