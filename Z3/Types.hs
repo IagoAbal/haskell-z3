@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+
 
 -- |
 -- Module    : Z3.Types
@@ -25,7 +28,7 @@ module Z3.Types (
 
     ) where
 
-import Data.Typeable ( Typeable (..) )
+import Data.Typeable ( Typeable )
 
 ------------------------------------------------------------------------
 -- * Haskell Z3 Types 
@@ -38,14 +41,15 @@ data TY a = TY
 
 -- | Z3 Sort.
 --
-data Sort = SBool
-          | SInt
-          | SReal
+data Sort :: * -> * where
+    SBool :: Sort Bool
+    SInt  :: (Z3Int a)  => Sort a
+    SReal :: (Z3Real a) => Sort a
 
 -- | Typeclass for Haskell Z3 types, used in Z3 expressions.
 --
 class Typeable a => Z3Type a where
-    sortZ3 :: TY a -> Sort
+    sortZ3 :: TY a -> Sort a
 
 instance Z3Type Bool where
     sortZ3 _ = SBool
@@ -76,7 +80,6 @@ instance Z3Num Rational where
 --
 class (Z3Num a, Integral a) => Z3Int a where
 instance Z3Int Integer where
-
 
 -- | Typeclass for Haskell Z3 numbers of 'real' sort in Z3.
 --
