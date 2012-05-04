@@ -303,7 +303,7 @@ mkFalse c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 --
-mkEq :: Context -> AST a -> AST a -> IO (AST a)
+mkEq :: Context -> AST a -> AST a -> IO (AST Bool)
 mkEq c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_eq cptr (unAST e1) (unAST e2)
 
@@ -319,7 +319,7 @@ mkNot c e = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94417eed5c36e1ad48bcfc8ad6e83547>
 --
-mkIte :: Context -> AST Z3_bool -> AST a -> AST a -> IO (AST a)
+mkIte :: Context -> AST Bool -> AST a -> AST a -> IO (AST a)
 mkIte c g e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_ite cptr (unAST g) (unAST e1) (unAST e2)
 
