@@ -19,17 +19,12 @@
 module Z3.Monad (
     -- * Z3 Monad
       Z3
-    -- * Z3 State
     , Z3State
-
-    -- * Perform Z3 actions
     , evalZ3
 
-    -- * Declare constants
+    -- * Z3 actions
     , decl
-    -- * Assert expression in current context
     , assert
-    -- * Check current context
     , check
 
     ) where
@@ -44,18 +39,12 @@ import Data.Maybe ( fromMaybe )
 import Data.IORef
 import qualified Data.Map as Map
 
--- | Existential type. Used to store constants keeping sort info.
-data Exp = forall a. Z3Type a => Exp (Base.AST a)
 
--- | State for the Z3 Monad
-data Z3State
-    = Z3State { uniqRef   :: IORef Uniq
-              , smbSupply :: [String]
-              , context   :: Base.Context
-              , consts    :: Map.Map Uniq Exp
-              }
+-- * The Z3 Monad
+--
 
--- | The Z3 Monad
+-- | Z3 Monad type
+--
 newtype Z3 a = Z3 (StateT Z3State IO a)
     deriving (Functor, Monad)
 
@@ -63,7 +52,21 @@ instance MonadState Z3State Z3 where
     get = Z3 $ StateT $ \s -> return (s,s)
     put st = Z3 $ StateT $ \_ -> return ((), st)
 
+-- | Existential type. Used to store constants keeping sort info.
+--
+data Exp = forall a. Z3Type a => Exp (Base.AST a)
+
+-- | Z3 monad State type.
+--
+data Z3State
+    = Z3State { uniqRef   :: IORef Uniq
+              , smbSupply :: [String]
+              , context   :: Base.Context
+              , consts    :: Map.Map Uniq Exp
+              }
+
 -- | evalStateT with empty initial state for the Z3 Monad
+--
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
     uref <- newIORef (Uniq 0)
@@ -82,12 +85,14 @@ evalZ3 (Z3 s) = do
                                ]
 
 -- | New Uniq
+--
 uniq :: Z3 Uniq
 uniq = do
     st <- return . uniqRef =<< get
     modifyZ3Ref st (\(Uniq i) -> Uniq $ i + 1)
 
 -- | Fresh string
+--
 fresh :: Z3 String
 fresh =
     do st <- get
@@ -95,12 +100,14 @@ fresh =
        return $ head $ smbSupply st
 
 -- | Lifted modifyIORef
+--
 modifyZ3Ref :: IORef a -> (a -> a) -> Z3 a
 modifyZ3Ref r f = Z3 $ lift (readIORef r) >>= \a -> do
     lift $ modifyIORef r f
     return a
 
 -- | Add a constant of type AST a to the state.
+--
 addConst :: (Z3Type a) => Base.AST a -> Z3 Uniq
 addConst expr = do
     st <- get
@@ -108,6 +115,8 @@ addConst expr = do
     put st { consts = Map.insert u (Exp expr) (consts st) }
     return u
 
+-- | Get a Base.AST stored in the Z3State
+--
 getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
 getConst u = liftM mlookup (gets consts)
     where mlookup :: Map.Map Uniq Exp -> Maybe (Base.AST a)
@@ -115,8 +124,10 @@ getConst u = liftM mlookup (gets consts)
 
 
 -- * Constructing expressions
+--
 
 -- | Declare constants
+--
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
     ctx <- gets context
@@ -128,10 +139,12 @@ decl = do
     return $ Const u
 
 -- | Make assertion in current context
+--
 assert :: Z3Type a => Expr a -> Z3 ()
 assert = join . liftM2 assertCnstr_ (gets context) . compile
 
 -- | Check current context
+--
 check :: Z3 (Maybe Bool)
 check = liftM fromResult . check_ =<< gets context
     where fromResult :: Base.Result -> Maybe Bool
@@ -140,6 +153,7 @@ check = liftM fromResult . check_ =<< gets context
           fromResult _                  = Nothing
 
 -- | Create a Base.AST from a Expr
+--
 compile :: Z3Type a => Expr a -> Z3 (Base.AST a)
 compile (Lit a)
     = flip mkLiteral_ a =<< gets context
@@ -148,7 +162,8 @@ compile (Const u)
 compile _
     = error "Z3.Monad: compile : STUB! Write-me!"
 
--- | Lifted Base functions
+-- * Lifted Base functions
+--
 
 assertCnstr_ :: Base.Context -> Base.AST a -> Z3 ()
 assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
@@ -179,7 +194,9 @@ mkLiteral_ ctx
           mkBool_ True  = Z3 . lift $ Base.mkTrue ctx
           mkBool_ False = Z3 . lift $ Base.mkFalse ctx
 
--- | Error Messages
+-- * Error Messages
+--
+
 pANIC_SORTS :: String
 pANIC_SORTS = "Panic! A type of class Z3Type is not instance\
     \of the corresponding subclass (Z3Int, Z3Real, ...)"
