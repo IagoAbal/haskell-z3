@@ -17,12 +17,20 @@
 
 
 module Z3.Monad (
+    -- * Z3 Monad
       Z3
+    -- * Z3 State
     , Z3State
 
+    -- * Perform Z3 actions
     , evalZ3
 
+    -- * Declare constants
     , decl
+    -- * Assert expression in current context
+    , assert
+    -- * Check current context
+    , check
 
     ) where
 
@@ -30,7 +38,9 @@ import qualified Z3.Base as Base
 import Z3.Exprs.Internal
 import Z3.Types
 
+import Control.Monad
 import Control.Monad.State.Strict
+import Data.Maybe ( fromMaybe )
 import Data.IORef
 import qualified Data.Map as Map
 
@@ -98,6 +108,12 @@ addConst expr = do
     put st { consts = Map.insert u (Exp expr) (consts st) }
     return u
 
+getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
+getConst u = liftM mlookup (gets consts)
+    where mlookup :: Map.Map Uniq Exp -> Maybe (Base.AST a)
+          mlookup m = Map.lookup u m >>= \(Exp e) -> Base.castAST e
+
+
 -- * Constructing expressions
 
 -- | Declare constants
@@ -111,7 +127,35 @@ decl = do
     u   <- addConst cst
     return $ Const u
 
+-- | Make assertion in current context
+assert :: Z3Type a => Expr a -> Z3 ()
+assert = join . liftM2 assertCnstr_ (gets context) . compile
+
+-- | Check current context
+check :: Z3 (Maybe Bool)
+check = liftM fromResult . check_ =<< gets context
+    where fromResult :: Base.Result -> Maybe Bool
+          fromResult Base.Unsatisfiable = Just False
+          fromResult Base.Satisfiable   = Just True
+          fromResult _                  = Nothing
+
+-- | Create a Base.AST from a Expr
+compile :: Z3Type a => Expr a -> Z3 (Base.AST a)
+compile (Lit a)
+    = flip mkLiteral_ a =<< gets context
+compile (Const u)
+    = liftM (fromMaybe $ error uNDEFINED_CONST) $ getConst u
+compile _
+    = error "Z3.Monad: compile : STUB! Write-me!"
+
 -- | Lifted Base functions
+
+assertCnstr_ :: Base.Context -> Base.AST a -> Z3 ()
+assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
+
+check_ :: Base.Context -> Z3 Base.Result
+check_ = Z3 . lift . Base.check
+
 mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
 mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
 
@@ -125,8 +169,21 @@ mkSort_
     | SReal <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkRealSort
     | otherwise                    = error pANIC_SORTS 
 
+mkLiteral_ :: forall a. Z3Type a => Base.Context -> a -> Z3 (Base.AST a)
+mkLiteral_ ctx
+    | SBool <- sortZ3 (TY :: TY a) = mkBool_
+    | SInt  <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkInt  ctx
+    | SReal <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkReal ctx
+    | otherwise                    = error pANIC_SORTS 
+    where mkBool_ :: Bool -> Z3 (Base.AST Bool)
+          mkBool_ True  = Z3 . lift $ Base.mkTrue ctx
+          mkBool_ False = Z3 . lift $ Base.mkFalse ctx
+
 -- | Error Messages
 pANIC_SORTS :: String
-pANIC_SORTS = "Panic! Impossible! A type of class Z3Type is not\
-              \instance of the corresponding subclass (Z3Int, \
-              \Z3Real, ...)!"
+pANIC_SORTS = "Panic! A type of class Z3Type is not instance\
+    \of the corresponding subclass (Z3Int, Z3Real, ...)"
+
+uNDEFINED_CONST :: String
+uNDEFINED_CONST = "Panic! Undefined constant or unexpected\
+    \constant sort."
