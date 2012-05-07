@@ -51,19 +51,22 @@ data Z3_model
 
 -- | Lifted Boolean type: false, undefined, true.
 type Z3_lbool = CInt
-#{ enum Z3_lbool,
- , z3_l_true  = Z3_L_TRUE
- , z3_l_false = Z3_L_FALSE
- , z3_l_undef = Z3_L_UNDEF
- }
+
+-- | Values of lifted boolean type
+z3_l_true, z3_l_false, z3_l_undef :: Z3_lbool
+z3_l_true  = #const Z3_L_TRUE
+z3_l_false = #const Z3_L_FALSE
+z3_l_undef = #const Z3_L_UNDEF
 
 -- | Boolean type. It is just an alias for int.
 type Z3_bool = CInt
-#{ enum Z3_bool,
- , z3_true  = Z3_TRUE
- , z3_false = Z3_FALSE
- }
 
+-- | Z3_bool values
+z3_true, z3_false :: Z3_lbool
+z3_true  = #const Z3_TRUE
+z3_false = #const Z3_FALSE
+
+-- | Z3 String type
 type Z3_string = CString
 
 ---------------------------------------------------------------------

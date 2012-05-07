@@ -14,8 +14,7 @@ module Z3.Exprs.Internal where
 
 import Z3.Types
 
--- * Abstract syntax
-
+-- | Unique identifiers
 newtype Uniq = Uniq Int deriving (Eq, Ord, Show)
 
 {-# WARNING Lit
@@ -34,28 +33,29 @@ newtype Uniq = Uniq Int deriving (Eq, Ord, Show)
           \In fact, you should not be importing this \
           \module at all! Import Z3.Exprs instead!" #-}
  
+-- | Abstract syntax
 data Expr :: * -> * where
-  -- | Literals
+--  * Literals
   Lit :: Z3Scalar a => a -> Expr a
-  -- | Constants
+--  * Constants
   Const :: !Uniq -> Expr a
-  -- | Logical negation
+--  * Logical negation
   Not :: Expr Bool -> Expr Bool
-  -- | Binary boolean expressions
+--  * Binary boolean expressions
   BoolBin :: BoolBinOp -> Expr Bool -> Expr Bool -> Expr Bool
-  -- | Variadic boolean expressions
+--  * Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
-  -- | Arithmetic negation
+--  * Arithmetic negation
   Neg :: Z3Num a => Expr a -> Expr a
-  -- | Arithmetic expressions for commutative rings
+--  * Arithmetic expressions for commutative rings
   CRingArith :: Z3Num a => CRingOp -> [Expr a] -> Expr a
-  -- | Integer arithmetic
+--  * Integer arithmetic
   IntArith :: Z3Int a => IntOp -> Expr a -> Expr a -> Expr a
-  -- | Real arithmetic
+--  * Real arithmetic
   RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
-  -- | Comparison expressions
+--  * Comparison expressions
   Cmp :: Z3Type a => CmpOp -> Expr a -> Expr a -> Expr Bool
-  -- | if-then-else expressions
+--  * if-then-else expressions
   Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
 
 {-# WARNING BoolBinOp
@@ -68,20 +68,26 @@ data Expr :: * -> * where
           \In fact, you should not be importing this \
           \module at all! Import Z3.Exprs instead!" #-}
 
+-- | Boolean binary operations.
 data BoolBinOp = Xor | Implies | Iff
     deriving (Eq,Show)
 
+-- | Boolean polyadic operations.
 data BoolMultiOp = And | Or
     deriving (Eq,Show)
 
+-- | Commutative ring operations.
 data CRingOp = Add | Mul | Sub
     deriving (Eq,Show)
 
+-- | Operations for sort /int/.
 data IntOp = Quot | Mod | Rem
     deriving (Eq,Show)
 
+-- | Operations for sort /real/.
 data RealOp = Div
     deriving (Eq,Show)
 
+-- | Comparison operations.
 data CmpOp = Eq | Neq | Le | Lt | Ge | Gt
     deriving (Eq,Show)
