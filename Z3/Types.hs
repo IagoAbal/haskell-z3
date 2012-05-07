@@ -62,10 +62,10 @@ matchSorts _     _     = False
 -- | Compare sorts of different types
 --
 cmpSorts :: forall a b. (Z3Type a, Z3Type b) => Sort a -> Sort b -> Bool
-cmpSorts s1 s2
+cmpSorts _ _
     -- FIXME: cleaner implementation without undefined?
     | typeOf (undefined :: a) == typeOf (undefined :: b)
-        = matchSorts s1 s2
+        = True
     | otherwise
         = False
 
