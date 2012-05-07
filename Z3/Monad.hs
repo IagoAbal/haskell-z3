@@ -6,6 +6,16 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+
+-- |
+-- Module    : Z3.Monad
+-- Copyright : (c) Iago Abal, 2011 
+--             (c) David Castro, 2011
+-- License   : BSD3
+-- Maintainer: Iago Abal <iago.abal@gmail.com>, 
+--             David Castro <david.castro.dcp@gmail.com>
+
+
 module Z3.Monad (
       Z3
     , evalZ3
@@ -14,7 +24,7 @@ module Z3.Monad (
 
     ) where
 
-import Z3.Base hiding ( Sort )
+import qualified Z3.Base as Base
 import Z3.Exprs.Internal
 import Z3.Types
 
@@ -22,13 +32,13 @@ import Control.Monad.State.Strict
 import Data.IORef
 import qualified Data.Map as Map
 
-data Exp = forall a. Z3Type a => Exp (AST a)
+data Exp = forall a. Z3Type a => Exp (Base.AST a)
 
 -- | The Z3 Monad
 data Z3State
     = Z3State { uniqRef   :: IORef Uniq
-              , smbSupply :: IORef [String]
-              , context   :: Context
+              , smbSupply :: [String]
+              , context   :: Base.Context
               , consts    :: Map.Map Uniq Exp
               }
 
@@ -42,58 +52,79 @@ instance MonadState Z3State Z3 where
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
     uref <- newIORef (Uniq 0)
-    sref <- newIORef smbGen
-    cfg  <- mkConfig
-    ctx  <- mkContext cfg
+    -- sref <- newIORef smbGen
+    cfg  <- Base.mkConfig
+    ctx  <- Base.mkContext cfg
     evalStateT s Z3State { uniqRef   = uref
-                         , smbSupply = sref
+                         , smbSupply = smbGen --sref
                          , context   = ctx
                          , consts    = Map.empty
                          }
   where smbGen :: [String]
         smbGen =  [ [c] | c <- ['a' .. 'z'] ] 
-               ++ [ c:(show i) | c <- ['a' .. 'z'], i <- [1 :: Integer ..] ]
+               ++ [ c:(show i) | i <- [0 :: Integer ..]
+                               , c <- ['a' .. 'z']
+                               ]
 
-newUniq :: Z3 Uniq
-newUniq = do
+uniq :: Z3 Uniq
+uniq = do
     st <- return . uniqRef =<< get
     modifyZ3Ref st (\(Uniq i) -> Uniq $ i + 1)
 
-uniqSymbol :: Z3 String
-uniqSymbol = do
-    st <- gets smbSupply
-    str <- Z3 $ lift $ readIORef st
-    Z3 $ lift $ writeIORef st (tail str)
-    return (head str)
+--fresh :: Z3 String
+--fresh = do
+--    st <- gets smbSupply
+--    str <- Z3 $ lift $ readIORef st
+--    Z3 $ lift $ writeIORef st (tail str)
+--    return (head str)
+
+fresh :: Z3 String
+fresh =
+    do st <- get
+       put st { smbSupply = tail (smbSupply st) }
+       return $ head $ smbSupply st
 
 modifyZ3Ref :: IORef a -> (a -> a) -> Z3 a
 modifyZ3Ref r f = Z3 $ lift (readIORef r) >>= \a -> do
     lift $ modifyIORef r f
     return a
 
+addConst :: (Z3Type a) => Base.AST a -> Z3 Uniq
+addConst expr = do
+    st <- get
+    u  <- uniq
+    put st { consts = Map.insert u (Exp expr) (consts st) }
+    return u
+
 -- | Constructing expressions
 
 -- * Declare constants
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
-    st  <- get
-    u   <- newUniq
-    let ctx = context st
-    str <- uniqSymbol
-    smb <- Z3 $ lift $ mkStringSymbol ctx str
-    srt <- cnstSort ctx
-    (c   :: AST a ) <- Z3 $ lift $ mkConst ctx smb srt
-    put st { consts = Map.insert u (Exp c) (consts st) }
+    str <- fresh
+    ctx <- gets context
+    smb <- mkStringSymbol_ ctx str
+    (srt :: Base.Sort a) <- mkSort_ ctx
+    cst <- mkConst_ ctx smb srt
+    u   <- addConst cst
     return $ Const u
-  where ty = TY :: TY a
-        cnstSort ctx
-            | SBool <- sortZ3 ty
-                = Z3 $ lift $ mkBoolSort ctx
-            | SInt  <- sortZ3 ty
-                = Z3 $ lift $ mkIntSort ctx
-            | SReal <- sortZ3 ty
-                = Z3 $ lift $ mkRealSort ctx
-            | otherwise
-                = error "Panic! The impossible happened. \
-                        \A Z3Type of sort Int/Real is not\
-                        \instance of Z3Int/Z3Real"
+
+-- | Lifted Base functions
+mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
+mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
+
+mkConst_ :: Base.Context -> Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
+mkConst_ ctx smb = Z3 . lift . Base.mkConst ctx smb
+
+mkSort_ :: forall a. Z3Type a => Base.Context -> Z3 (Base.Sort a) 
+mkSort_
+    | SBool <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkBoolSort
+    | SInt  <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkIntSort
+    | SReal <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkRealSort
+    | otherwise                    = error pANIC_SORTS 
+
+-- | Error Messages
+pANIC_SORTS :: String
+pANIC_SORTS = "Panic! Impossible! A type of class Z3Type is not\
+              \instance of the corresponding subclass (Z3Int, \
+              \Z3Real, ...)!"
