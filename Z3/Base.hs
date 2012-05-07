@@ -184,6 +184,7 @@ data Result
     | Undefined
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
+-- | Convert Z3_lbool from Z3.Base.C to Result
 toResult :: Z3_lbool -> Result
 toResult lb
     | lb == z3_l_true  = Satisfiable

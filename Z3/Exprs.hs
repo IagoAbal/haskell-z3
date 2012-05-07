@@ -79,27 +79,35 @@ infix  4  ==*, /=*, <*, <=*, >=*, >*
 infixr 3  &&*, ||*, `xor`
 infixr 2  `implies`, `iff`, ==>, <=>
 
+-- | /literal/ creation.
 literal :: Z3Scalar a => a -> Expr a
 literal = Lit
 
+-- | Boolean Z3 literals
 true, false :: Expr Bool
 true = Lit True
 false = Lit False
 
+-- | Boolean negation
 not_ :: Expr Bool -> Expr Bool
 not_ = Not
 
 xor, implies, (==>), iff, (<=>) :: Expr Bool -> Expr Bool -> Expr Bool
+-- | Boolean binary /xor/
 xor = BoolBin Xor
+-- | Boolean implication
 implies = BoolBin Implies
 (==>) = implies
+-- | Boolean if and only if
 iff = BoolBin Iff
 (<=>) = iff
 
+-- | Boolean polyadic and, or operations
 and_, or_ :: [Expr Bool] -> Expr Bool
 and_ = BoolMulti And
 or_ = BoolMulti Or
 
+-- | Boolean binary /and/, /or/ operations
 (&&*), (||*) :: Expr Bool -> Expr Bool -> Expr Bool
 (BoolMulti And ps) &&* (BoolMulti And qs) = and_ (ps ++ qs)
 (BoolMulti And ps) &&* q = and_ (q:ps)
@@ -110,14 +118,13 @@ p &&* q = and_ [p,q]
 p ||* (BoolMulti Or qs) = or_ (p:qs)
 p ||* q = or_ [p,q]
 
+-- | Integer division, modulo and remainder.
 (//), (%*), (%%) :: Z3Int a => Expr a -> Expr a -> Expr a
--- | Integer division
 (//) = IntArith Quot
--- | Modulo
 (%*) = IntArith Mod
--- | Remainder
 (%%) = IntArith Rem
 
+-- | Boolean comparison operations
 (==*), (/=*), (<=*), (<*), (>=*), (>*) :: Z3Type a => Expr a -> Expr a -> Expr Bool
 (==*) = Cmp Eq
 (/=*) = Cmp Neq

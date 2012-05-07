@@ -18,6 +18,8 @@
 
 module Z3.Monad (
       Z3
+    , Z3State
+
     , evalZ3
 
     , decl
@@ -32,9 +34,10 @@ import Control.Monad.State.Strict
 import Data.IORef
 import qualified Data.Map as Map
 
+-- | Existential type. Used to store constants keeping sort info.
 data Exp = forall a. Z3Type a => Exp (Base.AST a)
 
--- | The Z3 Monad
+-- | State for the Z3 Monad
 data Z3State
     = Z3State { uniqRef   :: IORef Uniq
               , smbSupply :: [String]
@@ -42,6 +45,7 @@ data Z3State
               , consts    :: Map.Map Uniq Exp
               }
 
+-- | The Z3 Monad
 newtype Z3 a = Z3 (StateT Z3State IO a)
     deriving (Functor, Monad)
 
@@ -49,6 +53,7 @@ instance MonadState Z3State Z3 where
     get = Z3 $ StateT $ \s -> return (s,s)
     put st = Z3 $ StateT $ \_ -> return ((), st)
 
+-- | evalStateT with empty initial state for the Z3 Monad
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
     uref <- newIORef (Uniq 0)
@@ -66,29 +71,26 @@ evalZ3 (Z3 s) = do
                                , c <- ['a' .. 'z']
                                ]
 
+-- | New Uniq
 uniq :: Z3 Uniq
 uniq = do
     st <- return . uniqRef =<< get
     modifyZ3Ref st (\(Uniq i) -> Uniq $ i + 1)
 
---fresh :: Z3 String
---fresh = do
---    st <- gets smbSupply
---    str <- Z3 $ lift $ readIORef st
---    Z3 $ lift $ writeIORef st (tail str)
---    return (head str)
-
+-- | Fresh string
 fresh :: Z3 String
 fresh =
     do st <- get
        put st { smbSupply = tail (smbSupply st) }
        return $ head $ smbSupply st
 
+-- | Lifted modifyIORef
 modifyZ3Ref :: IORef a -> (a -> a) -> Z3 a
 modifyZ3Ref r f = Z3 $ lift (readIORef r) >>= \a -> do
     lift $ modifyIORef r f
     return a
 
+-- | Add a constant of type AST a to the state.
 addConst :: (Z3Type a) => Base.AST a -> Z3 Uniq
 addConst expr = do
     st <- get
@@ -96,9 +98,9 @@ addConst expr = do
     put st { consts = Map.insert u (Exp expr) (consts st) }
     return u
 
--- | Constructing expressions
+-- * Constructing expressions
 
--- * Declare constants
+-- | Declare constants
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
     ctx <- gets context
