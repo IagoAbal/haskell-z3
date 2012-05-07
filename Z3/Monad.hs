@@ -101,8 +101,8 @@ addConst expr = do
 -- * Declare constants
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
-    str <- fresh
     ctx <- gets context
+    str <- fresh
     smb <- mkStringSymbol_ ctx str
     (srt :: Base.Sort a) <- mkSort_ ctx
     cst <- mkConst_ ctx smb srt
