@@ -23,7 +23,7 @@ module Z3.Base (
     -- ** Utility types
     , Result(..)
 
-    , astCast
+    , castAST
 
     -- * Config
     , mkConfig
@@ -134,8 +134,14 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
-astCast :: (Z3Type a, Z3Type b) => AST a -> AST b
-astCast (AST a) = AST a
+-- | Cast an 'AST a' to 'AST b'
+--
+-- /Warning:/
+-- * This cast is used to ignore the AST phantom type. It should
+-- be used carefully.
+--
+castAST :: (Z3Type a, Z3Type b) => AST a -> AST b
+castAST (AST a) = AST a
 
     -- TODO Improve type-safety with phantom types.
 
