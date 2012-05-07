@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 
 -- |
@@ -21,6 +22,10 @@ module Z3.Types (
     , Z3Type(..)
     , Z3Scalar
 
+    -- * Auxiliary functions
+    , matchSorts
+    , cmpSorts
+
     -- * Haskell Z3 Numerals
     , Z3Num
     , Z3Int
@@ -28,7 +33,7 @@ module Z3.Types (
 
     ) where
 
-import Data.Typeable ( Typeable )
+import Data.Typeable ( Typeable, typeOf )
 
 ------------------------------------------------------------------------
 -- * Haskell Z3 Types 
@@ -45,6 +50,24 @@ data Sort :: * -> * where
     SBool :: Sort Bool
     SInt  :: (Z3Int a)  => Sort a
     SReal :: (Z3Real a) => Sort a
+
+-- | Match the sorts of two different Z3Type
+--
+matchSorts :: Sort a -> Sort b -> Bool
+matchSorts SBool SBool = True
+matchSorts SInt  SInt  = True
+matchSorts SReal SReal = True
+matchSorts _     _     = False
+
+-- | Compare sorts of different types
+--
+cmpSorts :: forall a b. (Z3Type a, Z3Type b) => Sort a -> Sort b -> Bool
+cmpSorts s1 s2
+    -- FIXME: cleaner implementation without undefined?
+    | typeOf (undefined :: a) == typeOf (undefined :: b)
+        = matchSorts s1 s2
+    | otherwise
+        = False
 
 -- | Typeclass for Haskell Z3 types, used in Z3 expressions.
 --
