@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 -- |
 -- Module    : Z3.Base
@@ -134,16 +135,14 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
--- | Cast an 'AST a' to 'AST b'
+-- | Cast an 'AST a' to 'AST b' when the sorts of types 'a' and 'b' match.
 --
--- /Warning:/
--- * This cast is used to ignore the AST phantom type. It should
--- be used carefully.
---
-castAST :: (Z3Type a, Z3Type b) => AST a -> AST b
-castAST (AST a) = AST a
-
-    -- TODO Improve type-safety with phantom types.
+castAST :: forall a b.(Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
+castAST (AST a) 
+    | cmpSorts (sortZ3 (TY :: TY a)) (sortZ3 (TY :: TY b))
+        = Just (AST a)
+    | otherwise
+        = Nothing
 
 -- | Kind of Z3 AST representing /types/.
 -- 
