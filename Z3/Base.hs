@@ -134,7 +134,7 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
-astCast :: (Z3Type a) => AST a -> AST b
+astCast :: (Z3Type a, Z3Type b) => AST a -> AST b
 astCast (AST a) = AST a
 
     -- TODO Improve type-safety with phantom types.
