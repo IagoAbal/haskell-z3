@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 
@@ -23,8 +24,7 @@ module Z3.Types (
     , Z3Scalar
 
     -- * Auxiliary functions
-    , matchSorts
---    , cmpSorts
+    , cmpSorts
 
     -- * Haskell Z3 Numerals
     , Z3Num
@@ -51,25 +51,17 @@ data Sort :: * -> * where
     SInt  :: (Z3Int a)  => Sort a
     SReal :: (Z3Real a) => Sort a
 
--- | Match the sorts of two different Z3Type
---
-matchSorts :: Sort a -> Sort b -> Bool
-matchSorts SBool SBool = True
-matchSorts SInt  SInt  = True
-matchSorts SReal SReal = True
-matchSorts _     _     = False
+deriving instance Eq (Sort a)
 
 -- | Compare sorts of different types
 --
 -- TODO: Is this function really needed? Or it is safe to cast /a/ -> /b/ when
 -- their Z3 sorts are equal?
---cmpSorts :: forall a b. (Z3Type a, Z3Type b) => Sort a -> Sort b -> Bool
---cmpSorts _ _
---    -- FIXME: cleaner implementation without undefined?
---    | typeOf (undefined :: a) == typeOf (undefined :: b)
---        = True
---    | otherwise
---        = False
+-- FIXME: cleaner implementation without undefined?
+cmpSorts :: forall a b. (Z3Type a, Z3Type b) => Sort a -> Sort b -> Bool
+cmpSorts _ _
+    | typeOf (undefined :: a) == typeOf (undefined :: b) = True
+    | otherwise                                          = False
 
 -- | Typeclass for Haskell Z3 types, used in Z3 expressions.
 --
