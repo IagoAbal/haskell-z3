@@ -1,5 +1,8 @@
+
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 -- |
 -- Module    : Z3.Exprs.Internal
@@ -13,6 +16,9 @@ module Z3.Exprs.Internal where
 
 
 import Z3.Types
+
+import Data.Typeable ( Typeable1 )
+
 
 -- | Unique identifiers
 newtype Uniq = Uniq Int deriving (Eq, Ord, Show)
@@ -54,7 +60,7 @@ data Expr :: * -> * where
 --  * Real arithmetic
   RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
 --  * Comparison expressions
-  Cmp :: Z3Type a => CmpOp -> Expr a -> Expr a -> Expr Bool
+  Cmp :: Z3Type a => CmpOp a -> Expr a -> Expr a -> Expr Bool
 --  * if-then-else expressions
   Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
 
@@ -89,5 +95,14 @@ data RealOp = Div
     deriving (Eq,Show)
 
 -- | Comparison operations.
-data CmpOp = Eq | Neq | Le | Lt | Ge | Gt
-    deriving (Eq,Show)
+data CmpOp :: * -> * where
+    Eq  :: Z3Type a => CmpOp a
+    Neq :: Z3Type a => CmpOp a
+    Le  :: Z3Num a => CmpOp a
+    Lt  :: Z3Num a => CmpOp a
+    Ge  :: Z3Num a => CmpOp a
+    Gt  :: Z3Num a => CmpOp a
+
+deriving instance Eq (CmpOp a)
+deriving instance Show (CmpOp a)
+deriving instance Typeable1 CmpOp

@@ -66,8 +66,9 @@ instance Eq (Expr a) where
   (RealArith op1 a1 b1) == (RealArith op2 a2 b2)
     = op1 == op2 && a1 == a2 && b1 == b2
   (Cmp op1 a1 b1) == (Cmp op2 a2 b2)
-    | typeOf a1 == typeOf a2
-    = op1 == op2 && a1 == (unsafeCoerce a2) && b1 == (unsafeCoerce b2)
+    | typeOf op1 == typeOf op2
+    = op1 == (unsafeCoerce op2) 
+    && a1 == (unsafeCoerce a2) && b1 == (unsafeCoerce b2)
   (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
   _e1 == _e2 = False
 
@@ -125,9 +126,10 @@ p ||* q = or_ [p,q]
 (%%) = IntArith Rem
 
 -- | Boolean comparison operations
-(==*), (/=*), (<=*), (<*), (>=*), (>*) :: Z3Type a => Expr a -> Expr a -> Expr Bool
+(==*), (/=*) :: Z3Type a => Expr a -> Expr a -> Expr Bool
 (==*) = Cmp Eq
 (/=*) = Cmp Neq
+(<=*), (<*), (>=*), (>*) :: Z3Num a => Expr a -> Expr a -> Expr Bool
 (<=*) = Cmp Le
 (<*) = Cmp Lt
 (>=*) = Cmp Ge
