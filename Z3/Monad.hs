@@ -33,10 +33,10 @@ import qualified Z3.Base as Base
 import Z3.Exprs.Internal
 import Z3.Types
 
+import Control.Applicative ( (<$>) )
 import Control.Monad
 import Control.Monad.State.Strict
 import Data.Maybe ( fromMaybe )
-import Data.IORef
 import qualified Data.Map as Map
 
 
@@ -54,57 +54,42 @@ instance MonadState Z3State Z3 where
 
 -- | Existential type. Used to store constants keeping sort info.
 --
-data Exp = forall a. Z3Type a => Exp (Base.AST a)
+data AnyAST = forall a. Z3Type a => AnyAST (Base.AST a)
 
 -- | Z3 monad State type.
 --
 data Z3State
-    = Z3State { uniqRef   :: IORef Uniq
-              , smbSupply :: [String]
+    = Z3State { uniqVal   :: Uniq
               , context   :: Base.Context
-              , consts    :: Map.Map Uniq Exp
+              , consts    :: Map.Map Uniq AnyAST
               }
 
 -- | evalStateT with empty initial state for the Z3 Monad
 --
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
-    uref <- newIORef (Uniq 0)
-    -- sref <- newIORef smbGen
     cfg  <- Base.mkConfig
     ctx  <- Base.mkContext cfg
-    evalStateT s Z3State { uniqRef   = uref
-                         , smbSupply = smbGen --sref
+    evalStateT s Z3State { uniqVal   = Uniq 0
                          , context   = ctx
                          , consts    = Map.empty
                          }
-  where smbGen :: [String]
-        smbGen =  [ [c] | c <- ['a' .. 'z'] ] 
-               ++ [ c:(show i) | i <- [0 :: Integer ..]
-                               , c <- ['a' .. 'z']
-                               ]
 
 -- | New Uniq
 --
 uniq :: Z3 Uniq
 uniq = do
-    st <- return . uniqRef =<< get
-    modifyZ3Ref st (\(Uniq i) -> Uniq $ i + 1)
+    st <- get
+    let u@(Uniq i) = uniqVal st
+    put st { uniqVal = Uniq $ i + 1 }
+    return u 
 
 -- | Fresh string
 --
 fresh :: Z3 String
 fresh =
     do st <- get
-       put st { smbSupply = tail (smbSupply st) }
-       return $ head $ smbSupply st
-
--- | Lifted modifyIORef
---
-modifyZ3Ref :: IORef a -> (a -> a) -> Z3 a
-modifyZ3Ref r f = Z3 $ lift (readIORef r) >>= \a -> do
-    lift $ modifyIORef r f
-    return a
+       return $ 'v':(show $ uniqVal st)
 
 -- | Add a constant of type AST a to the state.
 --
@@ -112,15 +97,15 @@ addConst :: (Z3Type a) => Base.AST a -> Z3 Uniq
 addConst expr = do
     st <- get
     u  <- uniq
-    put st { consts = Map.insert u (Exp expr) (consts st) }
+    put st { consts = Map.insert u (AnyAST expr) (consts st) }
     return u
 
 -- | Get a Base.AST stored in the Z3State
 --
 getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
 getConst u = liftM mlookup (gets consts)
-    where mlookup :: Map.Map Uniq Exp -> Maybe (Base.AST a)
-          mlookup m = Map.lookup u m >>= \(Exp e) -> Base.castAST e
+    where mlookup :: Map.Map Uniq AnyAST -> Maybe (Base.AST a)
+          mlookup m = Map.lookup u m >>= \(AnyAST e) -> Base.castAST e
 
 
 -- * Constructing expressions
@@ -131,12 +116,9 @@ getConst u = liftM mlookup (gets consts)
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
     ctx <- gets context
-    str <- fresh
-    smb <- mkStringSymbol_ ctx str
+    smb <- mkStringSymbol_ ctx =<< fresh
     (srt :: Base.Sort a) <- mkSort_ ctx
-    cst <- mkConst_ ctx smb srt
-    u   <- addConst cst
-    return $ Const u
+    Const <$> (addConst =<< mkConst_ ctx smb srt)
 
 -- | Make assertion in current context
 --
