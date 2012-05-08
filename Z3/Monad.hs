@@ -87,9 +87,7 @@ uniq = do
 -- | Fresh string
 --
 fresh :: Z3 String
-fresh =
-    do st <- get
-       return $ 'v':(show $ uniqVal st)
+fresh = ('v':) . show <$> gets uniqVal
 
 -- | Add a constant of type AST a to the state.
 --
