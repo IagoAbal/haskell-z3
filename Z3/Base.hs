@@ -139,10 +139,8 @@ newtype AST a = AST { unAST :: Ptr Z3_ast }
 --
 castAST :: forall a b.(Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
 castAST (AST a) 
-    | matchSorts (sortZ3 (TY :: TY a)) (sortZ3 (TY :: TY b))
-        = Just (AST a)
-    | otherwise
-        = Nothing
+    | cmpSorts (sortZ3 (TY :: TY a)) (sortZ3 (TY :: TY b)) = Just (AST a)
+    | otherwise                                            = Nothing
 
 -- | Kind of Z3 AST representing /types/.
 -- 
