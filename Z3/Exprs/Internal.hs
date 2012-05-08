@@ -96,12 +96,12 @@ data RealOp = Div
 
 -- | Comparison operations.
 data CmpOp :: * -> * where
-    Eq  :: Z3Type a => CmpOp a
-    Neq :: Z3Type a => CmpOp a
-    Le  :: Z3Num a => CmpOp a
-    Lt  :: Z3Num a => CmpOp a
-    Ge  :: Z3Num a => CmpOp a
-    Gt  :: Z3Num a => CmpOp a
+  Eq  :: Z3Type a => CmpOp a
+  Neq :: Z3Type a => CmpOp a
+  Le  :: Z3Num a => CmpOp a
+  Lt  :: Z3Num a => CmpOp a
+  Ge  :: Z3Num a => CmpOp a
+  Gt  :: Z3Num a => CmpOp a
 
 deriving instance Eq (CmpOp a)
 deriving instance Show (CmpOp a)
