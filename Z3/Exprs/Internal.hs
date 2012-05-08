@@ -21,7 +21,7 @@ import Data.Typeable ( Typeable1 )
 
 
 -- | Unique identifiers
-newtype Uniq = Uniq Int deriving (Eq, Ord, Show)
+type Uniq = Int
 
 {-# WARNING Lit
           , Const

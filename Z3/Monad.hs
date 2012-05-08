@@ -37,7 +37,7 @@ import Control.Applicative ( (<$>) )
 import Control.Monad
 import Control.Monad.State.Strict
 import Data.Maybe ( fromMaybe )
-import qualified Data.Map as Map
+import qualified Data.IntMap as Map
 
 
 -- * The Z3 Monad
@@ -61,7 +61,7 @@ data AnyAST = forall a. Z3Type a => AnyAST (Base.AST a)
 data Z3State
     = Z3State { uniqVal   :: Uniq
               , context   :: Base.Context
-              , consts    :: Map.Map Uniq AnyAST
+              , consts    :: Map.IntMap AnyAST
               }
 
 -- | evalStateT with empty initial state for the Z3 Monad
@@ -70,39 +70,32 @@ evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
     cfg  <- Base.mkConfig
     ctx  <- Base.mkContext cfg
-    evalStateT s Z3State { uniqVal   = Uniq 0
+    evalStateT s Z3State { uniqVal   = 0
                          , context   = ctx
                          , consts    = Map.empty
                          }
 
--- | New Uniq
---
-uniq :: Z3 Uniq
-uniq = do
-    st <- get
-    let u@(Uniq i) = uniqVal st
-    put st { uniqVal = Uniq $ i + 1 }
-    return u 
-
 -- | Fresh string
 --
-fresh :: Z3 String
-fresh = ('v':) . show <$> gets uniqVal
+fresh :: Z3 (Uniq, String)
+fresh = do
+    st <- get
+    let i = uniqVal st
+    put st { uniqVal = i + 1 }
+    return (uniqVal st, 'v':(show i))
 
 -- | Add a constant of type AST a to the state.
 --
-addConst :: (Z3Type a) => Base.AST a -> Z3 Uniq
-addConst expr = do
+addConst :: (Z3Type a) => Uniq -> Base.AST a -> Z3 ()
+addConst u expr = do
     st <- get
-    u  <- uniq
     put st { consts = Map.insert u (AnyAST expr) (consts st) }
-    return u
 
 -- | Get a Base.AST stored in the Z3State
 --
 getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
 getConst u = liftM mlookup (gets consts)
-    where mlookup :: Map.Map Uniq AnyAST -> Maybe (Base.AST a)
+    where mlookup :: Map.IntMap AnyAST -> Maybe (Base.AST a)
           mlookup m = Map.lookup u m >>= \(AnyAST e) -> Base.castAST e
 
 
@@ -114,9 +107,11 @@ getConst u = liftM mlookup (gets consts)
 decl :: forall a.(Z3Type a) => Z3 (Expr a)
 decl = do
     ctx <- gets context
-    smb <- mkStringSymbol_ ctx =<< fresh
+    (u, str) <-  fresh
+    smb <- mkStringSymbol_ ctx str
     (srt :: Base.Sort a) <- mkSort_ ctx
-    Const <$> (addConst =<< mkConst_ ctx smb srt)
+    addConst u =<< mkConst_ ctx smb srt
+    return $ Const u
 
 -- | Make assertion in current context
 --
