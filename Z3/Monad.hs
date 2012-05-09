@@ -25,11 +25,13 @@ module Z3.Monad (
     -- * Z3 actions
     , decl
     , assert
+    , let_
     , check
 
     ) where
 
 import qualified Z3.Base as Base
+import Z3.Exprs ( (==*) )
 import Z3.Exprs.Internal
 import Z3.Types
 
@@ -117,6 +119,14 @@ decl = do
 --
 assert :: Z3Type a => Expr a -> Z3 ()
 assert = join . liftM2 assertCnstr_ (gets context) . compile
+
+-- | Introduce an auxiliary declaration to name a given expression.
+--
+let_ :: Z3Type a => Expr a -> Z3 (Expr a)
+let_ e = do
+  aux <- decl
+  assert (aux ==* e)
+  return aux
 
 -- | Check current context
 --
