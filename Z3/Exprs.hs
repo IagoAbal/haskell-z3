@@ -125,10 +125,12 @@ p ||* q = or_ [p,q]
 (%*) = IntArith Mod
 (%%) = IntArith Rem
 
--- | Boolean comparison operations
+-- | Equality 
 (==*), (/=*) :: Z3Type a => Expr a -> Expr a -> Expr Bool
 (==*) = Cmp Eq
 (/=*) = Cmp Neq
+
+-- | Boolean comparison operations
 (<=*), (<*), (>=*), (>*) :: Z3Num a => Expr a -> Expr a -> Expr Bool
 (<=*) = Cmp Le
 (<*) = Cmp Lt

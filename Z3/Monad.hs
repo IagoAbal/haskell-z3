@@ -35,7 +35,6 @@ import Z3.Exprs ( (==*) )
 import Z3.Exprs.Internal
 import Z3.Types
 
-import Control.Applicative ( (<$>) )
 import Control.Monad
 import Control.Monad.State.Strict
 import Data.Maybe ( fromMaybe )
@@ -144,10 +143,50 @@ compile (Lit a)
     = flip mkLiteral_ a =<< gets context
 compile (Const u)
     = liftM (fromMaybe $ error uNDEFINED_CONST) $ getConst u
-compile _
-    = error "Z3.Monad: compile : STUB! Write-me!"
+compile (Not b)
+    = do ctx <- gets context
+         b'  <- compile b
+         mkNot_ ctx b'
+compile (BoolBin op e1 e2)
+    = do ctx <- gets context
+         e1' <- compile e1
+         e2' <- compile e2
+         mkBoolBin_ ctx op e1' e2'
+compile (BoolMulti op es)
+    = do ctx <- gets context
+         es' <- mapM compile es
+         mkBoolMulti_ ctx op es'
+compile (Neg e)
+    = do ctx <- gets context
+         e'  <- compile e
+         mkUnaryMinus_ ctx e'
+compile (CRingArith op es)
+    = do ctx <- gets context
+         es' <- mapM compile es
+         mkCRingArith_ ctx op es'
+compile (IntArith op e1 e2)
+    = do ctx <- gets context
+         e1' <- compile e1
+         e2' <- compile e2
+         mkIntArith_ ctx op e1' e2'
+compile (RealArith op e1 e2)
+    = do ctx <- gets context
+         e1' <- compile e1
+         e2' <- compile e2
+         mkRealArith_ ctx op e1' e2'
+compile (Cmp op e1 e2)
+    = do ctx <- gets context
+         e1' <- compile e1
+         e2' <- compile e2
+         mkCmp_ ctx op e1' e2'
+compile (Ite b e1 e2)
+    = do ctx <- gets context
+         b'  <- compile b
+         e1' <- compile e1
+         e2' <- compile e2
+         mkIte_ ctx b' e1' e2'
 
--- * Lifted Base functions
+-- * Internal lifted Base functions
 --
 
 assertCnstr_ :: Base.Context -> Base.AST a -> Z3 ()
@@ -156,11 +195,49 @@ assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
 check_ :: Base.Context -> Z3 Base.Result
 check_ = Z3 . lift . Base.check
 
-mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
-mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
+mkBoolBin_ :: Base.Context -> BoolBinOp ->
+    Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkBoolBin_ ctx Xor b1 = Z3 . lift . Base.mkXor ctx b1
+mkBoolBin_ ctx Implies b1 = Z3 . lift . Base.mkImplies ctx b1
+mkBoolBin_ ctx Iff b1 = Z3 . lift . Base.mkIff ctx b1
+
+mkBoolMulti_ :: Base.Context -> BoolMultiOp ->
+    [Base.AST Bool] -> Z3 (Base.AST Bool)
+mkBoolMulti_ ctx And = Z3 . lift . Base.mkAnd ctx
+mkBoolMulti_ ctx Or  = Z3 . lift . Base.mkAnd ctx
+
+mkCmp_ :: (Z3Type a) => Base.Context -> CmpOp a ->
+    Base.AST a -> Base.AST a -> Z3 (Base.AST Bool)
+mkCmp_ ctx Eq  e1 = Z3 . lift . Base.mkEq ctx e1
+mkCmp_ ctx Neq e1 = Z3 . lift . (Base.mkNot ctx <=< Base.mkEq ctx e1)
+mkCmp_ ctx Le  e1 = Z3 . lift . Base.mkLe ctx e1
+mkCmp_ ctx Lt  e1 = Z3 . lift . Base.mkLt ctx e1
+mkCmp_ ctx Ge  e1 = Z3 . lift . Base.mkGe ctx e1
+mkCmp_ ctx Gt  e1 = Z3 . lift . Base.mkGt ctx e1
 
 mkConst_ :: Base.Context -> Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
 mkConst_ ctx smb = Z3 . lift . Base.mkConst ctx smb
+
+mkCRingArith_ :: Z3Num a => Base.Context -> CRingOp ->
+    [Base.AST a] -> Z3 (Base.AST a)
+mkCRingArith_ ctx Add = Z3 . lift . Base.mkAdd ctx
+mkCRingArith_ ctx Mul = Z3 . lift . Base.mkMul ctx
+mkCRingArith_ ctx Sub = Z3 . lift . Base.mkSub ctx
+
+mkIntArith_ :: Z3Int a => Base.Context -> IntOp ->
+    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIntArith_ ctx Quot e1 = Z3 . lift . Base.mkDiv ctx e1
+mkIntArith_ ctx Mod  e1 = Z3 . lift . Base.mkMod ctx e1
+mkIntArith_ ctx Rem  e1 = Z3 . lift . Base.mkRem ctx e1
+
+mkIte_ :: Base.Context -> Base.AST Bool ->
+    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIte_ ctx b e1 = Z3 . lift . Base.mkIte ctx b e1
+
+
+mkRealArith_ :: Z3Real a => Base.Context -> RealOp ->
+    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkRealArith_ ctx Div e1 = Z3 . lift . Base.mkDiv ctx e1
 
 mkSort_ :: forall a. Z3Type a => Base.Context -> Z3 (Base.Sort a) 
 mkSort_
@@ -178,6 +255,15 @@ mkLiteral_ ctx
     where mkBool_ :: Bool -> Z3 (Base.AST Bool)
           mkBool_ True  = Z3 . lift $ Base.mkTrue ctx
           mkBool_ False = Z3 . lift $ Base.mkFalse ctx
+
+mkNot_ :: Base.Context -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkNot_ ctx = Z3 . lift . Base.mkNot ctx
+
+mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
+mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
+
+mkUnaryMinus_ :: (Z3Num a) => Base.Context -> Base.AST a -> Z3 (Base.AST a)
+mkUnaryMinus_ ctx = Z3 . lift . Base.mkUnaryMinus ctx
 
 -- * Error Messages
 --
