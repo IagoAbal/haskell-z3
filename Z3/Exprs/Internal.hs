@@ -41,27 +41,27 @@ type Uniq = Int
  
 -- | Abstract syntax
 data Expr :: * -> * where
-  -- | Literals
+--  | Literals
   Lit :: Z3Scalar a => a -> Expr a
-  -- | Constants
+--  | Constants
   Const :: !Uniq -> Expr a
-  -- | Logical negation
+--  | Logical negation
   Not :: Expr Bool -> Expr Bool
-  -- | Binary boolean expressions
+--  | Binary boolean expressions
   BoolBin :: BoolBinOp -> Expr Bool -> Expr Bool -> Expr Bool
-  -- | Variadic boolean expressions
+--  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
-  -- | Arithmetic negation
+--  | Arithmetic negation
   Neg :: Z3Num a => Expr a -> Expr a
-  -- | Arithmetic expressions for commutative rings
+--  | Arithmetic expressions for commutative rings
   CRingArith :: Z3Num a => CRingOp -> [Expr a] -> Expr a
-  -- | Integer arithmetic
+--  | Integer arithmetic
   IntArith :: Z3Int a => IntOp -> Expr a -> Expr a -> Expr a
-  -- | Real arithmetic
+--  | Real arithmetic
   RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
-  -- | Comparison expressions
+--  | Comparison expressions
   Cmp :: Z3Type a => CmpOp a -> Expr a -> Expr a -> Expr Bool
-  -- | if-then-else expressions
+--  | if-then-else expressions
   Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
 
 {-# WARNING BoolBinOp
