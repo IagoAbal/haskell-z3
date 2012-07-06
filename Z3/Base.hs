@@ -73,9 +73,15 @@ module Z3.Base (
     , mkInt
     , mkReal
 
+    -- * Accessors
+    , getBool
+    , getInt
+    , getReal
+
     -- * Constraints
     , assertCnstr
     , check
+    , getModel
 
     ) where
 
@@ -83,8 +89,9 @@ import Z3.Base.C
 import Z3.Types hiding ( Sort )
 
 import Control.Applicative ( (<$>) )
+import Control.Monad ( (>=>), liftM2 )
 import Data.Int
-import Data.Ratio ( Ratio, numerator, denominator )
+import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Word
 import Foreign hiding ( newForeignPtr )
 import Foreign.C
@@ -168,25 +175,25 @@ newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
 -- 
 -- /Reference:/ < TODO >
 --
-newtype Model = Model { _unModel :: Ptr Z3_model }
-    deriving (Eq, Ord, Show, Storable)
+newtype Model = Model { _unModel :: ForeignPtr Z3_model }
+    deriving Eq
 
 -- | Lifted Boolean type.
 --
 -- /Reference:/ < TODO >
 --
 data Result
-    = Satisfiable
-    | Unsatisfiable
-    | Undefined
+    = Sat
+    | Unsat
+    | Undef
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
 -- | Convert Z3_lbool from Z3.Base.C to Result
 toResult :: Z3_lbool -> Result
 toResult lb
-    | lb == z3_l_true  = Satisfiable
-    | lb == z3_l_false = Unsatisfiable
-    | otherwise        = Undefined
+    | lb == z3_l_true  = Sat
+    | lb == z3_l_false = Unsat
+    | otherwise        = Undef
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -221,10 +228,9 @@ setParamValue cfg s1 s2 =
 --
 mkContext :: Config -> IO Context
 mkContext cfg =
-    withForeignPtr (unConfig cfg)              $ \cfgPtr ->
-    z3_mk_context cfgPtr                     >>= \pCtx   ->
-    newForeignPtr pCtx (z3_del_context pCtx) >>= \fptr   ->
-        return $! Context fptr
+    withForeignPtr (unConfig cfg) $ z3_mk_context >=> \pCtx ->
+      newForeignPtr pCtx (z3_del_context pCtx)      >>= \fptr ->
+      return $! Context fptr
 
 ---------------------------------------------------------------------
 -- * Symbols
@@ -275,8 +281,6 @@ mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
 ---------------------------------------------------------------------
 -- * Constants and Applications
 
--- TODO Constants and Applications: Z3_is_eq_ast
--- TODO Constants and Applications: Z3_is_eq_func_decl
 -- TODO Constants and Applications: Z3_mk_func_decl
 -- TODO Constants and Applications: Z3_mk_app
 
@@ -288,7 +292,6 @@ mkConst :: Context -> Symbol -> Sort a -> IO (AST a)
 mkConst c x s = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_const cptr (unSymbol x) (unSort s)
 
--- TODO Constants and Applications: Z3_mk_label
 -- TODO Constants and Applications: Z3_mk_fresh_func_decl
 -- TODO Constants and Applications: Z3_mk_fresh_const
 
@@ -504,8 +507,7 @@ mkIsInt :: Z3Real a => Context -> AST a -> IO (AST Bool)
 mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_is_int cptr (unAST e)
 
--- TODO Constants and applications: bitvectors and arrays
--- TODO Sets
+-- TODO Bit-vector, Arrays, Sets
 
 
 ---------------------------------------------------------------------
@@ -583,28 +585,80 @@ mkIntZ3 :: Z3Num a => Context -> Int32 -> Sort a -> IO (AST a)
 mkIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_int ctxPtr cn (unSort s)
-    where cn = (fromIntegral n) :: CInt
+    where cn = fromIntegral n :: CInt
 
 {-# INLINE mkUnsignedIntZ3 #-}
 mkUnsignedIntZ3 :: Z3Num a => Context -> Word32 -> Sort a -> IO (AST a)
 mkUnsignedIntZ3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_unsigned_int ctxPtr cn (unSort s)
-    where cn = (fromIntegral n) :: CUInt
+    where cn = fromIntegral n :: CUInt
 
 {-# INLINE mkInt64Z3 #-}
 mkInt64Z3 :: Z3Num a => Context -> Int64 -> Sort a -> IO (AST a)
 mkInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_int64 ctxPtr cn (unSort s)
-    where cn = (fromIntegral n) :: CLLong
+    where cn = fromIntegral n :: CLLong
 
 {-# INLINE mkUnsignedInt64Z3 #-}
 mkUnsignedInt64Z3 :: Z3Num a => Context -> Word64 -> Sort a -> IO (AST a)
 mkUnsignedInt64Z3 c n s =
     withForeignPtr (unContext c) $ \ctxPtr ->
         AST <$> z3_mk_unsigned_int64 ctxPtr cn (unSort s)
-    where cn = (fromIntegral n) :: CULLong
+    where cn = fromIntegral n :: CULLong
+
+-- TODO Quantifiers
+
+---------------------------------------------------------------------
+-- * Accessors
+
+-- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
+-- otherwise.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
+--
+getBool :: Context -> AST Bool -> IO Result
+getBool c a = withForeignPtr (unContext c) $ \ctxPtr ->
+  toResult <$> z3_get_bool_value ctxPtr (unAST a)
+
+-- | Return numeral value, as a string of a numeric constant term.  
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
+--
+getNumeralString :: Z3Num a => Context -> AST a -> IO String
+getNumeralString c a = withForeignPtr (unContext c) $ \ctxPtr ->
+  peekCString =<< z3_get_numeral_string ctxPtr (unAST a)
+
+-- | Return Z3Int value
+--
+getInt :: Z3Int a => Context -> AST a -> IO a
+getInt c a = fromInteger . read <$> getNumeralString c a
+
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Real. 
+--
+-- Reference: <>
+--
+getNumerator :: (Z3Real a, Z3Int b) => Context -> AST a -> IO b
+getNumerator c a = withForeignPtr (unContext c) $ \ctxPtr ->
+  z3_get_numerator ctxPtr (unAST a) >>= getInt c . AST
+
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real. 
+--
+-- Reference: <>
+--
+getDenominator :: (Z3Real a, Z3Int b) => Context -> AST a -> IO b
+getDenominator c a = withForeignPtr (unContext c) $ \ctxPtr ->
+  z3_get_denominator ctxPtr (unAST a) >>= getInt c . AST
+
+
+-- | Return Z3Real value
+--
+getReal :: Z3Real a => Context -> AST a -> IO a
+getReal c a = fromRational <$>
+  liftM2 (%) (getNumerator c a) (getDenominator c a)
+
+-- TODO Modifiers
 
 ---------------------------------------------------------------------
 -- * Constraints
@@ -623,7 +677,26 @@ assertCnstr ctx ast =
     withForeignPtr (unContext ctx) $ \ctxPtr ->
         z3_assert_cnstr ctxPtr (unAST ast)
 
--- TODO Constraints: Z3_check_and_get_model
+-- | Get model (logical context is consistent)
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
+--
+getModel :: Context -> IO (Result, Maybe Model)
+getModel c = withForeignPtr (unContext c) $ \ctxPtr ->
+  alloca $ \mptr ->
+    z3_check_and_get_model ctxPtr mptr >>= peekModel ctxPtr mptr . toResult
+  where peekModel :: Ptr Z3_context
+                  -> Ptr (Ptr Z3_model)
+                  -> Result
+                  -> IO (Result, Maybe Model)
+        peekModel ctx p r | p == nullPtr = return (r, Nothing)
+                          | otherwise    = do z3m <- peek p
+                                              m   <- mkModel ctx z3m
+                                              return (r, Just m)
+
+        mkModel :: Ptr Z3_context -> Ptr Z3_model -> IO Model
+        mkModel ctx ptr = Model <$> newForeignPtr ptr (z3_del_model ctx ptr)
+
 
 -- | Check whether the given logical context is consistent or not. 
 --
@@ -636,6 +709,5 @@ check ctx =
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
--- TODO Constraints: Z3_del_model
 
 -- TODO From section 'Constraints' on.

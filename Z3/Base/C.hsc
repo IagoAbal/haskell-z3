@@ -156,8 +156,6 @@ foreign import ccall unsafe "Z3_mk_real_sort"
 ---------------------------------------------------------------------
 -- * Constants and Applications
 
--- TODO Constants and Applications: Z3_is_eq_ast
--- TODO Constants and Applications: Z3_is_eq_func_decl
 -- TODO Constants and Applications: Z3_mk_func_decl
 -- TODO Constants and Applications: Z3_mk_app
 
@@ -168,9 +166,11 @@ foreign import ccall unsafe "Z3_mk_real_sort"
 foreign import ccall unsafe "Z3_mk_const"
     z3_mk_const :: Ptr Z3_context -> Ptr Z3_symbol -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
--- TODO Constants and Applications: Z3_mk_label
 -- TODO Constants and Applications: Z3_mk_fresh_func_decl
 -- TODO Constants and Applications: Z3_mk_fresh_const
+
+---------------------------------------------------------------------
+-- * Propositional Logic and Equality
 
 -- | Create an AST node representing /true/.
 --
@@ -192,6 +192,8 @@ foreign import ccall unsafe "Z3_mk_false"
 --
 foreign import ccall unsafe "Z3_mk_eq"
     z3_mk_eq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- TODO: Z3_mk_distinct
 
 -- | Create an AST node representing not(a).
 --
@@ -241,6 +243,9 @@ foreign import ccall unsafe "Z3_mk_and"
 --
 foreign import ccall unsafe "Z3_mk_or"
     z3_mk_or :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+
+---------------------------------------------------------------------
+-- * Arithmetic: Integers and Reals
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].  
 --
@@ -340,8 +345,7 @@ foreign import ccall unsafe "Z3_mk_real2int"
 foreign import ccall unsafe "Z3_mk_is_int"
     z3_mk_is_int :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- TODO Constants and applications: bitvectors and arrays
--- TODO Sets
+-- TODO Bit-vectors, Arrays, Sets
 
 ---------------------------------------------------------------------
 -- * Numerals
@@ -388,7 +392,56 @@ foreign import ccall unsafe "Z3_mk_int64"
 foreign import ccall unsafe "Z3_mk_unsigned_int64"
     z3_mk_unsigned_int64 :: Ptr Z3_context -> CULLong -> Ptr Z3_sort ->  IO (Ptr Z3_ast)
 
--- TODO Quantifiers, Accessors, Modifiers, Coercions
+-- TODO Quantifiers
+
+---------------------------------------------------------------------
+-- * Accessors
+
+-- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
+-- otherwise.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
+--
+foreign import ccall unsafe "Z3_get_bool_value"
+    z3_get_bool_value :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_lbool
+
+-- | Return numeral value, as a string of a numeric constant term.  
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
+--
+foreign import ccall unsafe "Z3_get_numeral_string"
+    z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
+
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Int.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga69564aaa9f2a76556b54f5bbff8e7175>
+--
+foreign import ccall unsafe "Z3_get_numerator"
+    z3_get_numerator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga25e5269d6845bb8ae03b551f09f5d46d>
+--
+foreign import ccall unsafe "Z3_get_denominator"
+    z3_get_denominator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- TODO Modifiers
+
+---------------------------------------------------------------------
+-- * Models
+
+-- | Evaluate the AST node t in the given model. Return Z3_TRUE if succeeded,
+-- and store the result in v.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga47d3655283564918c85bda0b423b7f67>
+--
+foreign import ccall unsafe "Z3_eval"
+    z3_eval :: Ptr Z3_context
+            -> Ptr Z3_model
+            -> Ptr Z3_ast
+            -> Ptr (Ptr Z3_ast)
+            -> IO Z3_bool
 
 ---------------------------------------------------------------------
 -- * Constraints
@@ -405,7 +458,12 @@ foreign import ccall unsafe "Z3_mk_unsigned_int64"
 foreign import ccall unsafe "Z3_assert_cnstr"
     z3_assert_cnstr :: Ptr Z3_context -> Ptr Z3_ast ->  IO ()
 
--- TODO Constraints: Z3_check_and_get_model
+-- | Check whether the given logical context is consistent or not.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
+--
+foreign import ccall unsafe "Z3_check_and_get_model"
+    z3_check_and_get_model :: Ptr Z3_context -> Ptr (Ptr Z3_model) -> IO Z3_lbool
 
 -- | Check whether the given logical context is consistent or not. 
 --
@@ -416,6 +474,13 @@ foreign import ccall unsafe "Z3_check"
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
--- TODO Constraints: Z3_del_model
+
+-- | Delete a model object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0cc98d3ce68047f873e119bccaabdbee>
+--
+foreign import ccall unsafe "Z3_del_model"
+    z3_del_model :: Ptr Z3_context -> Ptr Z3_model -> IO ()
+
 
 -- TODO From section 'Constraints' on.
