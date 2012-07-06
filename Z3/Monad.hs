@@ -83,7 +83,7 @@ fresh = do
     st <- get
     let i = uniqVal st
     put st { uniqVal = i + 1 }
-    return (uniqVal st, 'v':(show i))
+    return (uniqVal st, 'v':show i)
 
 -- | Add a constant of type AST a to the state.
 --

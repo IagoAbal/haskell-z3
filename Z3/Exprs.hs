@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans
-                -fno-warn-warnings-deprecations
-#-}
+                -fno-warn-warnings-deprecations #-}
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs              #-}
@@ -67,8 +66,8 @@ instance Eq (Expr a) where
     = op1 == op2 && a1 == a2 && b1 == b2
   (Cmp op1 a1 b1) == (Cmp op2 a2 b2)
     | typeOf op1 == typeOf op2
-    = op1 == (unsafeCoerce op2) 
-    && a1 == (unsafeCoerce a2) && b1 == (unsafeCoerce b2)
+    = op1 == unsafeCoerce op2
+    && a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
   (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
   _e1 == _e2 = False
 
@@ -153,7 +152,7 @@ instance Z3Num a => Num (Expr a) where
   a * b = CRingArith Mul [a,b]
   (CRingArith Sub as) - b = CRingArith Sub (as ++ [b])
   a - b = CRingArith Sub [a,b]
-  negate e = Neg e
+  negate = Neg
   abs e = ite (e >=* 0) e (-e)
   signum e = ite (e >* 0) 1 (ite (e ==* 0) 0 (-1))
   fromInteger = literal . fromInteger
