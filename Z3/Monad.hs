@@ -132,9 +132,9 @@ let_ e = do
 check :: Z3 (Maybe Bool)
 check = liftM fromResult . check_ =<< gets context
     where fromResult :: Base.Result -> Maybe Bool
-          fromResult Base.Unsatisfiable = Just False
-          fromResult Base.Satisfiable   = Just True
-          fromResult _                  = Nothing
+          fromResult Base.Unsat = Just False
+          fromResult Base.Sat   = Just True
+          fromResult _          = Nothing
 
 -- | Create a Base.AST from a Expr
 --
