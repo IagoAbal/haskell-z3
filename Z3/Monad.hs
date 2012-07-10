@@ -114,7 +114,7 @@ decl = do
 
 -- | Make assertion in current context
 --
-assert :: Z3Type a => Expr a -> Z3 ()
+assert :: Expr Bool -> Z3 ()
 assert = join . liftM2 assertCnstr_ (gets context) . compile
 
 -- | Introduce an auxiliary declaration to name a given expression.
@@ -187,7 +187,7 @@ compile (Ite b e1 e2)
 ---------------------------------------------------------------------
 -- Internal lifted Base functions
 
-assertCnstr_ :: Base.Context -> Base.AST a -> Z3 ()
+assertCnstr_ :: Base.Context -> Base.AST Bool -> Z3 ()
 assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
 
 check_ :: Base.Context -> Z3 Base.Result

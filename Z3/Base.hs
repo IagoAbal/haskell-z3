@@ -669,7 +669,7 @@ getReal c a = fromRational <$>
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 --
-assertCnstr :: Context -> AST a -> IO ()
+assertCnstr :: Context -> AST Bool -> IO ()
 assertCnstr ctx ast =
     withForeignPtr (unContext ctx) $ \ctxPtr ->
         z3_assert_cnstr ctxPtr (unAST ast)
