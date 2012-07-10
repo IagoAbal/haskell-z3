@@ -91,7 +91,7 @@ import Z3.Base.C
 import Z3.Types hiding ( Sort )
 
 import Control.Applicative ( (<$>) )
-import Control.Monad ( (>=>), liftM2 )
+import Control.Monad ( liftM2 )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Word
@@ -198,10 +198,10 @@ toResult lb
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d6c40d9b79fe8a8851cc8540970787f>
 --
 mkConfig :: IO Config
-mkConfig =
-    z3_mk_config                          >>= \ptr  ->
-    newForeignPtr ptr (z3_del_config ptr) >>= \fptr ->
-        return $! Config fptr
+mkConfig = do
+  ptr <- z3_mk_config
+  fptr <- newForeignPtr ptr (z3_del_config ptr)
+  return $! Config fptr
 
 -- | Set a configuration parameter.
 --
@@ -222,10 +222,10 @@ setParamValue cfg s1 s2 =
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0bd93cfab4d749dd3e2f2a4416820a46>
 --
 mkContext :: Config -> IO Context
-mkContext cfg =
-    withForeignPtr (unConfig cfg) $ z3_mk_context >=> \pCtx ->
-      newForeignPtr pCtx (z3_del_context pCtx)      >>= \fptr ->
-      return $! Context fptr
+mkContext cfg = withForeignPtr (unConfig cfg) $ \cfgPtr -> do
+  ptr <- z3_mk_context cfgPtr
+  fptr <- newForeignPtr ptr (z3_del_context ptr)
+  return $! Context fptr
 
 ---------------------------------------------------------------------
 -- Symbols
@@ -522,9 +522,7 @@ mkNumeral c str s =
 
 -- | Create a numeral of sort /int/.
 mkInt :: Z3Int a => Context -> a -> IO (AST a)
-mkInt c n =
-    mkIntSort c >>=
-        mkNumeral c n_str
+mkInt c n = mkIntSort c >>= mkNumeral c n_str
     where n_str = show $ toInteger n
 
 {-# INLINE mkIntZ3 #-}
@@ -700,9 +698,7 @@ getModel c = withForeignPtr (unContext c) $ \ctxPtr ->
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --
 check :: Context -> IO Result
-check ctx =
-    toResult <$>
-        withForeignPtr (unContext ctx) z3_check
+check ctx = toResult <$> withForeignPtr (unContext ctx) z3_check
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
