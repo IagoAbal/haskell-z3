@@ -607,16 +607,24 @@ mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 -- TODO Quantifiers
 
 ---------------------------------------------------------------------
--- * Accessors
+-- Accessors
+
+-- | Cast a 'Z3_lbool' from Z3.Base.C to @Bool@.
+castLBool :: Z3_lbool -> Maybe Bool
+castLBool lb
+    | lb == z3_l_true  = Just True
+    | lb == z3_l_false = Just False
+    | lb == z3_l_undef = Nothing
+    | otherwise        = error "Z3.Base.castLBool: illegal `Z3_lbool' value"
 
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
 --
-getBool :: Context -> AST Bool -> IO Result
+getBool :: Context -> AST Bool -> IO (Maybe Bool)
 getBool c a = withForeignPtr (unContext c) $ \ctxPtr ->
-  toResult <$> z3_get_bool_value ctxPtr (unAST a)
+  castLBool <$> z3_get_bool_value ctxPtr (unAST a)
 
 -- | Return numeral value, as a string of a numeric constant term.  
 --
