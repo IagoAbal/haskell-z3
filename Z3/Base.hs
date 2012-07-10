@@ -80,6 +80,9 @@ module Z3.Base (
     , getInt
     , getReal
 
+    -- * Models
+    , eval
+
     -- * Constraints
     , assertCnstr
     , check
@@ -96,8 +99,11 @@ import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Word
 import Data.Typeable ( typeOf )
-import Foreign hiding ( newForeignPtr )
+import Foreign hiding ( newForeignPtr, toBool )
 import Foreign.C
+  ( CInt, CUInt, CLLong, CULLong
+  , peekCString
+  , withCString )
 import Foreign.Concurrent ( newForeignPtr )
 
 ---------------------------------------------------------------------
@@ -172,7 +178,11 @@ newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
 
 -- | A model for the constraints asserted into the logical context.
 --
-newtype Model = Model { _unModel :: ForeignPtr Z3_model }
+data Model
+    = Model {
+        modelContext :: Context
+      , unModel      :: ForeignPtr Z3_model
+      }
     deriving Eq
 
 -- | Result of a satisfiability check.
@@ -188,7 +198,18 @@ toResult :: Z3_lbool -> Result
 toResult lb
     | lb == z3_l_true  = Sat
     | lb == z3_l_false = Unsat
-    | otherwise        = Undef
+    | lb == z3_l_undef = Undef
+    | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
+
+-- | Convert 'Z3_bool' to 'Bool'.
+--
+-- 'Foreign.toBool' should be OK but this is convenient.
+--
+toBool :: Z3_bool -> Bool
+toBool b
+    | b == z3_true  = True
+    | b == z3_false = False
+    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
 
 ---------------------------------------------------------------------
 -- Configuration
@@ -664,7 +685,25 @@ getReal c a = fromRational <$>
 -- TODO Modifiers
 
 ---------------------------------------------------------------------
--- * Constraints
+-- Models
+
+mkModel :: Context -> Ptr Z3_model -> IO Model
+mkModel ctx ptr = withForeignPtr (unContext ctx) $ \ctxPtr ->
+    Model ctx <$> newForeignPtr ptr (z3_del_model ctxPtr ptr)
+
+-- | Evaluate an AST node in the given model.
+eval :: Model -> AST a -> IO (Maybe (AST a))
+eval m a
+  = withForeignPtr (unContext $ modelContext m) $ \ctxPtr ->
+    withForeignPtr (unModel m) $ \mdlPtr ->
+      alloca $ \aptr2 ->
+        z3_eval ctxPtr mdlPtr (unAST a) aptr2 >>= peekAST aptr2 . toBool
+  where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe (AST a))
+        peekAST _p False = return Nothing
+        peekAST  p True  = Just . AST <$> peek p
+
+---------------------------------------------------------------------
+-- Constraints
 
 -- TODO Constraints: Z3_push
 -- TODO Constraints: Z3_pop
@@ -687,19 +726,14 @@ assertCnstr ctx ast =
 getModel :: Context -> IO (Result, Maybe Model)
 getModel c = withForeignPtr (unContext c) $ \ctxPtr ->
   alloca $ \mptr ->
-    z3_check_and_get_model ctxPtr mptr >>= peekModel ctxPtr mptr . toResult
-  where peekModel :: Ptr Z3_context
-                  -> Ptr (Ptr Z3_model)
+    z3_check_and_get_model ctxPtr mptr >>= peekModel mptr . toResult
+  where peekModel :: Ptr (Ptr Z3_model)
                   -> Result
                   -> IO (Result, Maybe Model)
-        peekModel ctx p r | p == nullPtr = return (r, Nothing)
-                          | otherwise    = do z3m <- peek p
-                                              m   <- mkModel ctx z3m
-                                              return (r, Just m)
-
-        mkModel :: Ptr Z3_context -> Ptr Z3_model -> IO Model
-        mkModel ctx ptr = Model <$> newForeignPtr ptr (z3_del_model ctx ptr)
-
+        peekModel p r | p == nullPtr = return (r, Nothing)
+                      | otherwise    = do z3m <- peek p
+                                          m   <- mkModel c z3m
+                                          return (r, Just m)
 
 -- | Check whether the given logical context is consistent or not. 
 --
