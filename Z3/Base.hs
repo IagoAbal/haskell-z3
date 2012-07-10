@@ -95,6 +95,7 @@ import Control.Monad ( (>=>), liftM2 )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Word
+import Data.Typeable ( typeOf )
 import Foreign hiding ( newForeignPtr )
 import Foreign.C
 import Foreign.Concurrent ( newForeignPtr )
@@ -144,14 +145,14 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
--- | Cast an 'AST a' to 'AST b' when the sorts of types 'a' and 'b' match.
+-- | Cast an 'AST a' to 'AST b' when 'a' and 'b' are the same type.
 --
 -- This is useful when unpacking an existentially quantified AST.
 --
 castAST :: forall a b. (Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
 castAST (AST a) 
-    | cmpSorts (sortZ3 (TY :: TY a)) (sortZ3 (TY :: TY b)) = Just (AST a)
-    | otherwise                                            = Nothing
+    | typeOf (TY::TY a) == typeOf (TY::TY b) = Just (AST a)
+    | otherwise                              = Nothing
 
 -- | Kind of Z3 AST representing /types/.
 --

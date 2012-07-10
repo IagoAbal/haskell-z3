@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -23,9 +24,6 @@ module Z3.Types (
     , Z3Type(..)
     , Z3Scalar
 
-    -- * Auxiliary functions
-    , cmpSorts
-
     -- * Haskell Z3 Numerals
     , Z3Num
     , Z3Int
@@ -33,7 +31,8 @@ module Z3.Types (
 
     ) where
 
-import Data.Typeable ( Typeable, typeOf )
+import Data.Data ( Data )
+import Data.Typeable ( Typeable )
 
 ------------------------------------------------------------------------
 -- Haskell Z3 Types 
@@ -43,6 +42,7 @@ import Data.Typeable ( Typeable, typeOf )
 -- Example: @TY :: TY Integer@ instead of @undefined :: Integer@
 --
 data TY a = TY
+    deriving (Data,Typeable)
 
 -- | Z3 Sort.
 --
@@ -53,15 +53,6 @@ data Sort :: * -> * where
 
 deriving instance Eq (Sort a)
 
--- | Compare sorts of different types
---
--- TODO: Is this function really needed? Or it is safe to cast /a/ -> /b/ when
--- their Z3 sorts are equal?
--- FIXME: cleaner implementation without undefined?
-cmpSorts :: forall a b. (Z3Type a, Z3Type b) => Sort a -> Sort b -> Bool
-cmpSorts _ _
-    | typeOf (undefined :: a) == typeOf (undefined :: b) = True
-    | otherwise                                          = False
 
 -- | Typeclass for Haskell Z3 types, used in Z3 expressions.
 --
