@@ -11,7 +11,9 @@
 
 module Z3.Base (
 
-    -- * Core Z3 types
+    -- * Types
+
+    -- ** Core Z3 types
       Config
     , Context
     , Symbol
@@ -20,13 +22,13 @@ module Z3.Base (
     , App
     , Pattern
     , Model
-    
-    -- ** Utility types
-    , Result(..)
 
     , castAST
+    
+    -- ** Satisfiability result
+    , Result(..)
 
-    -- * Config
+    -- * Configuration
     , mkConfig
     , setParamValue
 
@@ -97,8 +99,13 @@ import Foreign hiding ( newForeignPtr )
 import Foreign.C
 import Foreign.Concurrent ( newForeignPtr )
 
-------------------------------------------------------------------------
+---------------------------------------------------------------------
 -- Types
+--
+-- We use phantom types not only to provide extra safety, but also to
+-- keep track of the expected Haskell type independently of the
+-- underlying Z3 type.
+--
 
 -- | A Z3 /configuration object/.
 -- 
@@ -108,8 +115,6 @@ import Foreign.Concurrent ( newForeignPtr )
 -- * The resource is automatically managed by the Haskell garbage
 -- collector, and the structure is automatically deleted once it is out
 -- of scope (no need to call 'z3_del_config').
---
--- /Reference:/ < TODO >
 --
 newtype Config = Config { unConfig :: ForeignPtr Z3_config }
     deriving Eq
@@ -123,64 +128,53 @@ newtype Config = Config { unConfig :: ForeignPtr Z3_config }
 -- collector, and the structure is automatically deleted once it is out
 -- of scope (no need to call 'z3_del_context').
 --
--- /Reference:/ < TODO >
---
 newtype Context = Context { unContext :: ForeignPtr Z3_context }
     deriving Eq
 
 -- | A Z3 /Lisp-link symbol/.
 -- 
--- /Reference:/ < TODO >
---
 newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A Z3 /AST node/.
 -- 
--- /Reference:/ < TODO >
+-- TODO: Does the extra type safety provided by the phantom type worth
+--       complicating the higher-level layers such as 'Z3.Monad' ?
 --
 newtype AST a = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable)
 
 -- | Cast an 'AST a' to 'AST b' when the sorts of types 'a' and 'b' match.
 --
-castAST :: forall a b.(Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
+-- This is useful when unpacking an existentially quantified AST.
+--
+castAST :: forall a b. (Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
 castAST (AST a) 
     | cmpSorts (sortZ3 (TY :: TY a)) (sortZ3 (TY :: TY b)) = Just (AST a)
     | otherwise                                            = Nothing
 
 -- | Kind of Z3 AST representing /types/.
--- 
--- /Reference:/ < TODO >
 --
 newtype Sort a = Sort { unSort :: Ptr Z3_sort }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
--- 
--- /Reference:/ < TODO >
 --
 newtype App = App { _unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of AST used to represent pattern and multi-patterns used to 
 --   guide quantifier instantiation.
--- 
--- /Reference:/ < TODO >
 --
 newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A model for the constraints asserted into the logical context.
--- 
--- /Reference:/ < TODO >
 --
 newtype Model = Model { _unModel :: ForeignPtr Z3_model }
     deriving Eq
 
--- | Lifted Boolean type.
---
--- /Reference:/ < TODO >
+-- | Result of a satisfiability check.
 --
 data Result
     = Sat
@@ -188,7 +182,7 @@ data Result
     | Undef
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
--- | Convert Z3_lbool from Z3.Base.C to Result
+-- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
 toResult :: Z3_lbool -> Result
 toResult lb
     | lb == z3_l_true  = Sat
@@ -196,7 +190,7 @@ toResult lb
     | otherwise        = Undef
 
 ---------------------------------------------------------------------
--- * Create configuration
+-- Configuration
 
 -- | Create a configuration.
 --
@@ -220,7 +214,7 @@ setParamValue cfg s1 s2 =
         z3_set_param_value cfgPtr cs1 cs2
 
 ---------------------------------------------------------------------
--- * Create context
+-- Context
 
 -- | Create a context using the given configuration.
 --
@@ -233,9 +227,9 @@ mkContext cfg =
       return $! Context fptr
 
 ---------------------------------------------------------------------
--- * Symbols
+-- Symbols
 
--- | Create a Z3 symbol using a C string.
+-- | Create a Z3 symbol using a string.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafebb0d3c212927cf7834c3a20a84ecae>
 --
@@ -246,7 +240,7 @@ mkStringSymbol ctx s =
         Symbol <$> z3_mk_string_symbol ctxPtr cs
 
 ---------------------------------------------------------------------
--- * Sorts
+-- Sorts
 
 -- TODO Sorts: Z3_is_eq_sort
 -- TODO Sorts: Z3_mk_uninterpreted_sort
@@ -267,7 +261,7 @@ mkIntSort :: Z3Int i => Context -> IO (Sort i)
 mkIntSort c = withForeignPtr (unContext c) $ \cptr ->
   Sort <$> z3_mk_int_sort cptr
 
--- | Create an real type.
+-- | Create a real type.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 --
@@ -277,9 +271,8 @@ mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
 
 -- TODO Sorts: from Z3_mk_real_sort on
 
-
 ---------------------------------------------------------------------
--- * Constants and Applications
+-- Constants and Applications
 
 -- TODO Constants and Applications: Z3_mk_func_decl
 -- TODO Constants and Applications: Z3_mk_app
@@ -511,7 +504,7 @@ mkIsInt c e = withForeignPtr (unContext c) $ \cptr ->
 
 
 ---------------------------------------------------------------------
--- * Numerals
+-- Numerals
 
 -- | Create a numeral of a given sort.
 --
@@ -523,62 +516,15 @@ mkNumeral c str s =
     withCString str              $ \cstr->
         AST <$> z3_mk_numeral cptr cstr (unSort s)
 
+-------------------------------------------------
+-- Numerals / Integers
+
 -- | Create a numeral of sort /int/.
 mkInt :: Z3Int a => Context -> a -> IO (AST a)
 mkInt c n =
     mkIntSort c >>=
         mkNumeral c n_str
     where n_str = show $ toInteger n
-
--- | Create a numeral of sort /real/.
-mkReal :: Z3Real r => Context -> r -> IO (AST r)
-mkReal c n =
-    mkRealSort c >>=
-        mkNumeral c n_str
-    where r = toRational n
-          r_n = toInteger $ numerator r
-          r_d = toInteger $ denominator r
-          n_str =    show r_n ++ " / " ++ show r_d
-
-{-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
-mkRealZ3 :: Z3Real a => Context -> Ratio Int32 -> IO (AST a)
-mkRealZ3 c r =
-    withForeignPtr (unContext c) $ \ctxPtr ->
-        AST <$> z3_mk_real ctxPtr n d
-    where n = (fromIntegral $ numerator r)   :: CInt
-          d = (fromIntegral $ denominator r) :: CInt
-
-{-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
-mkInt_IntZ3 :: Z3Int a => Context -> Int32 -> IO (AST a)
-mkInt_IntZ3 c n = mkIntSort c >>= mkIntZ3 c n
-
-{-# RULES "mkInt/mkInt_UnsignedIntZ3" mkInt = mkInt_UnsignedIntZ3 #-}
-mkInt_UnsignedIntZ3 :: Z3Int a => Context -> Word32 -> IO (AST a)
-mkInt_UnsignedIntZ3 c n = mkIntSort c >>= mkUnsignedIntZ3 c n
-
-{-# RULES "mkInt/mkInt_Int64Z3" mkInt = mkInt_Int64Z3 #-}
-mkInt_Int64Z3 :: Z3Int a => Context -> Int64 -> IO (AST a)
-mkInt_Int64Z3 c n = mkIntSort c >>= mkInt64Z3 c n
-
-{-# RULES "mkInt/mkInt_UnsignedInt64Z3" mkInt = mkInt_UnsignedInt64Z3 #-}
-mkInt_UnsignedInt64Z3 :: Z3Int a => Context -> Word64 -> IO (AST a)
-mkInt_UnsignedInt64Z3 c n = mkIntSort c >>= mkUnsignedInt64Z3 c n
-
-{-# RULES "mkReal/mkReal_IntZ3" mkReal = mkReal_IntZ3 #-}
-mkReal_IntZ3 :: Z3Real r => Context -> Int32 -> IO (AST r)
-mkReal_IntZ3 c n = mkRealSort c >>= mkIntZ3 c n
-
-{-# RULES "mkReal/mkReal_UnsignedIntZ3" mkReal = mkReal_UnsignedIntZ3 #-}
-mkReal_UnsignedIntZ3 :: Z3Real r => Context -> Word32 -> IO (AST r)
-mkReal_UnsignedIntZ3 c n = mkRealSort c >>= mkUnsignedIntZ3 c n
-
-{-# RULES "mkReal/mkReal_Int64Z3" mkReal = mkReal_Int64Z3 #-}
-mkReal_Int64Z3 :: Z3Real r => Context -> Int64 -> IO (AST r)
-mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
-
-{-# RULES "mkReal/mkReal_UnsignedInt64Z3" mkReal = mkReal_UnsignedInt64Z3 #-}
-mkReal_UnsignedInt64Z3 :: Z3Real r => Context -> Word64 -> IO (AST r)
-mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 
 {-# INLINE mkIntZ3 #-}
 mkIntZ3 :: Z3Num a => Context -> Int32 -> Sort a -> IO (AST a)
@@ -608,6 +554,57 @@ mkUnsignedInt64Z3 c n s =
         AST <$> z3_mk_unsigned_int64 ctxPtr cn (unSort s)
     where cn = fromIntegral n :: CULLong
 
+{-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
+mkInt_IntZ3 :: Z3Int a => Context -> Int32 -> IO (AST a)
+mkInt_IntZ3 c n = mkIntSort c >>= mkIntZ3 c n
+
+{-# RULES "mkInt/mkInt_UnsignedIntZ3" mkInt = mkInt_UnsignedIntZ3 #-}
+mkInt_UnsignedIntZ3 :: Z3Int a => Context -> Word32 -> IO (AST a)
+mkInt_UnsignedIntZ3 c n = mkIntSort c >>= mkUnsignedIntZ3 c n
+
+{-# RULES "mkInt/mkInt_Int64Z3" mkInt = mkInt_Int64Z3 #-}
+mkInt_Int64Z3 :: Z3Int a => Context -> Int64 -> IO (AST a)
+mkInt_Int64Z3 c n = mkIntSort c >>= mkInt64Z3 c n
+
+{-# RULES "mkInt/mkInt_UnsignedInt64Z3" mkInt = mkInt_UnsignedInt64Z3 #-}
+mkInt_UnsignedInt64Z3 :: Z3Int a => Context -> Word64 -> IO (AST a)
+mkInt_UnsignedInt64Z3 c n = mkIntSort c >>= mkUnsignedInt64Z3 c n
+
+-------------------------------------------------
+-- Numerals / Reals
+
+-- | Create a numeral of sort /real/.
+mkReal :: Z3Real r => Context -> r -> IO (AST r)
+mkReal c n = mkRealSort c >>= mkNumeral c n_str
+    where r = toRational n
+          r_n = toInteger $ numerator r
+          r_d = toInteger $ denominator r
+          n_str = show r_n ++ " / " ++ show r_d
+
+{-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
+mkRealZ3 :: Z3Real a => Context -> Ratio Int32 -> IO (AST a)
+mkRealZ3 c r =
+    withForeignPtr (unContext c) $ \ctxPtr ->
+        AST <$> z3_mk_real ctxPtr n d
+    where n = (fromIntegral $ numerator r)   :: CInt
+          d = (fromIntegral $ denominator r) :: CInt
+
+{-# RULES "mkReal/mkReal_IntZ3" mkReal = mkReal_IntZ3 #-}
+mkReal_IntZ3 :: Z3Real r => Context -> Int32 -> IO (AST r)
+mkReal_IntZ3 c n = mkRealSort c >>= mkIntZ3 c n
+
+{-# RULES "mkReal/mkReal_UnsignedIntZ3" mkReal = mkReal_UnsignedIntZ3 #-}
+mkReal_UnsignedIntZ3 :: Z3Real r => Context -> Word32 -> IO (AST r)
+mkReal_UnsignedIntZ3 c n = mkRealSort c >>= mkUnsignedIntZ3 c n
+
+{-# RULES "mkReal/mkReal_Int64Z3" mkReal = mkReal_Int64Z3 #-}
+mkReal_Int64Z3 :: Z3Real r => Context -> Int64 -> IO (AST r)
+mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
+
+{-# RULES "mkReal/mkReal_UnsignedInt64Z3" mkReal = mkReal_UnsignedInt64Z3 #-}
+mkReal_UnsignedInt64Z3 :: Z3Real r => Context -> Word64 -> IO (AST r)
+mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
+
 -- TODO Quantifiers
 
 ---------------------------------------------------------------------
@@ -630,29 +627,28 @@ getNumeralString :: Z3Num a => Context -> AST a -> IO String
 getNumeralString c a = withForeignPtr (unContext c) $ \ctxPtr ->
   peekCString =<< z3_get_numeral_string ctxPtr (unAST a)
 
--- | Return Z3Int value
+-- | Return 'Z3Int' value
 --
 getInt :: Z3Int a => Context -> AST a -> IO a
 getInt c a = fromInteger . read <$> getNumeralString c a
 
--- | Return the numerator (as a numeral AST) of a numeral AST of sort Real. 
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort /real/. 
 --
--- Reference: <>
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga69564aaa9f2a76556b54f5bbff8e7175>
 --
 getNumerator :: (Z3Real a, Z3Int b) => Context -> AST a -> IO b
 getNumerator c a = withForeignPtr (unContext c) $ \ctxPtr ->
   z3_get_numerator ctxPtr (unAST a) >>= getInt c . AST
 
--- | Return the denominator (as a numeral AST) of a numeral AST of sort Real. 
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort /real/. 
 --
--- Reference: <>
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga25e5269d6845bb8ae03b551f09f5d46d>
 --
 getDenominator :: (Z3Real a, Z3Int b) => Context -> AST a -> IO b
 getDenominator c a = withForeignPtr (unContext c) $ \ctxPtr ->
   z3_get_denominator ctxPtr (unAST a) >>= getInt c . AST
 
-
--- | Return Z3Real value
+-- | Return 'Z3Real' value
 --
 getReal :: Z3Real a => Context -> AST a -> IO a
 getReal c a = fromRational <$>

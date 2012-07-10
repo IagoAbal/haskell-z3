@@ -40,9 +40,8 @@ import Control.Monad.State.Strict
 import Data.Maybe ( fromMaybe )
 import qualified Data.IntMap as Map
 
-
--- * The Z3 Monad
---
+---------------------------------------------------------------------
+-- The Z3 Monad
 
 -- | Z3 Monad type
 --
@@ -99,13 +98,12 @@ getConst u = liftM mlookup (gets consts)
     where mlookup :: Map.IntMap AnyAST -> Maybe (Base.AST a)
           mlookup m = Map.lookup u m >>= \(AnyAST e) -> Base.castAST e
 
-
--- * Constructing expressions
---
+---------------------------------------------------------------------
+-- Constructing expressions
 
 -- | Declare constants
 --
-decl :: forall a.(Z3Type a) => Z3 (Expr a)
+decl :: forall a. Z3Type a => Z3 (Expr a)
 decl = do
     ctx <- gets context
     (u, str) <-  fresh
@@ -186,8 +184,8 @@ compile (Ite b e1 e2)
          e2' <- compile e2
          mkIte_ ctx b' e1' e2'
 
--- * Internal lifted Base functions
---
+---------------------------------------------------------------------
+-- Internal lifted Base functions
 
 assertCnstr_ :: Base.Context -> Base.AST a -> Z3 ()
 assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
@@ -265,8 +263,8 @@ mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
 mkUnaryMinus_ :: (Z3Num a) => Base.Context -> Base.AST a -> Z3 (Base.AST a)
 mkUnaryMinus_ ctx = Z3 . lift . Base.mkUnaryMinus ctx
 
--- * Error Messages
---
+---------------------------------------------------------------------
+-- Error messages
 
 pANIC_SORTS :: String
 pANIC_SORTS = "Panic! A type of class Z3Type is not instance\
