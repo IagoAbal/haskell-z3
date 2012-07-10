@@ -3,8 +3,8 @@
 
 -- |
 -- Module    : Z3.Base.C
--- Copyright : (c) Iago Abal, 2011 
---             (c) David Castro, 2011
+-- Copyright : (c) Iago Abal, 2012
+--             (c) David Castro, 2012
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
