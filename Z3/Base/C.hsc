@@ -32,7 +32,7 @@ data Z3_context
 -- A symbol can be created using string or integers.
 data Z3_symbol
 
--- | abstract syntax tree node. That is, the data-structure used in Z3 to
+-- | Abstract syntax tree node. That is, the data-structure used in Z3 to
 -- represent terms, formulas and types.
 data Z3_ast
 
@@ -143,7 +143,7 @@ foreign import ccall unsafe "Z3_mk_bool_sort"
 foreign import ccall unsafe "Z3_mk_int_sort"
     z3_mk_int_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
 
--- | Create an real type.
+-- | Create a real type.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 --
@@ -405,7 +405,7 @@ foreign import ccall unsafe "Z3_mk_unsigned_int64"
 foreign import ccall unsafe "Z3_get_bool_value"
     z3_get_bool_value :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_lbool
 
--- | Return numeral value, as a string of a numeric constant term.  
+-- | Return numeral value, as a string of a numeric constant term.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
 --

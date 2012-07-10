@@ -36,11 +36,11 @@ module Z3.Types (
 import Data.Typeable ( Typeable, typeOf )
 
 ------------------------------------------------------------------------
--- * Haskell Z3 Types 
+-- Haskell Z3 Types 
 
--- | Type parameter. Used instead of 'undefined'
+-- | Type parameter. Used instead of 'undefined'.
 -- 
--- Example: TY :: (TY Integer) instead of undefined :: Integer
+-- Example: @TY :: TY Integer@ instead of @undefined :: Integer@
 --
 data TY a = TY
 
@@ -48,8 +48,8 @@ data TY a = TY
 --
 data Sort :: * -> * where
     SBool :: Sort Bool
-    SInt  :: (Z3Int a)  => Sort a
-    SReal :: (Z3Real a) => Sort a
+    SInt  :: Z3Int  a => Sort a
+    SReal :: Z3Real a => Sort a
 
 deriving instance Eq (Sort a)
 
@@ -85,7 +85,14 @@ instance Z3Scalar Integer where
 instance Z3Scalar Rational where
 
 ------------------------------------------------------------------------
--- * Haskell Z3 Numerals
+-- Haskell Z3 Numerals
+--
+-- Future Work: We would like to instance 'Z3Int' with 'Int32' to provide
+-- support for reasoning about 32-bit integer arithmetic with overflow.
+-- It would be also interesting (but perhaps more tricky) to support
+-- floating point arithmetic by creating an instance of 'Z3Real' for
+-- 'Double'.
+--
 
 -- | Typeclass for Haskell Z3 numbers.
 --
