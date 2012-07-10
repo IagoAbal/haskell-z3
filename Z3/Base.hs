@@ -161,7 +161,7 @@ newtype Sort a = Sort { unSort :: Ptr Z3_sort }
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
 --
-newtype App = App { _unApp :: Ptr Z3_app }
+newtype App a = App { _unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of AST used to represent pattern and multi-patterns used to 
