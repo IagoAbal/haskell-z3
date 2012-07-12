@@ -69,6 +69,8 @@ data Z3State
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
     cfg  <- Base.mkConfig
+    Base.set_MODEL cfg True
+    Base.set_MODEL_PARTIAL cfg False
     ctx  <- Base.mkContext cfg
     evalStateT s Z3State { uniqVal   = 0
                          , context   = ctx
