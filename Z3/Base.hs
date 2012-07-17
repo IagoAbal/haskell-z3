@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -13,8 +15,6 @@
 module Z3.Base (
 
     -- * Types
-
-    -- ** Core Z3 types
       Config
     , Context
     , Symbol
@@ -28,6 +28,11 @@ module Z3.Base (
     
     -- ** Satisfiability result
     , Result(..)
+
+    -- ** Z3 types
+    , Z3Type(..)
+    , Z3Scalar(..)
+    , Z3Num
 
     -- * Configuration
     , mkConfig
@@ -95,14 +100,15 @@ module Z3.Base (
     ) where
 
 import Z3.Base.C
-import Z3.Types hiding ( Sort )
+import Z3.Types.TY
 
 import Control.Applicative ( (<$>) )
 import Control.Monad ( liftM2 )
+import Data.Typeable ( Typeable )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Word
-import Data.Typeable ( typeOf )
+import Data.Typeable ( Typeable, typeOf )
 import Foreign hiding ( newForeignPtr, toBool )
 import Foreign.C
   ( CInt, CUInt, CLLong, CULLong
@@ -112,10 +118,6 @@ import Foreign.Concurrent ( newForeignPtr )
 
 ---------------------------------------------------------------------
 -- Types
---
--- We use phantom types not only to provide extra safety, but also to
--- keep track of the expected Haskell type independently of the
--- underlying Z3 type.
 --
 
 -- | A Z3 /configuration object/.
@@ -215,6 +217,49 @@ toBool b
     | b == z3_true  = True
     | b == z3_false = False
     | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
+
+-----------------------------------------------------------
+-- Z3 types
+--
+
+-- | A Z3 type
+--
+class Typeable a => Z3Type a where
+  mkSort :: Context -> IO (Sort a)
+
+instance Z3Type Bool where
+  mkSort = mkBoolSort
+
+instance Z3Type Integer where
+  mkSort = mkIntSort
+
+instance Z3Type Rational where
+  mkSort = mkRealSort
+
+-- | A Z3 scalar type
+--
+class (Eq a, Show a, Z3Type a) => Z3Scalar a where
+  mkValue :: Context -> a -> IO (AST a)
+  getValue :: Context -> AST a -> IO (Maybe a)
+
+instance Z3Scalar Bool where
+  mkValue ctx True = mkTrue ctx
+  mkValue ctx False = mkFalse ctx
+  getValue = getBool
+
+instance Z3Scalar Integer where
+  mkValue ctx = mkInt ctx
+  getValue ctx ast = Just <$> getInt ctx ast
+
+instance Z3Scalar Rational where
+  mkValue ctx = mkReal ctx
+  getValue ctx ast = Just <$> getReal ctx ast
+
+-- | A Z3 numeric type
+--
+class (Z3Scalar a, Num a) => Z3Num a where
+instance Z3Num Integer where
+instance Z3Num Rational where
 
 ---------------------------------------------------------------------
 -- Configuration

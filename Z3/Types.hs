@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 
@@ -18,85 +19,81 @@
 
 module Z3.Types (
     
-    -- * Haskell Z3 Types
-      TY(..)
-    , Sort(..)
-    , Z3Type(..)
-    , Z3Scalar
+    -- * Types
+      TypeZ3
+    , IsTy
+    , IsScalar(..)
 
-    -- * Haskell Z3 Numerals
-    , Z3Num
-    , Z3Int
-    , Z3Real
+    -- ** Numeric types
+    , IsNum
+    , IsInt
+    , IsReal
 
     ) where
 
-import Data.Data ( Data )
+import Z3.Base ( Z3Type, Z3Scalar, Z3Num )
+
 import Data.Typeable ( Typeable )
 
-------------------------------------------------------------------------
--- Haskell Z3 Types 
+----------------------------------------------------------------------
+-- Types 
 
--- | Type parameter. Used instead of 'undefined'.
--- 
--- Example: @TY :: TY Integer@ instead of @undefined :: Integer@
+-- | Maps a type to the underlying Z3 type.
 --
-data TY a = TY
-    deriving (Data,Typeable)
+type family TypeZ3 a
 
--- | Z3 Sort.
+type instance TypeZ3 Bool = Bool
+type instance TypeZ3 Integer = Integer
+type instance TypeZ3 Rational = Rational
+
+-- | Types for expressions.
 --
-data Sort :: * -> * where
-    SBool :: Sort Bool
-    SInt  :: Z3Int  a => Sort a
-    SReal :: Z3Real a => Sort a
+class (Typeable a, Z3Type (TypeZ3 a)) => IsTy a where
 
-deriving instance Eq (Sort a)
+instance IsTy Bool where
+instance IsTy Integer where
+instance IsTy Rational where
 
-
--- | Typeclass for Haskell Z3 types, used in Z3 expressions.
+-- | Scalar types.
 --
-class Typeable a => Z3Type a where
-    sortZ3 :: TY a -> Sort a
+class (Eq a, Show a, IsTy a, Z3Scalar(TypeZ3 a)) => IsScalar a where
+  fromZ3Type :: TypeZ3 a -> a
+  toZ3Type   :: a -> TypeZ3 a
 
-instance Z3Type Bool where
-    sortZ3 _ = SBool
+instance IsScalar Bool where
+  fromZ3Type = id
+  toZ3Type = id
 
-instance Z3Type Integer where
-    sortZ3 _ = SInt
+instance IsScalar Integer where
+  fromZ3Type = id
+  toZ3Type = id
 
-instance Z3Type Rational where
-    sortZ3 _ = SReal
+instance IsScalar Rational where
+  fromZ3Type = id
+  toZ3Type = id
 
--- | Z3 Scalars
+------------------------------------------------------------
+-- Numeric types
 --
-class (Eq a, Show a, Z3Type a) => Z3Scalar a where
-instance Z3Scalar Bool where
-instance Z3Scalar Integer where
-instance Z3Scalar Rational where
-
-------------------------------------------------------------------------
--- Haskell Z3 Numerals
---
--- Future Work: We would like to instance 'Z3Int' with 'Int32' to provide
+-- Future Work: We would like to instance 'IsInt' with 'Int32' to provide
 -- support for reasoning about 32-bit integer arithmetic with overflow.
 -- It would be also interesting (but perhaps more tricky) to support
--- floating point arithmetic by creating an instance of 'Z3Real' for
+-- floating point arithmetic by creating an instance of 'IsReal' for
 -- 'Double'.
 --
 
--- | Typeclass for Haskell Z3 numbers.
+-- | Numeric types.
 --
-class (Z3Scalar a, Num a) => Z3Num a where
-instance Z3Num Integer where
-instance Z3Num Rational where
+class (IsScalar a, Num a, Z3Num (TypeZ3 a)) => IsNum a where
+instance IsNum Integer where
+instance IsNum Rational where
 
 -- | Typeclass for Haskell Z3 numbers of 'int' sort in Z3.
 --
-class (Z3Num a, Integral a) => Z3Int a where
-instance Z3Int Integer where
+class (IsNum a, Integral a, TypeZ3 a ~ Integer) => IsInt a where
+instance IsInt Integer where
 
 -- | Typeclass for Haskell Z3 numbers of 'real' sort in Z3.
 --
-class (Z3Num a, Fractional a, Real a) => Z3Real a where
-instance Z3Real Rational where
+class (IsNum a, Fractional a, Real a, TypeZ3 a ~ Rational) => IsReal a where
+instance IsReal Rational where

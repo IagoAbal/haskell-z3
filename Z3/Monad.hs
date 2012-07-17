@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -26,17 +27,18 @@ module Z3.Monad (
     , Base.Result(..)
 
     -- * Z3 actions
-    , decl
+    , var
     , assert
     , let_
     , check
 
+    , module Z3.Exprs
+
     ) where
 
 import qualified Z3.Base as Base
-import Z3.Exprs ( (==*) )
+import Z3.Exprs
 import Z3.Exprs.Internal
-import Z3.Types
 
 import Control.Monad
 import Control.Monad.State.Strict
@@ -57,7 +59,7 @@ instance MonadState Z3State Z3 where
 
 -- | Existential type. Used to store constants keeping sort info.
 --
-data AnyAST = forall a. Z3Type a => AnyAST (Base.AST a)
+data AnyAST = forall a. Base.Z3Type a => AnyAST (Base.AST a)
 
 -- | Internal state of Z3 monad.
 --
@@ -91,14 +93,21 @@ fresh = do
 
 -- | Add a constant of type @Base.AST a@ to the state.
 --
-addConst :: (Z3Type a) => Uniq -> Base.AST a -> Z3 ()
-addConst u expr = do
+addConst :: Base.Z3Type a => Uniq -> Base.AST a -> Z3 ()
+addConst u ast = do
     st <- get
-    put st { consts = Map.insert u (AnyAST expr) (consts st) }
+    put st { consts = Map.insert u (AnyAST ast) (consts st) }
 
 -- | Get a 'Base.AST' stored in the Z3State.
 --
-getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
+{- TODO: I believe that getConst return type should be Z3 (Base.AST a)
+         instead. If Map.lookup returns nothing then we "panic" because
+         an undefined constant, if Base.castAST returns nothing then we
+         panic because of type mismatch. We have the duty to guarantee
+         that none of these errors would ever happen.
+          - Iago
+-}
+getConst :: forall a. Base.Z3Type a => Uniq -> Z3 (Maybe (Base.AST a))
 getConst u = liftM mlookup (gets consts)
     where mlookup :: Map.IntMap AnyAST -> Maybe (Base.AST a)
           mlookup m = Map.lookup u m >>= \(AnyAST e) -> Base.castAST e
@@ -106,14 +115,14 @@ getConst u = liftM mlookup (gets consts)
 ---------------------------------------------------------------------
 -- Constructing expressions
 
--- | Declare constants
+-- | Declare skolem variables.
 --
-decl :: forall a. Z3Type a => Z3 (Expr a)
-decl = do
+var :: forall a. IsTy a => Z3 (Expr a)
+var = do
     ctx <- gets context
     (u, str) <- fresh
     smb <- mkStringSymbol_ ctx str
-    (srt :: Base.Sort a) <- mkSort_ ctx
+    (srt :: Base.Sort (TypeZ3 a)) <- Z3 . lift $ Base.mkSort ctx
     addConst u =<< mkConst_ ctx smb srt
     return $ Const u
 
@@ -124,9 +133,11 @@ assert = join . liftM2 assertCnstr_ (gets context) . compile
 
 -- | Introduce an auxiliary declaration to name a given expression.
 --
-let_ :: Z3Type a => Expr a -> Z3 (Expr a)
+-- If you really want sharing use this instead of Haskell's /let/.
+--
+let_ :: IsScalar a => Expr a -> Z3 (Expr a)
 let_ e = do
-  aux <- decl
+  aux <- var
   assert (aux ==* e)
   return aux
 
