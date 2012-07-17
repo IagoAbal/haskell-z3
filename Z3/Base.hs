@@ -34,6 +34,7 @@ module Z3.Base (
     , setParamValue
     , set_MODEL
     , set_MODEL_PARTIAL
+    , set_WELL_SORTED_CHECK
 
     -- * Context
     , mkContext
@@ -256,6 +257,14 @@ set_MODEL cfg False = setParamValue cfg "MODEL" "false"
 set_MODEL_PARTIAL :: Config -> Bool -> IO ()
 set_MODEL_PARTIAL cfg True  = setParamValue cfg "MODEL_PARTIAL" "true"
 set_MODEL_PARTIAL cfg False = setParamValue cfg "MODEL_PARTIAL" "false"
+
+-- | Set the /WELL_SORTED_CHECK/ configuration parameter.
+--
+-- default: 'True', enable/disable type checker.
+--
+set_WELL_SORTED_CHECK :: Config -> Bool -> IO ()
+set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "MWELL_SORTED_CHECK" "true"
+set_WELL_SORTED_CHECK cfg False = setParamValue cfg "WELL_SORTED_CHECK" "false"
 
 ---------------------------------------------------------------------
 -- Context
