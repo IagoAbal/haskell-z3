@@ -65,84 +65,19 @@ instance Eq (Expr a) where
     = op1 == op2 && a1 == a2 && b1 == b2
   (RealArith op1 a1 b1) == (RealArith op2 a2 b2)
     = op1 == op2 && a1 == a2 && b1 == b2
-  (Cmp op1 a1 b1) == (Cmp op2 a2 b2)
-    | typeOf op1 == typeOf op2
-    = op1 == unsafeCoerce op2
-    && a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
+  (CmpE op1 a1 b1) == (CmpE op2 a2 b2)
+    | op1 == op2 && typeOf a1 == typeOf a2
+    = a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
+  (CmpI op1 a1 b1) == (CmpI op2 a2 b2)
+    | op1 == op2 && typeOf a1 == typeOf a2
+    = a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
   (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
   _e1 == _e2 = False
 
 
 -- * Constructing expressions
 
-infixl 7  //, %*, %%
-infix  4  ==*, /=*, <*, <=*, >=*, >*
-infixr 3  &&*, ||*, `xor`
-infixr 2  `implies`, `iff`, ==>, <=>
-
--- | /literal/ creation.
-literal :: Z3Scalar a => a -> Expr a
-literal = Lit
-
--- | Boolean Z3 literals
-true, false :: Expr Bool
-true = Lit True
-false = Lit False
-
--- | Boolean negation
-not_ :: Expr Bool -> Expr Bool
-not_ = Not
-
-xor, implies, (==>), iff, (<=>) :: Expr Bool -> Expr Bool -> Expr Bool
--- | Boolean binary /xor/
-xor = BoolBin Xor
--- | Boolean implication
-implies = BoolBin Implies
-(==>) = implies
--- | Boolean if and only if
-iff = BoolBin Iff
-(<=>) = iff
-
--- | Boolean polyadic and, or operations
-and_, or_ :: [Expr Bool] -> Expr Bool
-and_ = BoolMulti And
-or_ = BoolMulti Or
-
--- | Boolean binary /and/, /or/ operations
-(&&*), (||*) :: Expr Bool -> Expr Bool -> Expr Bool
-(BoolMulti And ps) &&* (BoolMulti And qs) = and_ (ps ++ qs)
-(BoolMulti And ps) &&* q = and_ (q:ps)
-p &&* (BoolMulti And qs) = and_ (p:qs)
-p &&* q = and_ [p,q]
-(BoolMulti Or ps) ||* (BoolMulti Or qs) = or_ (ps ++ qs)
-(BoolMulti Or ps) ||* q = or_ (q:ps)
-p ||* (BoolMulti Or qs) = or_ (p:qs)
-p ||* q = or_ [p,q]
-
--- | Integer division, modulo and remainder.
-(//), (%*), (%%) :: Z3Int a => Expr a -> Expr a -> Expr a
-(//) = IntArith Quot
-(%*) = IntArith Mod
-(%%) = IntArith Rem
-
--- | Equality 
-(==*), (/=*) :: Z3Type a => Expr a -> Expr a -> Expr Bool
-(==*) = Cmp Eq
-(/=*) = Cmp Neq
-
--- | Boolean comparison operations
-(<=*), (<*), (>=*), (>*) :: Z3Num a => Expr a -> Expr a -> Expr Bool
-(<=*) = Cmp Le
-(<*) = Cmp Lt
-(>=*) = Cmp Ge
-(>*) = Cmp Gt
-
--- | if-then-else
-ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
-ite = Ite
-
-
-instance Z3Num a => Num (Expr a) where
+instance IsNum a => Num (Expr a) where
   (CRingArith Add as) + (CRingArith Add bs) = CRingArith Add (as ++ bs)
   (CRingArith Add as) + b = CRingArith Add (b:as)
   a + (CRingArith Add bs) = CRingArith Add (a:bs)
@@ -158,6 +93,104 @@ instance Z3Num a => Num (Expr a) where
   signum e = ite (e >* 0) 1 (ite (e ==* 0) 0 (-1))
   fromInteger = literal . fromInteger
 
-instance Z3Real a => Fractional (Expr a) where
+instance IsReal a => Fractional (Expr a) where
   (/) = RealArith Div
   fromRational = literal . fromRational
+
+infixl 7  //, %*, %%
+infix  4  ==*, /=*, <*, <=*, >=*, >*
+infixr 3  &&*, ||*, `xor`
+infixr 2  `implies`, `iff`, ==>, <=>
+
+-- | /literal/ constructor.
+--
+literal :: IsScalar a => a -> Expr a
+literal = Lit
+
+-- | Boolean literals.
+--
+true, false :: Expr Bool
+true  = Lit True
+false = Lit False
+
+-- | Boolean negation
+--
+not_ :: Expr Bool -> Expr Bool
+not_ = Not
+
+xor, implies, (==>), iff, (<=>) :: Expr Bool -> Expr Bool -> Expr Bool
+-- | Boolean binary /xor/
+--
+xor = BoolBin Xor
+-- | Boolean implication
+--
+implies = BoolBin Implies
+-- | An alias for 'implies'.
+--
+(==>) = implies
+-- | Boolean if and only if
+--
+iff = BoolBin Iff
+-- | An alias for 'iff'.
+--
+(<=>) = iff
+
+and_, or_ :: [Expr Bool] -> Expr Bool
+-- | Boolean variadic /and/.
+--
+and_ = BoolMulti And
+-- | Boolean variadic /or/.
+--
+or_  = BoolMulti Or
+
+(&&*), (||*) :: Expr Bool -> Expr Bool -> Expr Bool
+-- | Boolean binary /and/.
+--
+(BoolMulti And ps) &&* (BoolMulti And qs) = and_ (ps ++ qs)
+(BoolMulti And ps) &&* q = and_ (q:ps)
+p &&* (BoolMulti And qs) = and_ (p:qs)
+p &&* q = and_ [p,q]
+-- | Boolean binary /or/.
+--
+(BoolMulti Or ps) ||* (BoolMulti Or qs) = or_ (ps ++ qs)
+(BoolMulti Or ps) ||* q = or_ (q:ps)
+p ||* (BoolMulti Or qs) = or_ (p:qs)
+p ||* q = or_ [p,q]
+
+(//), (%*), (%%) :: IsInt a => Expr a -> Expr a -> Expr a
+-- | Integer division.
+--
+(//) = IntArith Quot
+-- | Integer modulo.
+--
+(%*) = IntArith Mod
+-- | Integer remainder.
+--
+(%%) = IntArith Rem
+
+(==*), (/=*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
+-- | Equals.
+--
+(==*) = CmpE Eq
+-- | Not equals.
+--
+(/=*) = CmpE Neq
+
+(<=*), (<*), (>=*), (>*) :: IsNum a => Expr a -> Expr a -> Expr Bool
+-- | Less or equals than.
+--
+(<=*) = CmpI Le
+-- | Less than.
+--
+(<*) = CmpI Lt
+-- | Greater or equals than.
+--
+(>=*) = CmpI Ge
+-- | Greater than.
+--
+(>*) = CmpI Gt
+
+-- | /if-then-else/.
+--
+ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
+ite = Ite

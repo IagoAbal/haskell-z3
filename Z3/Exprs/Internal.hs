@@ -17,7 +17,7 @@ module Z3.Exprs.Internal where
 
 import Z3.Types
 
-import Data.Typeable ( Typeable1 )
+import Data.Typeable ( Typeable )
 
 
 -- | Unique identifiers
@@ -33,7 +33,8 @@ type Uniq = Int
           , CRingArith
           , IntArith
           , RealArith
-          , Cmp
+          , CmpE
+          , CmpI
           , Ite
           "You are using a constructor of type Expr, \
           \which you should NOT be using! \
@@ -43,35 +44,37 @@ type Uniq = Int
 -- | Abstract syntax
 --
 data Expr :: * -> * where
---  | Literals
-  Lit :: Z3Scalar a => a -> Expr a
---  | Constants
+  --  | Literals
+  Lit :: IsScalar a => a -> Expr a
+  --  | Constants
   Const :: !Uniq -> Expr a
---  | Logical negation
+  --  | Logical negation
   Not :: Expr Bool -> Expr Bool
---  | Binary boolean expressions
+  --  | Binary boolean expressions
   BoolBin :: BoolBinOp -> Expr Bool -> Expr Bool -> Expr Bool
---  | Variadic boolean expressions
+  --  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
---  | Arithmetic negation
-  Neg :: Z3Num a => Expr a -> Expr a
---  | Arithmetic expressions for commutative rings
-  CRingArith :: Z3Num a => CRingOp -> [Expr a] -> Expr a
---  | Integer arithmetic
-  IntArith :: Z3Int a => IntOp -> Expr a -> Expr a -> Expr a
---  | Real arithmetic
-  RealArith :: Z3Real a => RealOp -> Expr a -> Expr a -> Expr a
---  | Comparison expressions
-  Cmp :: Z3Type a => CmpOp a -> Expr a -> Expr a -> Expr Bool
---  | if-then-else expressions
-  Ite :: Z3Type a => Expr Bool -> Expr a -> Expr a -> Expr a
+  --  | Arithmetic negation
+  Neg :: IsNum a => Expr a -> Expr a
+  --  | Arithmetic expressions for commutative rings
+  CRingArith :: IsNum a => CRingOp -> [Expr a] -> Expr a
+  --  | Integer arithmetic
+  IntArith :: IsInt a => IntOp -> Expr a -> Expr a -> Expr a
+  --  | Real arithmetic
+  RealArith :: IsReal a => RealOp -> Expr a -> Expr a -> Expr a
+  --  | Comparison expressions
+  CmpE :: IsScalar a => CmpOpE -> Expr a -> Expr a -> Expr Bool
+  CmpI :: IsNum a => CmpOpI -> Expr a -> Expr a -> Expr Bool
+  --  | if-then-else expressions
+  Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
 
 {-# WARNING BoolBinOp
           , BoolMultiOp
           , CRingOp
           , IntOp
           , RealOp
-          , CmpOp
+          , CmpOpE
+          , CmpOpI
           "You should NOT be using this type or data constructor! \
           \In fact, you should not be importing this \
           \module at all! Import Z3.Exprs instead!" #-}
@@ -96,15 +99,10 @@ data IntOp = Quot | Mod | Rem
 data RealOp = Div
     deriving (Eq,Show)
 
--- | Comparison operations.
-data CmpOp :: * -> * where
-  Eq  :: Z3Type a => CmpOp a
-  Neq :: Z3Type a => CmpOp a
-  Le  :: Z3Num a => CmpOp a
-  Lt  :: Z3Num a => CmpOp a
-  Ge  :: Z3Num a => CmpOp a
-  Gt  :: Z3Num a => CmpOp a
+-- | Equality testing.
+data CmpOpE = Eq | Neq
+    deriving (Eq, Show, Typeable)
 
-deriving instance Eq (CmpOp a)
-deriving instance Show (CmpOp a)
-deriving instance Typeable1 CmpOp
+-- | Inequality comparisons.
+data CmpOpI = Le | Lt | Ge | Gt
+    deriving (Eq, Show, Typeable)
