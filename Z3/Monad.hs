@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 {-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 
 {-# LANGUAGE ExistentialQuantification #-}
@@ -19,7 +20,6 @@
 module Z3.Monad (
     -- * Z3 Monad
       Z3
-    , Z3State
     , evalZ3
 
     -- * Z3 actions
@@ -43,7 +43,7 @@ import qualified Data.IntMap as Map
 ---------------------------------------------------------------------
 -- The Z3 Monad
 
--- | Z3 Monad type
+-- | Z3 monad.
 --
 newtype Z3 a = Z3 (StateT Z3State IO a)
     deriving (Functor, Monad)
@@ -56,15 +56,15 @@ instance MonadState Z3State Z3 where
 --
 data AnyAST = forall a. Z3Type a => AnyAST (Base.AST a)
 
--- | Z3 monad State type.
+-- | Internal state of Z3 monad.
 --
 data Z3State
-    = Z3State { uniqVal   :: Uniq
+    = Z3State { uniqVal   :: !Uniq
               , context   :: Base.Context
               , consts    :: Map.IntMap AnyAST
               }
 
--- | evalStateT with empty initial state for the Z3 Monad
+-- | Eval a Z3 script.
 --
 evalZ3 :: Z3 a -> IO a
 evalZ3 (Z3 s) = do
@@ -77,7 +77,7 @@ evalZ3 (Z3 s) = do
                          , consts    = Map.empty
                          }
 
--- | Fresh string
+-- | Fresh symbol name.
 --
 fresh :: Z3 (Uniq, String)
 fresh = do
@@ -86,14 +86,14 @@ fresh = do
     put st { uniqVal = i + 1 }
     return (uniqVal st, 'v':show i)
 
--- | Add a constant of type AST a to the state.
+-- | Add a constant of type @Base.AST a@ to the state.
 --
 addConst :: (Z3Type a) => Uniq -> Base.AST a -> Z3 ()
 addConst u expr = do
     st <- get
     put st { consts = Map.insert u (AnyAST expr) (consts st) }
 
--- | Get a Base.AST stored in the Z3State
+-- | Get a 'Base.AST' stored in the Z3State.
 --
 getConst :: forall a. (Z3Type a) => Uniq -> Z3 (Maybe (Base.AST a))
 getConst u = liftM mlookup (gets consts)
@@ -108,13 +108,13 @@ getConst u = liftM mlookup (gets consts)
 decl :: forall a. Z3Type a => Z3 (Expr a)
 decl = do
     ctx <- gets context
-    (u, str) <-  fresh
+    (u, str) <- fresh
     smb <- mkStringSymbol_ ctx str
     (srt :: Base.Sort a) <- mkSort_ ctx
     addConst u =<< mkConst_ ctx smb srt
     return $ Const u
 
--- | Make assertion in current context
+-- | Make assertion in current context.
 --
 assert :: Expr Bool -> Z3 ()
 assert = join . liftM2 assertCnstr_ (gets context) . compile
@@ -127,7 +127,7 @@ let_ e = do
   assert (aux ==* e)
   return aux
 
--- | Check current context
+-- | Check current context.
 --
 check :: Z3 (Maybe Bool)
 check = liftM fromResult . check_ =<< gets context
@@ -136,7 +136,7 @@ check = liftM fromResult . check_ =<< gets context
           fromResult Base.Sat   = Just True
           fromResult _          = Nothing
 
--- | Create a Base.AST from a Expr
+-- | Create a 'Base.AST' from a 'Expr'.
 --
 compile :: Z3Type a => Expr a -> Z3 (Base.AST a)
 compile (Lit a)
@@ -197,9 +197,9 @@ check_ = Z3 . lift . Base.check
 
 mkBoolBin_ :: Base.Context -> BoolBinOp ->
     Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkBoolBin_ ctx Xor b1 = Z3 . lift . Base.mkXor ctx b1
+mkBoolBin_ ctx Xor     b1 = Z3 . lift . Base.mkXor ctx b1
 mkBoolBin_ ctx Implies b1 = Z3 . lift . Base.mkImplies ctx b1
-mkBoolBin_ ctx Iff b1 = Z3 . lift . Base.mkIff ctx b1
+mkBoolBin_ ctx Iff     b1 = Z3 . lift . Base.mkIff ctx b1
 
 mkBoolMulti_ :: Base.Context -> BoolMultiOp ->
     [Base.AST Bool] -> Z3 (Base.AST Bool)
