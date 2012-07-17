@@ -22,6 +22,9 @@ module Z3.Monad (
       Z3
     , evalZ3
 
+    -- * Satisfiability result
+    , Base.Result(..)
+
     -- * Z3 actions
     , decl
     , assert
@@ -129,18 +132,14 @@ let_ e = do
 
 -- | Check current context.
 --
-check :: Z3 (Maybe Bool)
-check = liftM fromResult . check_ =<< gets context
-    where fromResult :: Base.Result -> Maybe Bool
-          fromResult Base.Unsat = Just False
-          fromResult Base.Sat   = Just True
-          fromResult _          = Nothing
+check :: Z3 Base.Result
+check = check_ =<< gets context
 
 -- | Create a 'Base.AST' from a 'Expr'.
 --
-compile :: Z3Type a => Expr a -> Z3 (Base.AST a)
+compile :: IsTy a => Expr a -> Z3 (Base.AST (TypeZ3 a))
 compile (Lit a)
-    = flip mkLiteral_ a =<< gets context
+    = flip mkLiteral_ (toZ3Type a) =<< gets context
 compile (Const u)
     = liftM (fromMaybe $ error uNDEFINED_CONST) $ getConst u
 compile (Not b)
@@ -174,7 +173,12 @@ compile (RealArith op e1 e2)
          e1' <- compile e1
          e2' <- compile e2
          mkRealArith_ ctx op e1' e2'
-compile (Cmp op e1 e2)
+compile (CmpE op e1 e2)
+    = do ctx <- gets context
+         e1' <- compile e1
+         e2' <- compile e2
+         mkEq_ ctx op e1' e2'
+compile (CmpI op e1 e2)
     = do ctx <- gets context
          e1' <- compile e1
          e2' <- compile e2
@@ -195,6 +199,15 @@ assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
 check_ :: Base.Context -> Z3 Base.Result
 check_ = Z3 . lift . Base.check
 
+mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
+mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
+
+mkLiteral_ :: forall a. Base.Z3Scalar a => Base.Context -> a -> Z3 (Base.AST a)
+mkLiteral_ ctx = Z3 . lift . Base.mkValue ctx
+
+mkNot_ :: Base.Context -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkNot_ ctx = Z3 . lift . Base.mkNot ctx
+
 mkBoolBin_ :: Base.Context -> BoolBinOp ->
     Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
 mkBoolBin_ ctx Xor     b1 = Z3 . lift . Base.mkXor ctx b1
@@ -206,71 +219,53 @@ mkBoolMulti_ :: Base.Context -> BoolMultiOp ->
 mkBoolMulti_ ctx And = Z3 . lift . Base.mkAnd ctx
 mkBoolMulti_ ctx Or  = Z3 . lift . Base.mkAnd ctx
 
-mkCmp_ :: (Z3Type a) => Base.Context -> CmpOp a ->
+mkEq_ :: Base.Z3Scalar a => Base.Context -> CmpOpE ->
     Base.AST a -> Base.AST a -> Z3 (Base.AST Bool)
-mkCmp_ ctx Eq  e1 = Z3 . lift . Base.mkEq ctx e1
-mkCmp_ ctx Neq e1 = Z3 . lift . (Base.mkNot ctx <=< Base.mkEq ctx e1)
-mkCmp_ ctx Le  e1 = Z3 . lift . Base.mkLe ctx e1
-mkCmp_ ctx Lt  e1 = Z3 . lift . Base.mkLt ctx e1
-mkCmp_ ctx Ge  e1 = Z3 . lift . Base.mkGe ctx e1
-mkCmp_ ctx Gt  e1 = Z3 . lift . Base.mkGt ctx e1
+mkEq_ ctx Eq  e1 = Z3 . lift . Base.mkEq ctx e1
+mkEq_ ctx Neq e1 = Z3 . lift . (Base.mkNot ctx <=< Base.mkEq ctx e1)
 
-mkConst_ :: Base.Context -> Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
+mkCmp_ :: Base.Z3Num a => Base.Context -> CmpOpI ->
+    Base.AST a -> Base.AST a -> Z3 (Base.AST Bool)
+mkCmp_ ctx Le e1 = Z3 . lift . Base.mkLe ctx e1
+mkCmp_ ctx Lt e1 = Z3 . lift . Base.mkLt ctx e1
+mkCmp_ ctx Ge e1 = Z3 . lift . Base.mkGe ctx e1
+mkCmp_ ctx Gt e1 = Z3 . lift . Base.mkGt ctx e1
+
+mkConst_ :: Base.Z3Type a => Base.Context
+              -> Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
 mkConst_ ctx smb = Z3 . lift . Base.mkConst ctx smb
 
-mkCRingArith_ :: Z3Num a => Base.Context -> CRingOp ->
-    [Base.AST a] -> Z3 (Base.AST a)
+mkUnaryMinus_ :: Base.Z3Num a => Base.Context -> Base.AST a -> Z3 (Base.AST a)
+mkUnaryMinus_ ctx = Z3 . lift . Base.mkUnaryMinus ctx
+
+mkCRingArith_ :: Base.Z3Num a => Base.Context
+                    -> CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
 mkCRingArith_ ctx Add = Z3 . lift . Base.mkAdd ctx
 mkCRingArith_ ctx Mul = Z3 . lift . Base.mkMul ctx
 mkCRingArith_ ctx Sub = Z3 . lift . Base.mkSub ctx
 
-mkIntArith_ :: Z3Int a => Base.Context -> IntOp ->
-    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIntArith_ :: Base.Context
+                -> IntOp
+                -> Base.AST Integer -> Base.AST Integer
+                -> Z3 (Base.AST Integer)
 mkIntArith_ ctx Quot e1 = Z3 . lift . Base.mkDiv ctx e1
 mkIntArith_ ctx Mod  e1 = Z3 . lift . Base.mkMod ctx e1
 mkIntArith_ ctx Rem  e1 = Z3 . lift . Base.mkRem ctx e1
 
-mkIte_ :: Base.Context -> Base.AST Bool ->
-    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
-mkIte_ ctx b e1 = Z3 . lift . Base.mkIte ctx b e1
-
-
-mkRealArith_ :: Z3Real a => Base.Context -> RealOp ->
-    Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkRealArith_ :: Base.Context
+                  -> RealOp
+                  -> Base.AST Rational -> Base.AST Rational
+                  -> Z3 (Base.AST Rational)
 mkRealArith_ ctx Div e1 = Z3 . lift . Base.mkDiv ctx e1
 
-mkSort_ :: forall a. Z3Type a => Base.Context -> Z3 (Base.Sort a) 
-mkSort_
-    | SBool <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkBoolSort
-    | SInt  <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkIntSort
-    | SReal <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkRealSort
-    | otherwise                    = error pANIC_SORTS 
-
-mkLiteral_ :: forall a. Z3Type a => Base.Context -> a -> Z3 (Base.AST a)
-mkLiteral_ ctx
-    | SBool <- sortZ3 (TY :: TY a) = mkBool_
-    | SInt  <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkInt  ctx
-    | SReal <- sortZ3 (TY :: TY a) = Z3 . lift . Base.mkReal ctx
-    | otherwise                    = error pANIC_SORTS 
-    where mkBool_ :: Bool -> Z3 (Base.AST Bool)
-          mkBool_ True  = Z3 . lift $ Base.mkTrue ctx
-          mkBool_ False = Z3 . lift $ Base.mkFalse ctx
-
-mkNot_ :: Base.Context -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkNot_ ctx = Z3 . lift . Base.mkNot ctx
-
-mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
-mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
-
-mkUnaryMinus_ :: (Z3Num a) => Base.Context -> Base.AST a -> Z3 (Base.AST a)
-mkUnaryMinus_ ctx = Z3 . lift . Base.mkUnaryMinus ctx
+mkIte_ :: Base.Context
+            -> Base.AST Bool
+            -> Base.AST a -> Base.AST a
+            -> Z3 (Base.AST a)
+mkIte_ ctx b e1 = Z3 . lift . Base.mkIte ctx b e1
 
 ---------------------------------------------------------------------
 -- Error messages
-
-pANIC_SORTS :: String
-pANIC_SORTS = "Panic! A type of class Z3Type is not instance\
-    \of the corresponding subclass (Z3Int, Z3Real, ...)"
 
 uNDEFINED_CONST :: String
 uNDEFINED_CONST = "Panic! Undefined constant or unexpected\
