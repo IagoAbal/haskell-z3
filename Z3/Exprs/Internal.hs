@@ -21,6 +21,7 @@ import Data.Typeable ( Typeable1 )
 
 
 -- | Unique identifiers
+--
 type Uniq = Int
 
 {-# WARNING Lit
@@ -38,8 +39,9 @@ type Uniq = Int
           \which you should NOT be using! \
           \In fact, you should not be importing this \
           \module at all! Import Z3.Exprs instead!" #-}
- 
+
 -- | Abstract syntax
+--
 data Expr :: * -> * where
 --  | Literals
   Lit :: Z3Scalar a => a -> Expr a
@@ -78,7 +80,7 @@ data Expr :: * -> * where
 data BoolBinOp = Xor | Implies | Iff
     deriving (Eq,Show)
 
--- | Boolean polyadic operations.
+-- | Boolean variadic operations.
 data BoolMultiOp = And | Or
     deriving (Eq,Show)
 

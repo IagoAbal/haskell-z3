@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- |
 -- Module    : Z3.Base
@@ -196,6 +197,7 @@ data Result
     deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
 -- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
+--
 toResult :: Z3_lbool -> Result
 toResult lb
     | lb == z3_l_true  = Sat
@@ -230,6 +232,8 @@ mkConfig = do
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga001ade87a1671fe77d7e53ed0f4f1ec3>
 --
+-- See: <http://research.microsoft.com/en-us/um/redmond/projects/z3/config.html>
+--
 setParamValue :: Config -> String -> String -> IO ()
 setParamValue cfg s1 s2 =
     withForeignPtr (unConfig cfg) $ \cfgPtr ->
@@ -237,10 +241,18 @@ setParamValue cfg s1 s2 =
     withCString s2                $ \cs2 ->
         z3_set_param_value cfgPtr cs1 cs2
 
+-- | Set the /MODEL/ configuration parameter.
+--
+-- default: 'True', enable/disable model construction.
+--
 set_MODEL :: Config -> Bool -> IO ()
 set_MODEL cfg True  = setParamValue cfg "MODEL" "true"
 set_MODEL cfg False = setParamValue cfg "MODEL" "false"
 
+-- | Set the /MODEL_PARTIAL/ configuration parameter.
+--
+-- default: 'False', enable/disable partial function interpretations.
+--
 set_MODEL_PARTIAL :: Config -> Bool -> IO ()
 set_MODEL_PARTIAL cfg True  = setParamValue cfg "MODEL_PARTIAL" "true"
 set_MODEL_PARTIAL cfg False = setParamValue cfg "MODEL_PARTIAL" "false"

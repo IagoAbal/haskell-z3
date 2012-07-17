@@ -1,5 +1,5 @@
-{-# OPTIONS_GHC -fno-warn-orphans
-                -fno-warn-warnings-deprecations #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs              #-}
@@ -7,8 +7,8 @@
 
 -- |
 -- Module    : Z3.Exprs
--- Copyright : (c) Iago Abal, 2011 
---             (c) David Castro, 2011
+-- Copyright : (c) Iago Abal, 2012
+--             (c) David Castro, 2012
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
@@ -45,6 +45,7 @@ import Z3.Types
 
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
+
 
 deriving instance Show (Expr a)
 deriving instance Typeable1 Expr
