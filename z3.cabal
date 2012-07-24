@@ -1,5 +1,5 @@
 Name:                z3
-Version:             0.1.0
+Version:             0.1.1
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:         
     Bindings for the Z3 Theorem Prover.
@@ -12,17 +12,21 @@ Description:
     More information about Z3:
     .
     * <http://research.microsoft.com/en-us/um/redmond/projects/z3/>
-Homepage:            
+Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE
-Author:              Iago Abal <iago.abal@gmail.com>
+Author:              Iago Abal <iago.abal@gmail.com>,
                      David Castro <david.castro.dcp@gmail.com>
-Maintainer:          Iago Abal <iago.abal@gmail.com>
+Maintainer:          Iago Abal <iago.abal@gmail.com>,
                      David Castro <david.castro.dcp@gmail.com>
 Copyright:           2012, Iago Abal, David Castro
 Category:            Math, Theorem Provers, Formal Methods
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >= 1.6
+
+source-repository head
+  type:     mercurial
+  location: https://bitbucket.org/iago/z3-haskell
 
 Library
     Exposed-modules: 
