@@ -88,12 +88,12 @@ class (IsScalar a, Num a, Z3Num (TypeZ3 a)) => IsNum a where
 instance IsNum Integer where
 instance IsNum Rational where
 
--- | Typeclass for Haskell Z3 numbers of 'int' sort in Z3.
+-- | Typeclass for Haskell Z3 numbers of /int/ sort in Z3.
 --
 class (IsNum a, Integral a, TypeZ3 a ~ Integer) => IsInt a where
 instance IsInt Integer where
 
--- | Typeclass for Haskell Z3 numbers of 'real' sort in Z3.
+-- | Typeclass for Haskell Z3 numbers of /real/ sort in Z3.
 --
 class (IsNum a, Fractional a, Real a, TypeZ3 a ~ Rational) => IsReal a where
 instance IsReal Rational where

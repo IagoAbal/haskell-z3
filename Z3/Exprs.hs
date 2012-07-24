@@ -12,6 +12,7 @@
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
+-- Stability : experimental
 
 -- TODO: Pretty-printing of expressions
 
@@ -118,76 +119,90 @@ false = Lit False
 not_ :: Expr Bool -> Expr Bool
 not_ = Not
 
-xor, implies, (==>), iff, (<=>) :: Expr Bool -> Expr Bool -> Expr Bool
--- | Boolean binary /xor/
+-- | Boolean binary /xor/.
 --
+xor :: Expr Bool -> Expr Bool -> Expr Bool
 xor = BoolBin Xor
 -- | Boolean implication
 --
+implies :: Expr Bool -> Expr Bool -> Expr Bool
 implies = BoolBin Implies
 -- | An alias for 'implies'.
 --
+(==>) :: Expr Bool -> Expr Bool -> Expr Bool
 (==>) = implies
--- | Boolean if and only if
+-- | Boolean /if and only if/.
 --
+iff :: Expr Bool -> Expr Bool -> Expr Bool
 iff = BoolBin Iff
 -- | An alias for 'iff'.
 --
+(<=>) :: Expr Bool -> Expr Bool -> Expr Bool
 (<=>) = iff
 
-and_, or_ :: [Expr Bool] -> Expr Bool
 -- | Boolean variadic /and/.
 --
+and_ :: [Expr Bool] -> Expr Bool
 and_ = BoolMulti And
 -- | Boolean variadic /or/.
 --
+or_ :: [Expr Bool] -> Expr Bool
 or_  = BoolMulti Or
 
-(&&*), (||*) :: Expr Bool -> Expr Bool -> Expr Bool
 -- | Boolean binary /and/.
 --
+(&&*) :: Expr Bool -> Expr Bool -> Expr Bool
 (BoolMulti And ps) &&* (BoolMulti And qs) = and_ (ps ++ qs)
 (BoolMulti And ps) &&* q = and_ (q:ps)
 p &&* (BoolMulti And qs) = and_ (p:qs)
 p &&* q = and_ [p,q]
 -- | Boolean binary /or/.
 --
+(||*) :: Expr Bool -> Expr Bool -> Expr Bool
 (BoolMulti Or ps) ||* (BoolMulti Or qs) = or_ (ps ++ qs)
 (BoolMulti Or ps) ||* q = or_ (q:ps)
 p ||* (BoolMulti Or qs) = or_ (p:qs)
 p ||* q = or_ [p,q]
 
-(//), (%*), (%%) :: IsInt a => Expr a -> Expr a -> Expr a
 -- | Integer division.
 --
+(//) :: IsInt a => Expr a -> Expr a -> Expr a
 (//) = IntArith Quot
 -- | Integer modulo.
 --
+(%*) :: IsInt a => Expr a -> Expr a -> Expr a
 (%*) = IntArith Mod
 -- | Integer remainder.
 --
+(%%) :: IsInt a => Expr a -> Expr a -> Expr a
 (%%) = IntArith Rem
 
-(==*), (/=*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
+
 -- | Equals.
 --
+(==*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
 (==*) = CmpE Eq
 -- | Not equals.
 --
+(/=*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
 (/=*) = CmpE Neq
 
-(<=*), (<*), (>=*), (>*) :: IsNum a => Expr a -> Expr a -> Expr Bool
+
 -- | Less or equals than.
 --
+(<=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<=*) = CmpI Le
 -- | Less than.
 --
+(<*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<*) = CmpI Lt
 -- | Greater or equals than.
 --
+(>=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>=*) = CmpI Ge
 -- | Greater than.
 --
+(>*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>*) = CmpI Gt
 
 -- | /if-then-else/.

@@ -11,6 +11,9 @@
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
+--
+-- Medium-level bindings, highly inspired by yices-painless.
+--
 
 module Z3.Base (
 

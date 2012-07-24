@@ -2,7 +2,16 @@ Name:                z3
 Version:             0.0.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:         
-    TODO
+    Bindings for the Z3 Theorem Prover.
+    .
+    This package is still a work in progress. Low and medium-level bindings
+    to the Z3 API are provided ("Z3.Base.C" and "Z3.Base") in the spirit
+    of yices-painless. These APIs are still incomplete but usable.
+    The high-level API ("Z3.Monad") is still very experimental.
+    .
+    More information about Z3:
+    .
+    * <http://research.microsoft.com/en-us/um/redmond/projects/z3/>
 Homepage:            
 License:             BSD3
 License-file:        LICENSE

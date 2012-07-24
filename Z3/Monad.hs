@@ -16,6 +16,7 @@
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
+-- Stability : experimental
 
 
 module Z3.Monad (

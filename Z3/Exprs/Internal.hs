@@ -11,6 +11,7 @@
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>, 
 --             David Castro <david.castro.dcp@gmail.com>
+-- Stability : experimental
 
 module Z3.Exprs.Internal where
 
@@ -41,7 +42,7 @@ type Uniq = Int
           \In fact, you should not be importing this \
           \module at all! Import Z3.Exprs instead!" #-}
 
--- | Abstract syntax
+-- | Abstract syntax.
 --
 data Expr :: * -> * where
   --  | Literals
