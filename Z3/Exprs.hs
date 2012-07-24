@@ -10,7 +10,7 @@
 -- Copyright : (c) Iago Abal, 2012
 --             (c) David Castro, 2012
 -- License   : BSD3
--- Maintainer: Iago Abal <iago.abal@gmail.com>, 
+-- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
 
