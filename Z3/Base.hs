@@ -103,15 +103,14 @@ module Z3.Base (
     ) where
 
 import Z3.Base.C
-import Z3.Types.TY
+import Z3.Lang.TY
 
 import Control.Applicative ( (<$>) )
 import Control.Monad ( liftM2 )
-import Data.Typeable ( Typeable )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
-import Data.Word
 import Data.Typeable ( Typeable, typeOf )
+import Data.Word
 import Foreign hiding ( newForeignPtr, toBool )
 import Foreign.C
   ( CInt, CUInt, CLLong, CULLong

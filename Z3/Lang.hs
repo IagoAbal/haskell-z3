@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 
 -- |
--- Module    : Z3.Exprs
+-- Module    : Z3.Lang
 -- Copyright : (c) Iago Abal, 2012
 --             (c) David Castro, 2012
 -- License   : BSD3
@@ -16,12 +16,10 @@
 
 -- TODO: Pretty-printing of expressions
 
-module Z3.Exprs (
+module Z3.Lang (
 
-    module Z3.Types
-    
     -- * Abstract syntax
-    , Expr
+      Expr
 
     -- * Constructing expressions
     , true
@@ -38,15 +36,24 @@ module Z3.Exprs (
     , (>=*), (>*) 
     , ite
 
+    -- * Z3 Monad
+    , Z3
+
+    , var
+    , assert
+    , let_
+    , check
+
     ) where
 
 
-import Z3.Exprs.Internal
-import Z3.Types
+import qualified Z3.Base as Base
+import Z3.Lang.Bool ()
+import Z3.Lang.Monad
 
+import Control.Monad.State
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
-
 
 deriving instance Show (Expr a)
 deriving instance Typeable1 Expr
@@ -209,3 +216,38 @@ p ||* q = or_ [p,q]
 --
 ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
 ite = Ite
+
+
+---------------------------------------------------------------------
+-- Constructing expressions
+
+-- | Declare skolem variables.
+--
+var :: forall a. IsTy a => Z3 (Expr a)
+var = do
+    ctx <- gets context
+    (u, str) <- fresh
+    smb <- mkStringSymbol_ ctx str
+    (srt :: Base.Sort (TypeZ3 a)) <- mkSort_ ctx
+    addConst u =<< mkConst_ ctx smb srt
+    return $ Const u
+
+-- | Make assertion in current context.
+--
+assert :: Expr Bool -> Z3 ()
+assert = join . liftM2 assertCnstr_ (gets context) . compile
+
+-- | Introduce an auxiliary declaration to name a given expression.
+--
+-- If you really want sharing use this instead of Haskell's /let/.
+--
+let_ :: IsScalar a => Expr a -> Z3 (Expr a)
+let_ e = do
+  aux <- var
+  assert (aux ==* e)
+  return aux
+
+-- | Check current context.
+--
+check :: Z3 Base.Result
+check = check_ =<< gets context

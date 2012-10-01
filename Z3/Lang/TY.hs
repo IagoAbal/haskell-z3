@@ -2,14 +2,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 -- |
--- Module    : Z3.Types.TY
+-- Module    : Z3.Lang.TY
 -- Copyright : (c) Iago Abal, 2012
 --             (c) David Castro, 2012
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 
-module Z3.Types.TY where
+module Z3.Lang.TY where
 
 
 import Data.Data ( Data, Typeable )

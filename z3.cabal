@@ -34,15 +34,13 @@ Library
         Z3.Base
         Z3.Base.C 
 
-        Z3.Exprs
-
-        Z3.Monad
-
-        Z3.Types
+        Z3.Lang
+        Z3.Lang.Monad
+        Z3.Lang.Bool
 
     Other-modules:
         
-        Z3.Exprs.Internal
+        Z3.Lang.TY
 
     ghc-options: -Wall
 
