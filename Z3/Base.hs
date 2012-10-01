@@ -738,27 +738,20 @@ getNumeralString c a = withForeignPtr (unContext c) $ \ctxPtr ->
 getInt :: Num a => Context -> AST Integer -> IO a
 getInt c a = fromInteger . read <$> getNumeralString c a
 
--- | Return the numerator (as a numeral AST) of a numeral AST of sort /real/. 
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga69564aaa9f2a76556b54f5bbff8e7175>
---
-getNumerator :: Context -> AST Rational -> IO Integer
-getNumerator c a = withForeignPtr (unContext c) $ \ctxPtr ->
-  z3_get_numerator ctxPtr (unAST a) >>= getInt c . AST
-
--- | Return the denominator (as a numeral AST) of a numeral AST of sort /real/. 
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga25e5269d6845bb8ae03b551f09f5d46d>
---
-getDenominator :: Context -> AST Rational -> IO Integer
-getDenominator c a = withForeignPtr (unContext c) $ \ctxPtr ->
-  z3_get_denominator ctxPtr (unAST a) >>= getInt c . AST
-
 -- | Return 'Z3Real' value
 --
 getReal :: Fractional a => Context -> AST Rational -> IO a
-getReal c a = fromRational <$>
-  liftM2 (%) (getNumerator c a) (getDenominator c a)
+getReal c a = fromRational . parse <$> getNumeralString c a
+  where parse :: String -> Rational
+        parse s
+          | [(i, sj)] <- reads s = i % parseDen (dropWhile (== ' ') sj)
+          | otherwise            = error "Z3.Base.getReal: no parse"
+
+        parseDen :: String -> Integer
+        parseDen ""       = 1
+        parseDen ('/':sj) = read sj
+        parseDen _        = error "Z3.Base.getReal: no parse"
+        
 
 -- TODO Modifiers
 
