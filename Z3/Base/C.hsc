@@ -415,20 +415,6 @@ foreign import ccall unsafe "Z3_get_bool_value"
 foreign import ccall unsafe "Z3_get_numeral_string"
     z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
 
--- | Return the numerator (as a numeral AST) of a numeral AST of sort Int.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga69564aaa9f2a76556b54f5bbff8e7175>
---
-foreign import ccall unsafe "Z3_get_numerator"
-    z3_get_numerator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
-
--- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga25e5269d6845bb8ae03b551f09f5d46d>
---
-foreign import ccall unsafe "Z3_get_denominator"
-    z3_get_denominator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
-
 -- TODO Modifiers
 
 ---------------------------------------------------------------------
