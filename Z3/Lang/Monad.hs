@@ -49,22 +49,22 @@ module Z3.Lang.Monad (
     , getConst
 
     -- ** Lifted Z3.Base functions
-    , assertCnstr_
-    , check_
-    , mkSort_
-    , mkStringSymbol_
-    , mkLiteral_
-    , mkNot_
-    , mkBoolBin_
-    , mkBoolMulti_
-    , mkEq_
-    , mkCmp_
-    , mkConst_
-    , mkUnaryMinus_
-    , mkCRingArith_
-    , mkIntArith_
-    , mkRealArith_
-    , mkIte_
+    , assertCnstr
+    , check
+    , mkSort
+    , mkStringSymbol
+    , mkLiteral
+    , mkNot
+    , mkBoolBin
+    , mkBoolMulti
+    , mkEq
+    , mkCmp
+    , mkConst
+    , mkUnaryMinus
+    , mkCRingArith
+    , mkIntArith
+    , mkRealArith
+    , mkIte
     
     -- * Satisfiability result
     , Base.Result(..)
@@ -247,80 +247,80 @@ getConst u = liftM mlookup $ gets consts
 ---------------------------------------------------------------------
 -- Lifted Base functions
 
-assertCnstr_ :: Base.Context -> Base.AST Bool -> Z3 ()
-assertCnstr_ ctx = Z3 . lift . Base.assertCnstr ctx
+assertCnstr :: Base.AST Bool -> Z3 ()
+assertCnstr b = Z3 . lift . (flip Base.assertCnstr b) =<< gets context
 
-check_ :: Base.Context -> Z3 Base.Result
-check_ = Z3 . lift . Base.check
+check :: Z3 Base.Result
+check = Z3 . lift . Base.check =<< gets context
 
-mkSort_ :: Base.Z3Type a => Base.Context -> Z3 (Base.Sort a)
-mkSort_ = Z3 . lift . Base.mkSort
+mkSort :: Base.Z3Type a => Z3 (Base.Sort a)
+mkSort = Z3 . lift . Base.mkSort =<< gets context
 
+mkStringSymbol:: String -> Z3 Base.Symbol
+mkStringSymbol s = Z3 . lift . (flip Base.mkStringSymbol s) =<< gets context
 
-mkStringSymbol_ :: Base.Context -> String -> Z3 Base.Symbol
-mkStringSymbol_ ctx = Z3 . lift . Base.mkStringSymbol ctx
+mkLiteral:: forall a. Base.Z3Scalar a => a -> Z3 (Base.AST a)
+mkLiteral l = Z3 . lift . flip Base.mkValue l =<< gets context
 
-mkLiteral_ :: forall a. Base.Z3Scalar a => Base.Context -> a -> Z3 (Base.AST a)
-mkLiteral_ ctx = Z3 . lift . Base.mkValue ctx
+mkNot:: Base.AST Bool -> Z3 (Base.AST Bool)
+mkNot b = Z3 . lift . flip Base.mkNot b =<< gets context
 
-mkNot_ :: Base.Context -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkNot_ ctx = Z3 . lift . Base.mkNot ctx
+mkBoolBin:: BoolBinOp -> Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkBoolBin Xor     b1 b2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkXor ctx b1 b2
+mkBoolBin Implies b1 b2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkImplies ctx b1 b2
+mkBoolBin Iff     b1 b2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkIff ctx b1 b2
 
-mkBoolBin_ :: Base.Context -> BoolBinOp ->
-    Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkBoolBin_ ctx Xor     b1 = Z3 . lift . Base.mkXor ctx b1
-mkBoolBin_ ctx Implies b1 = Z3 . lift . Base.mkImplies ctx b1
-mkBoolBin_ ctx Iff     b1 = Z3 . lift . Base.mkIff ctx b1
+mkBoolMulti:: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
+mkBoolMulti And bs = Z3 . lift . flip Base.mkAnd bs =<< gets context
+mkBoolMulti Or  bs = Z3 . lift . flip Base.mkOr  bs =<< gets context
 
-mkBoolMulti_ :: Base.Context -> BoolMultiOp ->
-    [Base.AST Bool] -> Z3 (Base.AST Bool)
-mkBoolMulti_ ctx And = Z3 . lift . Base.mkAnd ctx
-mkBoolMulti_ ctx Or  = Z3 . lift . Base.mkAnd ctx
+mkEq:: Base.Z3Scalar a => CmpOpE
+                            -> Base.AST a -> Base.AST a
+                            -> Z3 (Base.AST Bool)
+mkEq Eq  e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkEq ctx e1 e2
+mkEq Neq e1 e2 = gets context >>= \ctx ->
+  Z3 $ lift $ (Base.mkNot ctx =<< Base.mkEq ctx e1 e2)
 
-mkEq_ :: Base.Z3Scalar a => Base.Context -> CmpOpE ->
-    Base.AST a -> Base.AST a -> Z3 (Base.AST Bool)
-mkEq_ ctx Eq  e1 = Z3 . lift . Base.mkEq ctx e1
-mkEq_ ctx Neq e1 = Z3 . lift . (Base.mkNot ctx <=< Base.mkEq ctx e1)
+mkCmp:: Base.Z3Num a => CmpOpI
+                          -> Base.AST a -> Base.AST a
+                          -> Z3 (Base.AST Bool)
+mkCmp Le e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkLe ctx e1 e2
+mkCmp Lt e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkLt ctx e1 e2
+mkCmp Ge e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkGe ctx e1 e2
+mkCmp Gt e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkGt ctx e1 e2
 
-mkCmp_ :: Base.Z3Num a => Base.Context -> CmpOpI ->
-    Base.AST a -> Base.AST a -> Z3 (Base.AST Bool)
-mkCmp_ ctx Le e1 = Z3 . lift . Base.mkLe ctx e1
-mkCmp_ ctx Lt e1 = Z3 . lift . Base.mkLt ctx e1
-mkCmp_ ctx Ge e1 = Z3 . lift . Base.mkGe ctx e1
-mkCmp_ ctx Gt e1 = Z3 . lift . Base.mkGt ctx e1
+mkConst:: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
+mkConst smb srt = gets context >>= \ctx -> Z3 $ lift $ Base.mkConst ctx smb srt
 
-mkConst_ :: Base.Z3Type a => Base.Context
-              -> Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
-mkConst_ ctx smb = Z3 . lift . Base.mkConst ctx smb
+mkUnaryMinus:: Base.Z3Num a => Base.AST a -> Z3 (Base.AST a)
+mkUnaryMinus e = Z3 . lift . flip Base.mkUnaryMinus e =<< gets context
 
-mkUnaryMinus_ :: Base.Z3Num a => Base.Context -> Base.AST a -> Z3 (Base.AST a)
-mkUnaryMinus_ ctx = Z3 . lift . Base.mkUnaryMinus ctx
+mkCRingArith:: Base.Z3Num a => CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
+mkCRingArith Add es = Z3 . lift . flip Base.mkAdd es =<< gets context
+mkCRingArith Mul es = Z3 . lift . flip Base.mkMul es =<< gets context
+mkCRingArith Sub es = Z3 . lift . flip Base.mkSub es =<< gets context
 
-mkCRingArith_ :: Base.Z3Num a => Base.Context
-                    -> CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
-mkCRingArith_ ctx Add = Z3 . lift . Base.mkAdd ctx
-mkCRingArith_ ctx Mul = Z3 . lift . Base.mkMul ctx
-mkCRingArith_ ctx Sub = Z3 . lift . Base.mkSub ctx
+mkIntArith:: IntOp
+               -> Base.AST Integer -> Base.AST Integer
+               -> Z3 (Base.AST Integer)
+mkIntArith Quot e1 e2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkDiv ctx e1 e2
+mkIntArith Mod  e1 e2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkMod ctx e1 e2
+mkIntArith Rem  e1 e2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkRem ctx e1 e2
 
-mkIntArith_ :: Base.Context
-                -> IntOp
-                -> Base.AST Integer -> Base.AST Integer
-                -> Z3 (Base.AST Integer)
-mkIntArith_ ctx Quot e1 = Z3 . lift . Base.mkDiv ctx e1
-mkIntArith_ ctx Mod  e1 = Z3 . lift . Base.mkMod ctx e1
-mkIntArith_ ctx Rem  e1 = Z3 . lift . Base.mkRem ctx e1
+mkRealArith:: RealOp
+                -> Base.AST Rational -> Base.AST Rational
+                -> Z3 (Base.AST Rational)
+mkRealArith Div e1 e2 = gets context >>= \ctx ->
+  Z3 $ lift $ Base.mkDiv ctx e1 e2
 
-mkRealArith_ :: Base.Context
-                  -> RealOp
-                  -> Base.AST Rational -> Base.AST Rational
-                  -> Z3 (Base.AST Rational)
-mkRealArith_ ctx Div e1 = Z3 . lift . Base.mkDiv ctx e1
-
-mkIte_ :: Base.Context
-            -> Base.AST Bool
-            -> Base.AST a -> Base.AST a
-            -> Z3 (Base.AST a)
-mkIte_ ctx b e1 = Z3 . lift . Base.mkIte ctx b e1
+mkIte:: Base.AST Bool -> Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIte b e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkIte ctx b e1 e2
 
 ---------------------------------------------------------------------
 -- Error messages
