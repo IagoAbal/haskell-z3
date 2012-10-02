@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -106,7 +107,6 @@ import Z3.Base.C
 import Z3.Lang.TY
 
 import Control.Applicative ( (<$>) )
-import Control.Monad ( liftM2 )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Typeable ( Typeable, typeOf )
@@ -250,11 +250,11 @@ instance Z3Scalar Bool where
   getValue = getBool
 
 instance Z3Scalar Integer where
-  mkValue ctx = mkInt ctx
+  mkValue = mkInt
   getValue ctx ast = Just <$> getInt ctx ast
 
 instance Z3Scalar Rational where
-  mkValue ctx = mkReal ctx
+  mkValue = mkReal
   getValue ctx ast = Just <$> getReal ctx ast
 
 -- | A Z3 numeric type
