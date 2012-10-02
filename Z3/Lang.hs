@@ -225,17 +225,16 @@ ite = Ite
 --
 var :: forall a. IsTy a => Z3 (Expr a)
 var = do
-    ctx <- gets context
     (u, str) <- fresh
-    smb <- mkStringSymbol_ ctx str
-    (srt :: Base.Sort (TypeZ3 a)) <- mkSort_ ctx
-    addConst u =<< mkConst_ ctx smb srt
+    smb <- mkStringSymbol str
+    (srt :: Base.Sort (TypeZ3 a)) <- mkSort
+    addConst u =<< mkConst smb srt
     return $ Const u
 
 -- | Make assertion in current context.
 --
 assert :: Expr Bool -> Z3 ()
-assert = join . liftM2 assertCnstr_ (gets context) . compile
+assert = join . liftM assertCnstr . compile
 
 -- | Introduce an auxiliary declaration to name a given expression.
 --
@@ -246,8 +245,3 @@ let_ e = do
   aux <- var
   assert (aux ==* e)
   return aux
-
--- | Check current context.
---
-check :: Z3 Base.Result
-check = check_ =<< gets context

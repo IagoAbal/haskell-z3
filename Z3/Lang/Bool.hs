@@ -13,8 +13,6 @@
 
 module Z3.Lang.Bool () where
 
-import Control.Monad.State
-
 import Z3.Base ( AST )
 import Z3.Lang.Monad
 
@@ -29,42 +27,35 @@ instance IsScalar Bool where
 
 compileBool :: Expr Bool -> Z3 (AST Bool)
 compileBool (Lit a)
-    = flip mkLiteral_ (toZ3Type a) =<< gets context
+    = mkLiteral (toZ3Type a)
 compileBool (Const u)
     = getConst u
 compileBool (Not b)
-    = do ctx <- gets context
-         b'  <- compileBool b
-         mkNot_ ctx b'
+    = do b'  <- compileBool b
+         mkNot b'
 compileBool (BoolBin op e1 e2)
-    = do ctx <- gets context
-         e1' <- compileBool e1
+    = do e1' <- compileBool e1
          e2' <- compileBool e2
-         mkBoolBin_ ctx op e1' e2'
+         mkBoolBin op e1' e2'
 compileBool (BoolMulti op es)
-    = do ctx <- gets context
-         es' <- mapM compileBool es
-         mkBoolMulti_ ctx op es'
+    = do es' <- mapM compileBool es
+         mkBoolMulti op es'
 compileBool (Neg e)
-    = do ctx <- gets context
-         e'  <- compileBool e
-         mkUnaryMinus_ ctx e'
+    = do e'  <- compileBool e
+         mkUnaryMinus e'
 compileBool (CmpE op e1 e2)
-    = do ctx <- gets context
-         e1' <- compile e1
+    = do e1' <- compile e1
          e2' <- compile e2
-         mkEq_ ctx op e1' e2'
+         mkEq op e1' e2'
 compileBool (CmpI op e1 e2)
-    = do ctx <- gets context
-         e1' <- compile e1
+    = do e1' <- compile e1
          e2' <- compile e2
-         mkCmp_ ctx op e1' e2'
+         mkCmp op e1' e2'
 compileBool (Ite b e1 e2)
-    = do ctx <- gets context
-         b'  <- compileBool b
+    = do b'  <- compileBool b
          e1' <- compileBool e1
          e2' <- compileBool e2
-         mkIte_ ctx b' e1' e2'
+         mkIte b' e1' e2'
 compileBool _
     = error "Z3.Lang.Bool.compileBool: Panic!\
         \ Impossible constructor in pattern matching!"
