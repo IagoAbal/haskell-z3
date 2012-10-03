@@ -56,7 +56,6 @@ import qualified Z3.Base as Base
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
-import Control.Monad.State
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
 
@@ -268,7 +267,7 @@ instance IsScalar Bool where
 
 compileBool :: Expr Bool -> Z3 (AST Bool)
 compileBool (Lit a)
-    = mkLiteral (toZ3Type a)
+    = mkLiteral a
 compileBool (Const u)
     = getConst u
 compileBool (Not b)
@@ -319,7 +318,7 @@ instance IsInt Integer where
 
 compileInteger :: Expr Integer -> Z3 (AST Integer)
 compileInteger (Lit a)
-  = mkLiteral (toZ3Type a)
+  = mkLiteral a
 compileInteger (Const u)
   = getConst u
 compileInteger (Neg e)
@@ -357,7 +356,7 @@ instance IsReal Rational where
 
 compileRational :: Expr Rational -> Z3 (AST Rational)
 compileRational (Lit a)
-  = mkLiteral (toZ3Type a)
+  = mkLiteral a
 compileRational (Const u)
   = getConst u
 compileRational (Neg e)
