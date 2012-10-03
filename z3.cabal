@@ -35,16 +35,13 @@ Library
         Z3.Base.C 
 
         Z3.Lang
+        Z3.Lang.Prelude
 
     Other-modules:
         
         Z3.Lang.TY
         Z3.Lang.Exprs
         Z3.Lang.Monad
-
-        Z3.Lang.Bool
-        Z3.Lang.Rational
-        Z3.Lang.Integer
 
     ghc-options: -Wall
 
