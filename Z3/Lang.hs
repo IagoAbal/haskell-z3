@@ -10,8 +10,10 @@
 --
 
 module Z3.Lang (
-  module Z3.Lang.Prelude
+    module Z3.Lang.Prelude
+  , module Z3.Lang.Nat
   ) where
 
 
 import Z3.Lang.Prelude
+import Z3.Lang.Nat

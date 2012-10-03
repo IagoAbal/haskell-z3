@@ -71,12 +71,15 @@ var = do
     smb <- mkStringSymbol str
     (srt :: Base.Sort (TypeZ3 a)) <- mkSort
     addConst u =<< mkConst smb srt
-    return $ Const u
+    let e = Const u
+    assert $ typeInv e
+    return e
 
 -- | Make assertion in current context.
 --
 assert :: Expr Bool -> Z3 ()
-assert = join . liftM assertCnstr . compile
+assert (Lit True) = return ()
+assert e          = compile e >>= assertCnstr
 
 -- | Introduce an auxiliary declaration to name a given expression.
 --
@@ -256,6 +259,7 @@ ite = Ite
 type instance TypeZ3 Bool = Bool
 
 instance IsTy Bool where
+  typeInv = const true
   compile = compileBool
 
 instance IsScalar Bool where
@@ -303,6 +307,7 @@ compileBool _
 type instance TypeZ3 Integer = Integer
 
 instance IsTy Integer where
+  typeInv = const true
   compile = compileInteger
 
 instance IsScalar Integer where
@@ -340,6 +345,7 @@ compileInteger _
 type instance TypeZ3 Rational = Rational
 
 instance IsTy Rational where
+  typeInv = const true
   compile = compileRational
 
 instance IsScalar Rational where

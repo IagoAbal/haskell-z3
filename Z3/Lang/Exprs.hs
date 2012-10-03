@@ -54,6 +54,10 @@ type family TypeZ3 a
 -- | Types for expressions.
 --
 class (Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
+  -- | Type invariant.
+  -- Introduced when creating a variable.
+  --
+  typeInv :: Expr a -> Expr Bool
   -- | Create a 'Base.AST' from a 'Expr'.
   --
   compile :: Expr a -> Z3 (Base.AST (TypeZ3 a))
