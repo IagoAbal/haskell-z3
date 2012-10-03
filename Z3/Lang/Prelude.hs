@@ -294,7 +294,7 @@ compileBool (Ite b e1 e2)
          e2' <- compileBool e2
          mkIte b' e1' e2'
 compileBool _
-    = error "Z3.Lang.Bool.compileBool: Panic!\
+    = error "Z3.Lang.Prelude.compileBool: Panic!\
         \ Impossible constructor in pattern matching!"
 
 ----------------------------------------------------------------------
@@ -331,7 +331,7 @@ compileInteger (Ite eb e1 e2)
        e2' <- compileInteger e2
        mkIte eb' e1' e2'
 compileInteger _
-    = error "Z3.Lang.Integer.compileInteger: Panic!\
+    = error "Z3.Lang.Prelude.compileInteger: Panic!\
         \ Impossible constructor in pattern matching!"
 
 ----------------------------------------------------------------------
@@ -368,5 +368,5 @@ compileRational (Ite eb e1 e2)
        e2' <- compileRational e2
        mkIte eb' e1' e2'
 compileRational _
-    = error "Z3.Lang.Rational.compileRational: Panic!\
+    = error "Z3.Lang.Prelude.compileRational: Panic!\
         \ Impossible constructor in pattern matching!"
