@@ -17,6 +17,7 @@ module Z3.Lang.Rational () where
 
 import Z3.Base ( AST )
 import Z3.Lang.Bool ()
+import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
 type instance TypeZ3 Rational = Rational
