@@ -121,80 +121,88 @@ getConst u = liftM mlookup $ gets consts
 ---------------------------------------------------------------------
 -- Lifted Base functions
 
+liftZ3 :: IO a -> Z3 a
+liftZ3 = Z3 . lift
+
+liftZ3Op :: (Base.Context -> IO b) -> Z3 b
+liftZ3Op f = liftZ3 . f =<< gets context
+
+liftZ3Op2 :: (Base.Context -> a -> IO b) -> a -> Z3 b
+liftZ3Op2 f a = gets context >>= \ctx -> liftZ3 (f ctx a)
+
+liftZ3Op3 :: (Base.Context -> a -> b -> IO c) -> a -> b -> Z3 c
+liftZ3Op3 f a b = gets context >>= \ctx -> liftZ3 (f ctx a b)
+ 
+liftZ3Op4 :: (Base.Context -> a -> b -> c -> IO d) -> a -> b -> c -> Z3 d
+liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
+
 assertCnstr :: Base.AST Bool -> Z3 ()
-assertCnstr b = Z3 . lift . (flip Base.assertCnstr b) =<< gets context
+assertCnstr = liftZ3Op2 Base.assertCnstr
 
 check :: Z3 Base.Result
-check = Z3 . lift . Base.check =<< gets context
+check = liftZ3Op Base.check
 
 mkSort :: Base.Z3Type a => Z3 (Base.Sort a)
-mkSort = Z3 . lift . Base.mkSort =<< gets context
+mkSort = liftZ3Op Base.mkSort
 
-mkStringSymbol:: String -> Z3 Base.Symbol
-mkStringSymbol s = Z3 . lift . (flip Base.mkStringSymbol s) =<< gets context
+mkStringSymbol :: String -> Z3 Base.Symbol
+mkStringSymbol = liftZ3Op2 Base.mkStringSymbol
 
-mkLiteral:: forall a. Base.Z3Scalar a => a -> Z3 (Base.AST a)
-mkLiteral l = Z3 . lift . flip Base.mkValue l =<< gets context
+mkLiteral :: forall a. Base.Z3Scalar a => a -> Z3 (Base.AST a)
+mkLiteral = liftZ3Op2 Base.mkValue
 
-mkNot:: Base.AST Bool -> Z3 (Base.AST Bool)
-mkNot b = Z3 . lift . flip Base.mkNot b =<< gets context
+mkNot :: Base.AST Bool -> Z3 (Base.AST Bool)
+mkNot = liftZ3Op2 Base.mkNot
 
-mkBoolBin:: BoolBinOp -> Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkBoolBin Xor     b1 b2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkXor ctx b1 b2
-mkBoolBin Implies b1 b2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkImplies ctx b1 b2
-mkBoolBin Iff     b1 b2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkIff ctx b1 b2
+mkBoolBin :: BoolBinOp -> Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkBoolBin Xor     = liftZ3Op3 Base.mkXor
+mkBoolBin Implies = liftZ3Op3 Base.mkImplies
+mkBoolBin Iff     = liftZ3Op3 Base.mkIff
 
-mkBoolMulti:: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
-mkBoolMulti And bs = Z3 . lift . flip Base.mkAnd bs =<< gets context
-mkBoolMulti Or  bs = Z3 . lift . flip Base.mkOr  bs =<< gets context
+mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
+mkBoolMulti And = liftZ3Op2 Base.mkAnd
+mkBoolMulti Or  = liftZ3Op2 Base.mkOr
 
-mkEq:: Base.Z3Scalar a => CmpOpE
+mkEq :: Base.Z3Scalar a => CmpOpE
                             -> Base.AST a -> Base.AST a
                             -> Z3 (Base.AST Bool)
-mkEq Eq  e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkEq ctx e1 e2
-mkEq Neq e1 e2 = gets context >>= \ctx ->
-  Z3 $ lift $ (Base.mkNot ctx =<< Base.mkEq ctx e1 e2)
+mkEq Eq  = liftZ3Op3 Base.mkEq
+mkEq Neq = liftZ3Op3 mkNeq
+  where mkNeq ctx b1 = Base.mkNot ctx <=< Base.mkEq ctx b1
 
-mkCmp:: Base.Z3Num a => CmpOpI
+mkCmp :: Base.Z3Num a => CmpOpI
                           -> Base.AST a -> Base.AST a
                           -> Z3 (Base.AST Bool)
-mkCmp Le e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkLe ctx e1 e2
-mkCmp Lt e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkLt ctx e1 e2
-mkCmp Ge e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkGe ctx e1 e2
-mkCmp Gt e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkGt ctx e1 e2
+mkCmp Le = liftZ3Op3 Base.mkLe
+mkCmp Lt = liftZ3Op3 Base.mkLt
+mkCmp Ge = liftZ3Op3 Base.mkGe
+mkCmp Gt = liftZ3Op3 Base.mkGt
 
-mkConst:: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
-mkConst smb srt = gets context >>= \ctx -> Z3 $ lift $ Base.mkConst ctx smb srt
+mkConst :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
+mkConst = liftZ3Op3 Base.mkConst
 
-mkUnaryMinus:: Base.Z3Num a => Base.AST a -> Z3 (Base.AST a)
-mkUnaryMinus e = Z3 . lift . flip Base.mkUnaryMinus e =<< gets context
+mkUnaryMinus :: Base.Z3Num a => Base.AST a -> Z3 (Base.AST a)
+mkUnaryMinus = liftZ3Op2 Base.mkUnaryMinus
 
-mkCRingArith:: Base.Z3Num a => CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
-mkCRingArith Add es = Z3 . lift . flip Base.mkAdd es =<< gets context
-mkCRingArith Mul es = Z3 . lift . flip Base.mkMul es =<< gets context
-mkCRingArith Sub es = Z3 . lift . flip Base.mkSub es =<< gets context
+mkCRingArith :: Base.Z3Num a => CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
+mkCRingArith Add = liftZ3Op2 Base.mkAdd
+mkCRingArith Mul = liftZ3Op2 Base.mkMul
+mkCRingArith Sub = liftZ3Op2 Base.mkSub
 
-mkIntArith:: IntOp
+mkIntArith :: IntOp
                -> Base.AST Integer -> Base.AST Integer
                -> Z3 (Base.AST Integer)
-mkIntArith Quot e1 e2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkDiv ctx e1 e2
-mkIntArith Mod  e1 e2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkMod ctx e1 e2
-mkIntArith Rem  e1 e2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkRem ctx e1 e2
+mkIntArith Quot = liftZ3Op3 Base.mkDiv
+mkIntArith Mod  = liftZ3Op3 Base.mkMod
+mkIntArith Rem  = liftZ3Op3 Base.mkRem
 
-mkRealArith:: RealOp
+mkRealArith :: RealOp
                 -> Base.AST Rational -> Base.AST Rational
                 -> Z3 (Base.AST Rational)
-mkRealArith Div e1 e2 = gets context >>= \ctx ->
-  Z3 $ lift $ Base.mkDiv ctx e1 e2
+mkRealArith Div = liftZ3Op3 Base.mkDiv
 
-mkIte:: Base.AST Bool -> Base.AST a -> Base.AST a -> Z3 (Base.AST a)
-mkIte b e1 e2 = gets context >>= \ctx -> Z3 $ lift $ Base.mkIte ctx b e1 e2
+mkIte :: Base.AST Bool -> Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIte = liftZ3Op4 Base.mkIte
 
 ---------------------------------------------------------------------
 -- Error messages
