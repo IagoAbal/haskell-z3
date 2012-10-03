@@ -39,6 +39,7 @@ Library
     Other-modules:
         
         Z3.Lang.TY
+        Z3.Lang.Exprs
         Z3.Lang.Monad
 
         Z3.Lang.Bool

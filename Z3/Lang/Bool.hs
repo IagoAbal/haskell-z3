@@ -14,6 +14,7 @@
 module Z3.Lang.Bool () where
 
 import Z3.Base ( AST )
+import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
 type instance TypeZ3 Bool = Bool
