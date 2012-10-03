@@ -1,5 +1,5 @@
 Name:                z3
-Version:             0.1.1
+Version:             0.2.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:         
     Bindings for the Z3 Theorem Prover.
