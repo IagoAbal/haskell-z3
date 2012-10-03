@@ -38,6 +38,8 @@ module Z3.Lang (
 
     -- * Z3 Monad
     , Z3
+    , Base.Result(..)
+    , evalZ3
 
     , var
     , assert
@@ -49,6 +51,8 @@ module Z3.Lang (
 
 import qualified Z3.Base as Base
 import Z3.Lang.Bool ()
+import Z3.Lang.Rational ()
+import Z3.Lang.Integer ()
 import Z3.Lang.Monad
 
 import Control.Monad.State
