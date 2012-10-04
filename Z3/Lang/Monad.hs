@@ -23,8 +23,15 @@ module Z3.Lang.Monad (
     , getConst
 
     -- ** Lifted Z3.Base functions
+    , liftZ3
     , assertCnstr
     , check
+    , eval
+    , getBool
+    , getInt
+    , getReal
+    , getModel
+    , getValue
     , mkSort
     , mkStringSymbol
     , mkLiteral
@@ -112,10 +119,10 @@ getConst :: forall a. Base.Z3Type a => Uniq -> Z3 (Base.AST a)
 getConst u = liftM mlookup $ gets consts
     where mlookup :: Map.IntMap AnyAST -> Base.AST a
           mlookup m =
-              maybe (error _UNDEFINED_CONST) extract $ Map.lookup u m
+              maybe (error _UNDEFINED_CONST) extractAST $ Map.lookup u m
 
-          extract :: AnyAST -> Base.AST a
-          extract (AnyAST e) =
+          extractAST :: AnyAST -> Base.AST a
+          extractAST (AnyAST e) =
               fromMaybe (error _UNDEFINED_CONST) $ Base.castAST e
 
 ---------------------------------------------------------------------
@@ -139,8 +146,26 @@ liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
 assertCnstr :: Base.AST Bool -> Z3 ()
 assertCnstr = liftZ3Op2 Base.assertCnstr
 
-check :: Z3 Base.Result
+check :: Z3 (Base.Result ())
 check = liftZ3Op Base.check
+
+eval :: Base.Model -> Base.AST a -> Z3 (Maybe (Base.AST a))
+eval = liftZ3Op3 Base.eval
+
+getBool :: Base.AST Bool -> Z3 (Maybe Bool)
+getBool = liftZ3Op2 Base.getBool
+
+getInt :: Base.AST Integer -> Z3 Integer
+getInt = liftZ3Op2 Base.getInt
+
+getReal :: Base.AST Rational -> Z3 Rational
+getReal = liftZ3Op2 Base.getReal
+
+getModel :: Z3 (Base.Result Base.Model)
+getModel = liftZ3Op Base.getModel
+
+getValue :: Base.Z3Scalar a => Base.AST a -> Z3 a
+getValue = liftZ3Op2 Base.getValue
 
 mkSort :: Base.Z3Type a => Z3 (Base.Sort a)
 mkSort = liftZ3Op Base.mkSort

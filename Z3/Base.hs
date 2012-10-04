@@ -111,12 +111,12 @@ import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Typeable ( Typeable, typeOf )
 import Data.Word
-import Foreign hiding ( newForeignPtr, toBool )
+import Foreign hiding ( newForeignPtr, addForeignPtrFinalizer, toBool )
 import Foreign.C
   ( CInt, CUInt, CLLong, CULLong
   , peekCString
   , withCString )
-import Foreign.Concurrent ( newForeignPtr )
+import Foreign.Concurrent ( newForeignPtr, addForeignPtrFinalizer )
 
 ---------------------------------------------------------------------
 -- Types
@@ -186,26 +186,22 @@ newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
 
 -- | A model for the constraints asserted into the logical context.
 --
-data Model
-    = Model {
-        modelContext :: Context
-      , unModel      :: ForeignPtr Z3_model
-      }
+newtype Model = Model { unModel :: Ptr Z3_model }
     deriving Eq
 
 -- | Result of a satisfiability check.
 --
-data Result
-    = Sat
+data Result a
+    = Sat a
     | Unsat
     | Undef
-    deriving (Eq, Ord, Enum, Bounded, Read, Show)
+    deriving (Eq, Ord, Read, Show)
 
 -- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
 --
-toResult :: Z3_lbool -> Result
+toResult :: Z3_lbool -> Result ()
 toResult lb
-    | lb == z3_l_true  = Sat
+    | lb == z3_l_true  = Sat ()
     | lb == z3_l_false = Unsat
     | lb == z3_l_undef = Undef
     | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
@@ -242,20 +238,20 @@ instance Z3Type Rational where
 --
 class (Eq a, Show a, Z3Type a) => Z3Scalar a where
   mkValue :: Context -> a -> IO (AST a)
-  getValue :: Context -> AST a -> IO (Maybe a)
+  getValue :: Context -> AST a -> IO a
 
 instance Z3Scalar Bool where
   mkValue ctx True = mkTrue ctx
   mkValue ctx False = mkFalse ctx
-  getValue = getBool
+  getValue ctx a = maybe False id <$> getBool ctx a
 
 instance Z3Scalar Integer where
   mkValue = mkInt
-  getValue ctx ast = Just <$> getInt ctx ast
+  getValue = getInt
 
 instance Z3Scalar Rational where
   mkValue = mkReal
-  getValue ctx ast = Just <$> getReal ctx ast
+  getValue = getReal
 
 -- | A Z3 numeric type
 --
@@ -735,13 +731,13 @@ getNumeralString c a = withForeignPtr (unContext c) $ \ctxPtr ->
 
 -- | Return 'Z3Int' value
 --
-getInt :: Num a => Context -> AST Integer -> IO a
-getInt c a = fromInteger . read <$> getNumeralString c a
+getInt :: Context -> AST Integer -> IO Integer
+getInt c a = read <$> getNumeralString c a
 
 -- | Return 'Z3Real' value
 --
-getReal :: Fractional a => Context -> AST Rational -> IO a
-getReal c a = fromRational . parse <$> getNumeralString c a
+getReal :: Context -> AST Rational -> IO Rational
+getReal c a = parse <$> getNumeralString c a
   where parse :: String -> Rational
         parse s
           | [(i, sj)] <- reads s = i % parseDen (dropWhile (== ' ') sj)
@@ -759,16 +755,17 @@ getReal c a = fromRational . parse <$> getNumeralString c a
 -- Models
 
 mkModel :: Context -> Ptr Z3_model -> IO Model
-mkModel ctx ptr = withForeignPtr (unContext ctx) $ \ctxPtr ->
-    Model ctx <$> newForeignPtr ptr (z3_del_model ctxPtr ptr)
+mkModel ctx ptr = withForeignPtr fptr $ \ctxPtr -> do
+    addForeignPtrFinalizer fptr $ z3_del_model ctxPtr ptr
+    return $ Model ptr
+  where fptr = unContext ctx
 
 -- | Evaluate an AST node in the given model.
-eval :: Model -> AST a -> IO (Maybe (AST a))
-eval m a
-  = withForeignPtr (unContext $ modelContext m) $ \ctxPtr ->
-    withForeignPtr (unModel m) $ \mdlPtr ->
+eval :: Context -> Model -> AST a -> IO (Maybe (AST a))
+eval ctx m a
+  = withForeignPtr (unContext ctx) $ \ctxPtr ->
       alloca $ \aptr2 ->
-        z3_eval ctxPtr mdlPtr (unAST a) aptr2 >>= peekAST aptr2 . toBool
+        z3_eval ctxPtr (unModel m) (unAST a) aptr2 >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe (AST a))
         peekAST _p False = return Nothing
         peekAST  p True  = Just . AST <$> peek p
@@ -794,23 +791,25 @@ assertCnstr ctx ast =
 --
 -- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 --
-getModel :: Context -> IO (Result, Maybe Model)
+getModel :: Context -> IO (Result Model)
 getModel c = withForeignPtr (unContext c) $ \ctxPtr ->
   alloca $ \mptr ->
     z3_check_and_get_model ctxPtr mptr >>= peekModel mptr . toResult
   where peekModel :: Ptr (Ptr Z3_model)
-                  -> Result
-                  -> IO (Result, Maybe Model)
-        peekModel p r | p == nullPtr = return (r, Nothing)
-                      | otherwise    = do z3m <- peek p
-                                          m   <- mkModel c z3m
-                                          return (r, Just m)
+                  -> Result ()
+                  -> IO (Result Model)
+        peekModel _ Unsat                   = return Unsat
+        peekModel _ Undef                   = return Undef
+        peekModel p (Sat ()) | p == nullPtr = error "Z3.Base.getModel: Panic! nullPtr!"
+                             | otherwise    = do z3m <- peek p
+                                                 m <- mkModel c z3m
+                                                 return $ Sat m
 
 -- | Check whether the given logical context is consistent or not. 
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --
-check :: Context -> IO Result
+check :: Context -> IO (Result ())
 check ctx = toResult <$> withForeignPtr (unContext ctx) z3_check
 
 -- TODO Constraints: Z3_check_assumptions
