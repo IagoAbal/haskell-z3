@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DeriveDataTypeable   #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
@@ -56,8 +57,12 @@ import qualified Z3.Base as Base
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
+#if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
+#else
+import Data.Typeable ( Typeable1(..) )
+#endif
 
 ---------------------------------------------------------------------
 -- Commands
@@ -95,32 +100,15 @@ let_ e = do
 ----------------------------------------------------------------------
 -- Expressions
 
-deriving instance Show (Expr a)
 deriving instance Typeable1 Expr
 
+-- In GHC 7.4 Eq and Show are no longer superclasses of Num
+#if __GLASGOW_HASKELL__ < 704
+deriving instance Show (Expr a)
+
 instance Eq (Expr a) where
-  (Lit l1) == (Lit l2) = l1 == l2
-  (Const a) == (Const b) = a == b
-  (Not e1) == (Not e2) = e1 == e2
-  (BoolBin op1 p1 q1) == (BoolBin op2 p2 q2)
-    = op1 == op2 && p1 == p2 && q1 == q2
-  (BoolMulti op1 ps) == (BoolMulti op2 qs)
-    | length ps == length qs = op1 == op2 && and (zipWith (==) ps qs)
-  (Neg e1) == (Neg e2) = e1 == e2
-  (CRingArith op1 as) == (CRingArith op2 bs)
-    | length as == length bs = op1 == op2 && and (zipWith (==) as bs)
-  (IntArith op1 a1 b1) == (IntArith op2 a2 b2)
-    = op1 == op2 && a1 == a2 && b1 == b2
-  (RealArith op1 a1 b1) == (RealArith op2 a2 b2)
-    = op1 == op2 && a1 == a2 && b1 == b2
-  (CmpE op1 a1 b1) == (CmpE op2 a2 b2)
-    | op1 == op2 && typeOf a1 == typeOf a2
-    = a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
-  (CmpI op1 a1 b1) == (CmpI op2 a2 b2)
-    | op1 == op2 && typeOf a1 == typeOf a2
-    = a1 == unsafeCoerce a2 && b1 == unsafeCoerce b2
-  (Ite g1 a1 b1) == (Ite g2 a2 b2) = g1 == g2 && a1 == a2 && b1 == b2
-  _e1 == _e2 = False
+  _e1 == _e2 = error "Z3.Lang.Expr: equality not supported"
+#endif
 
 instance IsNum a => Num (Expr a) where
   (CRingArith Add as) + (CRingArith Add bs) = CRingArith Add (as ++ bs)
@@ -299,8 +287,7 @@ compileBool (Ite b e1 e2)
          e2' <- compileBool e2
          mkIte b' e1' e2'
 compileBool _
-    = error "Z3.Lang.Prelude.compileBool: Panic!\
-        \ Impossible constructor in pattern matching!"
+    = error "Z3.Lang.Prelude.compileBool: Panic! Impossible constructor in pattern matching!"
 
 ----------------------------------------------------------------------
 -- Integers
@@ -343,8 +330,7 @@ compileInteger (Ite eb e1 e2)
        e2' <- compileInteger e2
        mkIte eb' e1' e2'
 compileInteger _
-    = error "Z3.Lang.Prelude.compileInteger: Panic!\
-        \ Impossible constructor in pattern matching!"
+    = error "Z3.Lang.Prelude.compileInteger: Panic! Impossible constructor in pattern matching!"
 
 ----------------------------------------------------------------------
 -- Rationals
@@ -383,5 +369,4 @@ compileRational (Ite eb e1 e2)
        e2' <- compileRational e2
        mkIte eb' e1' e2'
 compileRational _
-    = error "Z3.Lang.Prelude.compileRational: Panic!\
-        \ Impossible constructor in pattern matching!"
+    = error "Z3.Lang.Prelude.compileRational: Panic! Impossible constructor in pattern matching!"
