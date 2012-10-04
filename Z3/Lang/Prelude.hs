@@ -32,6 +32,7 @@ module Z3.Lang.Prelude (
     , assert
     , let_
     , check
+    , checkModel
 
     -- * Expressions
     , Expr
@@ -56,6 +57,7 @@ import qualified Z3.Base as Base
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
+import Control.Applicative ( (<$>) )
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
 
@@ -89,6 +91,23 @@ let_ e = do
   aux <- var
   assert (aux ==* e)
   return aux
+
+-- | Check expression in current model (checks current model if none exists)
+--
+checkModel :: forall a.IsScalar a => Expr a -> Z3 (Result a)
+checkModel e = do
+  a <- compile e
+  m <- getModel
+  fixResult a m
+  where fixResult :: Base.AST (TypeZ3 a) -> Result Base.Model -> Z3 (Result a)
+        fixResult _ (Base.Undef)  = return Base.Undef
+        fixResult _ (Base.Unsat)  = return Base.Unsat
+        fixResult a (Base.Sat m)  = peek =<< eval m a
+
+        peek :: Maybe (Base.AST (TypeZ3 a)) -> Z3 (Base.Result a)
+        peek (Just a) = Base.Sat . fromZ3Type <$> getValue a
+        peek Nothing  = error "Z3.Lang.Monad.eval: quantified\
+            \expression or partial model!"
 
 ----------------------------------------------------------------------
 -- Expressions
