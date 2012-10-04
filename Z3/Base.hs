@@ -88,6 +88,10 @@ module Z3.Base (
     , mkInt
     , mkReal
 
+    -- * Quantifiers
+    , mkBound
+    , mkForall
+
     -- * Accessors
     , getBool
     , getInt
@@ -703,7 +707,21 @@ mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
 mkReal_UnsignedInt64Z3 :: Context -> Word64 -> IO (AST Rational)
 mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 
--- TODO Quantifiers
+---------------------------------------------------------------------
+-- Quantifiers
+
+mkBound :: Context -> Int -> Sort a -> IO (AST a)
+mkBound c i s
+  | i >= 0    = withForeignPtr (unContext c) $ \cptr ->
+                  AST <$> z3_mk_bound cptr (fromIntegral i) (unSort s)
+  | otherwise = error "Z3.Base.mkBound: negative de-Bruijn index"
+
+mkForall :: Context -> Symbol -> Sort a -> AST Bool -> IO (AST Bool)
+mkForall c x s p
+  = with (unSymbol x) $ \xptr ->
+    with (unSort s) $ \sptr ->
+    withForeignPtr (unContext c) $ \cptr ->
+      AST <$> z3_mk_forall cptr 0 0 nullPtr 1 sptr xptr (unAST p)
 
 ---------------------------------------------------------------------
 -- Accessors

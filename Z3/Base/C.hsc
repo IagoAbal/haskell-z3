@@ -395,7 +395,30 @@ foreign import ccall unsafe "Z3_mk_int64"
 foreign import ccall unsafe "Z3_mk_unsigned_int64"
     z3_mk_unsigned_int64 :: Ptr Z3_context -> CULLong -> Ptr Z3_sort ->  IO (Ptr Z3_ast)
 
--- TODO Quantifiers
+---------------------------------------------------------------------
+-- * Quantifiers
+
+-- TODO Function 'Z3_mk_pattern'.
+
+-- | Create a bound variable.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1d4da8849fca699b345322f8ee1fa31e>
+--
+foreign import ccall unsafe "Z3_mk_bound"
+  z3_mk_bound :: Ptr Z3_context -> CUInt -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+
+-- | Create a forall formula.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7e975b7d7ac96de1db73d8f71166c663>
+--
+foreign import ccall unsafe "Z3_mk_forall"
+  z3_mk_forall :: Ptr Z3_context -> CUInt
+                  -> CUInt -> Ptr (Ptr Z3_pattern)
+                  -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol)
+                  -> Ptr Z3_ast
+                  -> IO (Ptr Z3_ast)
+
+-- TODO From 'Z3_mk_exists' on.
 
 ---------------------------------------------------------------------
 -- * Accessors
