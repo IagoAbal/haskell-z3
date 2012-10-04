@@ -24,6 +24,7 @@ module Z3.Base (
     , Symbol
     , AST
     , Sort
+    , FuncDecl
     , App
     , Pattern
     , Model
@@ -171,6 +172,11 @@ castAST (AST a)
 -- | Kind of Z3 AST representing /types/.
 --
 newtype Sort a = Sort { unSort :: Ptr Z3_sort }
+    deriving (Eq, Ord, Show, Storable)
+
+-- | Kind of AST used to represent function symbols.
+--
+newtype FuncDecl a = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
