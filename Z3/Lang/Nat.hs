@@ -69,6 +69,12 @@ compileNat (Neg e) = do
 compileNat (CRingArith Sub (e1:e2:es)) = compileNatSub e1 e2 es
 compileNat (CRingArith op es)
   = mkCRingArith op =<< mapM compileNat es
+compileNat (IntArith Quot e1 e2)
+  = do aux <- let_ e2
+       assert $ aux /=* 0
+       e1' <- compileNat e1
+       aux' <- compileNat aux
+       mkIntArith Quot e1' aux' 
 compileNat (IntArith op e1 e2)
   = do e1' <- compileNat e1
        e2' <- compileNat e2

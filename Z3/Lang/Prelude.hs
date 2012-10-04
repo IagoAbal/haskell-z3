@@ -85,6 +85,8 @@ assert e          = compile e >>= assertCnstr
 -- If you really want sharing use this instead of Haskell's /let/.
 --
 let_ :: IsScalar a => Expr a -> Z3 (Expr a)
+let_ e@(Lit _)   = return e
+let_ e@(Const u) = return e
 let_ e = do
   aux <- var
   assert (aux ==* e)
@@ -325,6 +327,12 @@ compileInteger (Neg e)
   = mkUnaryMinus =<< compileInteger e
 compileInteger (CRingArith op es)
   = mkCRingArith op =<< mapM compileInteger es
+compileInteger (IntArith Quot e1 e2)
+  = do aux <- let_ e2
+       assert $ aux /=* 0
+       e1' <- compileInteger e1
+       aux' <- compileInteger aux
+       mkIntArith Quot e1' aux' 
 compileInteger (IntArith op e1 e2)
   = do e1' <- compileInteger e1
        e2' <- compileInteger e2
@@ -363,10 +371,12 @@ compileRational (Neg e)
   = mkUnaryMinus =<< compileRational e
 compileRational (CRingArith op es)
   = mkCRingArith op =<< mapM compileRational es
-compileRational (RealArith op e1 e2)
-  = do e1' <- compileRational e1
-       e2' <- compileRational e2
-       mkRealArith op e1' e2'
+compileRational (RealArith op@Div e1 e2)
+  = do aux <- let_ e2
+       assert $ aux /=* 0
+       e1' <- compileRational e1
+       aux' <- compileRational aux
+       mkRealArith op e1' aux'
 compileRational (Ite eb e1 e2)
   = do eb' <- compile eb
        e1' <- compileRational e1
