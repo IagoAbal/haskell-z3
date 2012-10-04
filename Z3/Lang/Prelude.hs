@@ -86,7 +86,7 @@ assert e          = compile e >>= assertCnstr
 --
 let_ :: IsScalar a => Expr a -> Z3 (Expr a)
 let_ e@(Lit _)   = return e
-let_ e@(Const u) = return e
+let_ e@(Const _) = return e
 let_ e = do
   aux <- var
   assert (aux ==* e)
