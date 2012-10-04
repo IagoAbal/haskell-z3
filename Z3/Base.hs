@@ -312,7 +312,7 @@ set_MODEL_PARTIAL cfg False = setParamValue cfg "MODEL_PARTIAL" "false"
 -- default: 'True', enable/disable type checker.
 --
 set_WELL_SORTED_CHECK :: Config -> Bool -> IO ()
-set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "MWELL_SORTED_CHECK" "true"
+set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "WELL_SORTED_CHECK" "true"
 set_WELL_SORTED_CHECK cfg False = setParamValue cfg "WELL_SORTED_CHECK" "false"
 
 ---------------------------------------------------------------------
