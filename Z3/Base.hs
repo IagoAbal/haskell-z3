@@ -1,9 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module    : Z3.Base
@@ -36,7 +41,7 @@ module Z3.Base (
 
     -- ** Z3 types
     , Z3Type(..)
-    , Z3Scalar(..)
+    , Z3Fun()
     , Z3Num
 
     -- * Configuration
@@ -58,6 +63,8 @@ module Z3.Base (
     , mkRealSort
 
     -- * Constants and Applications
+    , mkFuncDecl
+    , mkApp1, mkApp2, mkApp3, mkApp4, mkApp5, mkApp6
     , mkConst
     , mkTrue
     , mkFalse
@@ -158,7 +165,7 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 --       complicating the higher-level layers such as 'Z3.Monad' ?
 --
 newtype AST a = AST { unAST :: Ptr Z3_ast }
-    deriving (Eq, Ord, Show, Storable)
+    deriving (Eq, Ord, Show, Storable, Typeable)
 
 -- | Cast an 'AST a' to 'AST b' when 'a' and 'b' are the same type.
 --
@@ -177,7 +184,7 @@ newtype Sort a = Sort { unSort :: Ptr Z3_sort }
 -- | Kind of AST used to represent function symbols.
 --
 newtype FuncDecl a = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
-    deriving (Eq, Ord, Show, Storable)
+    deriving (Eq, Ord, Show, Storable, Typeable)
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
 --
@@ -228,40 +235,49 @@ toBool b
 
 -- | A Z3 type
 --
-class Typeable a => Z3Type a where
+class (Eq a, Show a, Typeable a) => Z3Type a where
   mkSort :: Context -> IO (Sort a)
-
-instance Z3Type Bool where
-  mkSort = mkBoolSort
-
-instance Z3Type Integer where
-  mkSort = mkIntSort
-
-instance Z3Type Rational where
-  mkSort = mkRealSort
-
--- | A Z3 scalar type
---
-class (Eq a, Show a, Z3Type a) => Z3Scalar a where
   mkValue :: Context -> a -> IO (AST a)
   getValue :: Context -> AST a -> IO a
 
-instance Z3Scalar Bool where
+instance Z3Type Bool where
+  mkSort = mkBoolSort
   mkValue ctx True = mkTrue ctx
   mkValue ctx False = mkFalse ctx
   getValue ctx a = maybe False id <$> getBool ctx a
 
-instance Z3Scalar Integer where
+instance Z3Type Integer where
+  mkSort = mkIntSort
   mkValue = mkInt
   getValue = getInt
 
-instance Z3Scalar Rational where
+instance Z3Type Rational where
+  mkSort = mkRealSort
   mkValue = mkReal
   getValue = getReal
 
+-- | A Function type
+--
+class Z3Fun a where
+  -- Private functions: domain, range
+  domain :: Context -> TY a -> IO (CUInt, [Ptr Z3_sort])
+  range  :: Context -> TY a -> IO (Ptr Z3_sort)
+
+instance (Z3Type a, Z3Type b) => Z3Fun (a -> b) where
+  domain ctx _ = (1,) . (: []) . unSort <$> (mkSort ctx :: IO (Sort a))
+  range  ctx _ = unSort <$> (mkSort ctx :: IO (Sort b))
+
+instance (Z3Type a, Z3Fun (b -> c)) => Z3Fun (a -> b -> c) where
+  domain ctx _ = do
+    (srt1 :: Sort a) <- mkSort ctx
+    (n,lst)          <- domain ctx (TY :: TY  (b -> c))
+    return (n + 1, unSort srt1 : lst)
+  range ctx _ = range ctx (TY :: TY (b -> c))
+
+
 -- | A Z3 numeric type
 --
-class (Z3Scalar a, Num a) => Z3Num a where
+class (Z3Type a, Num a) => Z3Num a where
 instance Z3Num Integer where
 instance Z3Num Rational where
 
@@ -376,14 +392,79 @@ mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
 ---------------------------------------------------------------------
 -- Constants and Applications
 
--- TODO Constants and Applications: Z3_mk_func_decl
--- TODO Constants and Applications: Z3_mk_app
+-- | A Z3 function
+mkFuncDecl :: forall t. Z3Fun t => Context -> Symbol -> IO (FuncDecl t)
+mkFuncDecl ctx (Symbol smb) = withForeignPtr (unContext ctx) $ \ctxPtr -> do
+  (len, dom) <- domain ctx (TY :: TY t)
+  rng <- range  ctx (TY :: TY t)
+  withArray dom $ \c_dom ->
+    FuncDecl <$> z3_mk_func_decl ctxPtr smb len c_dom rng
+
+-- | Create a constant or function application.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga33a202d86bf628bfab9b6f437536cebe>
+--
+mkApp1 :: (Z3Type a, Z3Type b)
+            => Context
+                -> FuncDecl (a -> b)
+                -> AST a
+                -> IO (AST b)
+mkApp1 ctx fd a
+  = AST <$> mkApp ctx fd [unAST a]
+
+mkApp2 :: (Z3Type a, Z3Type b, Z3Type c)
+            => Context
+                -> FuncDecl (a -> b -> c)
+                -> AST a -> AST b
+                -> IO (AST c)
+mkApp2 ctx fd a b
+  = AST <$> mkApp ctx fd [unAST a,unAST b]
+
+mkApp3 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d)
+            => Context
+                -> FuncDecl (a -> b -> c -> d)
+                -> AST a -> AST b -> AST c
+                -> IO (AST d)
+mkApp3 ctx fd a b c
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c]
+
+mkApp4 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e)
+                -> AST a -> AST b -> AST c -> AST d
+                -> IO (AST e)
+mkApp4 ctx fd a b c d
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c,unAST d]
+
+mkApp5 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e -> f)
+                -> AST a -> AST b -> AST c -> AST d -> AST e
+                -> IO (AST f)
+mkApp5 ctx fd a b c d e
+  = AST <$> mkApp ctx fd [unAST a,unAST b ,unAST c,unAST d ,unAST e]
+
+mkApp6 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f, Z3Type g)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e -> f -> g)
+                -> AST a -> AST b -> AST c -> AST d -> AST e -> AST f
+                -> IO (AST g)
+mkApp6 ctx fd a b c d e f
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c,unAST d,unAST e,unAST f]
+
+
+mkApp :: Context -> FuncDecl t -> [Ptr Z3_ast] -> IO (Ptr Z3_ast)
+mkApp ctx fd args =
+  withForeignPtr (unContext ctx) $ \ctxPtr ->
+    withArray args $ \pargs ->
+       z3_mk_app ctxPtr (unFuncDecl fd) (fromIntegral $ length args) pargs
+
 
 -- | Declare and create a constant.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
 --
-mkConst :: Context -> Symbol -> Sort a -> IO (AST a)
+mkConst :: Z3Type a => Context -> Symbol -> Sort a -> IO (AST a)
 mkConst c x s = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_const cptr (unSymbol x) (unSort s)
 
@@ -410,7 +491,7 @@ mkFalse c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 --
-mkEq :: Z3Scalar a => Context -> AST a -> AST a -> IO (AST Bool)
+mkEq :: Z3Type a => Context -> AST a -> AST a -> IO (AST Bool)
 mkEq c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_eq cptr (unAST e1) (unAST e2)
 
