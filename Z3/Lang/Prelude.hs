@@ -155,7 +155,7 @@ assert e          = compile e >>= assertCnstr
 --
 let_ :: IsTy a => Expr a -> Z3 (Expr a)
 let_ e@(Lit _)   = return e
-let_ e@(Const _) = return e
+let_ e@(Const _ _) = return e
 let_ e = do
   aux <- var
   assert (aux ==* e)
@@ -175,8 +175,7 @@ checkModel e = do
 
         peek :: Maybe (Base.AST (TypeZ3 a)) -> Z3 (Base.Result a)
         peek (Just a) = Base.Sat . fromZ3Type <$> getValue a
-        peek Nothing  = error "Z3.Lang.Monad.eval: quantified\
-            \expression or partial model!"
+        peek Nothing  = error "Z3.Lang.Monad.eval: quantified expression or partial model!"
 
 ----------------------------------------------------------------------
 -- Expressions
@@ -471,5 +470,4 @@ app2AST (PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4) = join $
   liftM4 (mkApp4 fd) (compile e1) (compile e2) (compile e3) (compile e4)
 app2AST (PApp(PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4)e5) = join $
   liftM5 (mkApp5 fd) (compile e1) (compile e2) (compile e3) (compile e4) (compile e5)
-app2AST _ = error "Z3.Lang.Prelude.app2AST:\
-    \ Panic! Impossible function application!"
+app2AST _ = error "Z3.Lang.Prelude.app2AST: Panic! Impossible function application!"
