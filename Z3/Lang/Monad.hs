@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE StandaloneDeriving         #-}
 
 -- |
 -- Module    : Z3.Lang.Monad
@@ -19,8 +18,6 @@ module Z3.Lang.Monad (
     , Z3State(..)
     , evalZ3
     , fresh
-    , addConst
-    , getConst
 
     -- ** Lifted Z3.Base functions
     , liftZ3
@@ -40,6 +37,13 @@ module Z3.Lang.Monad (
     , mkBoolMulti
     , mkEq
     , mkCmp
+    , mkFuncDecl
+    , mkApp1
+    , mkApp2
+    , mkApp3
+    , mkApp4
+    , mkApp5
+    , mkApp6
     , mkConst
     , mkUnaryMinus
     , mkCRingArith
@@ -57,8 +61,6 @@ import Z3.Lang.Exprs
 import qualified Z3.Base as Base
 
 import Control.Monad.State
-import qualified Data.IntMap as Map
-import Data.Maybe ( fromMaybe )
 
 ---------------------------------------------------------------------
 -- The Z3 Monad
@@ -72,16 +74,11 @@ instance MonadState Z3State Z3 where
     get = Z3 $ StateT $ \s -> return (s,s)
     put st = Z3 $ StateT $ \_ -> return ((), st)
 
--- | Existential type. Used to store constants keeping sort info.
---
-data AnyAST = forall a. Base.Z3Type a => AnyAST (Base.AST a)
-
 -- | Internal state of Z3 monad.
 --
 data Z3State
     = Z3State { uniqVal   :: !Uniq
               , context   :: Base.Context
-              , consts    :: Map.IntMap AnyAST
               }
 
 -- | Eval a Z3 script.
@@ -94,7 +91,6 @@ evalZ3 (Z3 s) = do
     ctx  <- Base.mkContext cfg
     evalStateT s Z3State { uniqVal   = 0
                          , context   = ctx
-                         , consts    = Map.empty
                          }
 
 -- | Fresh symbol name.
@@ -105,25 +101,6 @@ fresh = do
     let i = uniqVal st
     put st { uniqVal = i + 1 }
     return (uniqVal st, 'v':show i)
-
--- | Add a constant of type @Base.AST a@ to the state.
---
-addConst :: Base.Z3Type a => Uniq -> Base.AST a -> Z3 ()
-addConst u ast = do
-    st <- get
-    put st { consts = Map.insert u (AnyAST ast) (consts st) }
-
--- | Get a 'Base.AST' stored in the Z3State.
---
-getConst :: forall a. Base.Z3Type a => Uniq -> Z3 (Base.AST a)
-getConst u = liftM mlookup $ gets consts
-    where mlookup :: Map.IntMap AnyAST -> Base.AST a
-          mlookup m =
-              maybe (error _UNDEFINED_CONST) extractAST $ Map.lookup u m
-
-          extractAST :: AnyAST -> Base.AST a
-          extractAST (AnyAST e) =
-              fromMaybe (error _UNDEFINED_CONST) $ Base.castAST e
 
 ---------------------------------------------------------------------
 -- Lifted Base functions
@@ -164,7 +141,7 @@ getReal = liftZ3Op2 Base.getReal
 getModel :: Z3 (Base.Result Base.Model)
 getModel = liftZ3Op Base.getModel
 
-getValue :: Base.Z3Scalar a => Base.AST a -> Z3 a
+getValue :: Base.Z3Type a => Base.AST a -> Z3 a
 getValue = liftZ3Op2 Base.getValue
 
 mkSort :: Base.Z3Type a => Z3 (Base.Sort a)
@@ -173,7 +150,7 @@ mkSort = liftZ3Op Base.mkSort
 mkStringSymbol :: String -> Z3 Base.Symbol
 mkStringSymbol = liftZ3Op2 Base.mkStringSymbol
 
-mkLiteral :: forall a. Base.Z3Scalar a => a -> Z3 (Base.AST a)
+mkLiteral :: forall a. Base.Z3Type a => a -> Z3 (Base.AST a)
 mkLiteral = liftZ3Op2 Base.mkValue
 
 mkNot :: Base.AST Bool -> Z3 (Base.AST Bool)
@@ -188,9 +165,9 @@ mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
 mkBoolMulti And = liftZ3Op2 Base.mkAnd
 mkBoolMulti Or  = liftZ3Op2 Base.mkOr
 
-mkEq :: Base.Z3Scalar a => CmpOpE
-                            -> Base.AST a -> Base.AST a
-                            -> Z3 (Base.AST Bool)
+mkEq :: Base.Z3Type a => CmpOpE
+                           -> Base.AST a -> Base.AST a
+                           -> Z3 (Base.AST Bool)
 mkEq Eq  = liftZ3Op3 Base.mkEq
 mkEq Neq = liftZ3Op3 mkNeq
   where mkNeq ctx b1 = Base.mkNot ctx <=< Base.mkEq ctx b1
@@ -202,6 +179,50 @@ mkCmp Le = liftZ3Op3 Base.mkLe
 mkCmp Lt = liftZ3Op3 Base.mkLt
 mkCmp Ge = liftZ3Op3 Base.mkGe
 mkCmp Gt = liftZ3Op3 Base.mkGt
+
+mkFuncDecl :: Base.Z3Fun a => Base.Symbol
+                                -> Z3 (Base.FuncDecl a)
+mkFuncDecl = liftZ3Op2 Base.mkFuncDecl
+
+mkApp1 :: (Base.Z3Type a, Base.Z3Type b)
+            => Base.FuncDecl (a -> b)
+                -> Base.AST a
+                -> Z3 (Base.AST b)
+mkApp1 = liftZ3Op3 Base.mkApp1
+
+mkApp2 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c)
+            => Base.FuncDecl (a -> b -> c)
+                -> Base.AST a -> Base.AST b
+                -> Z3 (Base.AST c)
+mkApp2 = liftZ3Op4 Base.mkApp2
+
+mkApp3 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d)
+            => Base.FuncDecl (a -> b -> c -> d)
+                -> Base.AST a -> Base.AST b -> Base.AST c
+                -> Z3 (Base.AST d)
+mkApp3 fd a b c
+  = gets context >>= \ctx -> liftZ3 $ Base.mkApp3 ctx fd a b c
+
+mkApp4 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e)
+            => Base.FuncDecl (a -> b -> c -> d -> e)
+                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d
+                -> Z3 (Base.AST e)
+mkApp4 fd a b c d
+  = gets context >>= \ctx -> liftZ3 $ Base.mkApp4 ctx fd a b c d
+
+mkApp5 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e, Base.Z3Type f)
+            => Base.FuncDecl (a -> b -> c -> d -> e -> f)
+                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d -> Base.AST e
+                -> Z3 (Base.AST f)
+mkApp5 fd a b c d e
+  = gets context >>= \ctx -> liftZ3 $ Base.mkApp5 ctx fd a b c d e
+
+mkApp6 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e, Base.Z3Type f, Base.Z3Type g)
+            => Base.FuncDecl (a -> b -> c -> d -> e -> f -> g)
+                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d -> Base.AST e -> Base.AST f
+                -> Z3 (Base.AST g)
+mkApp6 fd a b c d e f
+  = gets context >>= \ctx -> liftZ3 $ Base.mkApp6 ctx fd a b c d e f
 
 mkConst :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
 mkConst = liftZ3Op3 Base.mkConst
@@ -228,10 +249,3 @@ mkRealArith Div = liftZ3Op3 Base.mkDiv
 
 mkIte :: Base.AST Bool -> Base.AST a -> Base.AST a -> Z3 (Base.AST a)
 mkIte = liftZ3Op4 Base.mkIte
-
----------------------------------------------------------------------
--- Error messages
-
-_UNDEFINED_CONST :: String
-_UNDEFINED_CONST = "Panic! Undefined constant or unexpected\
-    \constant sort."

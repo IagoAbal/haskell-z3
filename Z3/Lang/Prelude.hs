@@ -1,12 +1,16 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE IncoherentInstances  #-}
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE StandaloneDeriving   #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module    : Z3.Lang.Prelude
@@ -29,6 +33,7 @@ module Z3.Lang.Prelude (
 
     -- ** Commands
     , var
+    , fun1, fun2, fun3, fun4, fun5
     , assert
     , let_
     , check
@@ -36,6 +41,11 @@ module Z3.Lang.Prelude (
 
     -- * Expressions
     , Expr
+    , IsTy
+    , IsFun
+    , IsNum
+    , IsInt
+    , IsReal
     , true
     , false
     , not_
@@ -58,6 +68,7 @@ import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
 import Control.Applicative ( (<$>) )
+import Control.Monad ( liftM, liftM2, liftM3, liftM4, liftM5, join )
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
 
@@ -71,10 +82,61 @@ var = do
     (u, str) <- fresh
     smb <- mkStringSymbol str
     (srt :: Base.Sort (TypeZ3 a)) <- mkSort
-    addConst u =<< mkConst smb srt
-    let e = Const u
+    cnst <- mkConst smb srt
+    let e = Const u cnst
     assert $ typeInv e
     return e
+
+-- | Declare uninterpreted function of arity 1
+--
+fun1 :: (IsTy a, IsTy b, b ~ TypeZ3 b) => Z3 (Expr a -> Expr b)
+fun1 = do
+    (fd :: FunApp (a -> b)) <- fun 
+    return $ \e -> App $ PApp fd e
+
+-- | Declare uninterpreted function of arity 2
+--
+fun2 :: (IsTy a, IsTy b, IsTy c, c ~ TypeZ3 c) => Z3 (Expr a -> Expr b -> Expr c)
+fun2 = do
+    (fd :: FunApp (a -> b -> c)) <- fun 
+    return $ \e1 e2 -> App $ PApp (PApp fd e1) e2
+
+
+-- | Declare uninterpreted function of arity 3
+--
+fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d, d ~ TypeZ3 d)
+     => Z3 (Expr a -> Expr b -> Expr c -> Expr d)
+fun3 = do
+    (fd :: FunApp (a -> b -> c -> d)) <- fun 
+    return $ \e1 e2 e3 ->
+        App $ PApp (PApp (PApp fd e1) e2) e3
+
+-- | Declare uninterpreted function of arity 4
+--
+fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, e ~ TypeZ3 e)
+     => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e)
+fun4 = do
+    (fd :: FunApp (a -> b -> c -> d -> e)) <- fun 
+    return $ \e1 e2 e3 e4 ->
+        App $ PApp (PApp (PApp (PApp fd e1) e2) e3) e4
+
+-- | Declare uninterpreted function of arity 5
+--
+fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f, f ~ TypeZ3 f)
+     => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e -> Expr f)
+fun5 = do
+    (fd :: FunApp (a -> b -> c -> d -> e -> f)) <- fun 
+    return $ \e1 e2 e3 e4 e5 ->
+        App $ PApp (PApp (PApp (PApp (PApp fd e1) e2) e3) e4) e5
+
+-- | Declare uninterpreted function
+--
+fun :: forall a. IsFun a => Z3 (FunApp a)
+fun = do
+  (_u, str) <- fresh
+  smb <- mkStringSymbol str
+  (fd :: Base.FuncDecl (TypeZ3 a)) <- mkFuncDecl smb
+  return (FuncDecl fd)
 
 -- | Make assertion in current context.
 --
@@ -86,7 +148,7 @@ assert e          = compile e >>= assertCnstr
 --
 -- If you really want sharing use this instead of Haskell's /let/.
 --
-let_ :: IsScalar a => Expr a -> Z3 (Expr a)
+let_ :: IsTy a => Expr a -> Z3 (Expr a)
 let_ e = do
   aux <- var
   assert (aux ==* e)
@@ -94,7 +156,7 @@ let_ e = do
 
 -- | Check expression in current model (checks current model if none exists)
 --
-checkModel :: forall a.IsScalar a => Expr a -> Z3 (Result a)
+checkModel :: forall a.IsTy a => Expr a -> Z3 (Result a)
 checkModel e = do
   a <- compile e
   m <- getModel
@@ -112,12 +174,13 @@ checkModel e = do
 ----------------------------------------------------------------------
 -- Expressions
 
+deriving instance Show (FunApp a)
 deriving instance Show (Expr a)
 deriving instance Typeable1 Expr
 
 instance Eq (Expr a) where
   (Lit l1) == (Lit l2) = l1 == l2
-  (Const a) == (Const b) = a == b
+  (Const a _) == (Const b _) = a == b
   (Not e1) == (Not e2) = e1 == e2
   (BoolBin op1 p1 q1) == (BoolBin op2 p2 q2)
     = op1 == op2 && p1 == p2 && q1 == q2
@@ -166,7 +229,7 @@ infixr 2  `implies`, `iff`, ==>, <=>
 
 -- | /literal/ constructor.
 --
-literal :: IsScalar a => a -> Expr a
+literal :: IsTy a => a -> Expr a
 literal = Lit
 
 -- | Boolean literals.
@@ -241,11 +304,11 @@ p ||* q = or_ [p,q]
 
 -- | Equals.
 --
-(==*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
+(==*) :: IsTy a => Expr a -> Expr a -> Expr Bool
 (==*) = CmpE Eq
 -- | Not equals.
 --
-(/=*) :: IsScalar a => Expr a -> Expr a -> Expr Bool
+(/=*) :: IsTy a => Expr a -> Expr a -> Expr Bool
 (/=*) = CmpE Neq
 
 
@@ -272,6 +335,13 @@ ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
 ite = Ite
 
 ----------------------------------------------------------------------
+-- Functions
+type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
+
+instance (IsTy a, IsTy b) => IsFun (a -> b) where
+instance (IsTy a, IsFun (b -> c)) => IsFun (a -> b -> c) where
+
+----------------------------------------------------------------------
 -- Booleans
 
 type instance TypeZ3 Bool = Bool
@@ -279,16 +349,14 @@ type instance TypeZ3 Bool = Bool
 instance IsTy Bool where
   typeInv = const true
   compile = compileBool
-
-instance IsScalar Bool where
   fromZ3Type = id
   toZ3Type = id
 
 compileBool :: Expr Bool -> Z3 (AST Bool)
 compileBool (Lit a)
     = mkLiteral a
-compileBool (Const u)
-    = getConst u
+compileBool (Const _ u)
+    = return u
 compileBool (Not b)
     = do b'  <- compileBool b
          mkNot b'
@@ -315,6 +383,8 @@ compileBool (Ite b e1 e2)
          e1' <- compileBool e1
          e2' <- compileBool e2
          mkIte b' e1' e2'
+compileBool (App e)
+    = app2AST e
 compileBool _
     = error "Z3.Lang.Prelude.compileBool: Panic!\
         \ Impossible constructor in pattern matching!"
@@ -327,8 +397,6 @@ type instance TypeZ3 Integer = Integer
 instance IsTy Integer where
   typeInv = const true
   compile = compileInteger
-
-instance IsScalar Integer where
   fromZ3Type = id
   toZ3Type = id
 
@@ -338,8 +406,8 @@ instance IsInt Integer where
 compileInteger :: Expr Integer -> Z3 (AST Integer)
 compileInteger (Lit a)
   = mkLiteral a
-compileInteger (Const u)
-  = getConst u
+compileInteger (Const _ u)
+  = return u
 compileInteger (Neg e)
   = mkUnaryMinus =<< compileInteger e
 compileInteger (CRingArith op es)
@@ -353,6 +421,8 @@ compileInteger (Ite eb e1 e2)
        e1' <- compileInteger e1
        e2' <- compileInteger e2
        mkIte eb' e1' e2'
+compileInteger (App e)
+    = app2AST e
 compileInteger _
     = error "Z3.Lang.Prelude.compileInteger: Panic!\
         \ Impossible constructor in pattern matching!"
@@ -365,8 +435,6 @@ type instance TypeZ3 Rational = Rational
 instance IsTy Rational where
   typeInv = const true
   compile = compileRational
-
-instance IsScalar Rational where
   fromZ3Type = id
   toZ3Type = id
 
@@ -376,8 +444,8 @@ instance IsReal Rational where
 compileRational :: Expr Rational -> Z3 (AST Rational)
 compileRational (Lit a)
   = mkLiteral a
-compileRational (Const u)
-  = getConst u
+compileRational (Const _ u)
+  = return u
 compileRational (Neg e)
   = mkUnaryMinus =<< compileRational e
 compileRational (CRingArith op es)
@@ -391,6 +459,22 @@ compileRational (Ite eb e1 e2)
        e1' <- compileRational e1
        e2' <- compileRational e2
        mkIte eb' e1' e2'
+compileRational (App e)
+    = app2AST e
 compileRational _
     = error "Z3.Lang.Prelude.compileRational: Panic!\
         \ Impossible constructor in pattern matching!"
+
+app2AST :: forall a. IsTy a => FunApp a -> Z3 (Base.AST (TypeZ3 a))
+app2AST (PApp(FuncDecl fd)e1) = join $
+  liftM  (mkApp1 fd) (compile e1)
+app2AST (PApp(PApp(FuncDecl fd)e1)e2) = join $
+  liftM2 (mkApp2 fd) (compile e1) (compile e2)
+app2AST (PApp(PApp(PApp(FuncDecl fd)e1)e2)e3) = join $
+  liftM3 (mkApp3 fd) (compile e1) (compile e2) (compile e3)
+app2AST (PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4) = join $
+  liftM4 (mkApp4 fd) (compile e1) (compile e2) (compile e3) (compile e4)
+app2AST (PApp(PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4)e5) = join $
+  liftM5 (mkApp5 fd) (compile e1) (compile e2) (compile e3) (compile e4) (compile e5)
+app2AST _ = error "Z3.Lang.Prelude.app2AST:\
+    \ Panic! Impossible function application!"
