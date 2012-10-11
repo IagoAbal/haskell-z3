@@ -50,8 +50,6 @@ type instance TypeZ3 Nat = Integer
 instance IsTy Nat where
   typeInv e = e >=* 0
   compile = compileNat
-
-instance IsScalar Nat where
   fromZ3Type = Nat
   toZ3Type = unNat
 
@@ -61,8 +59,8 @@ instance IsInt Nat where
 compileNat :: Expr Nat -> Z3 (AST Integer)
 compileNat (Lit a)
   = mkLiteral (toZ3Type a)
-compileNat (Const u)
-  = getConst u
+compileNat (Const _ u)
+  = return u
 compileNat (Neg e) = do
   assert $ e ==* 0
   mkUnaryMinus =<< compileNat e
@@ -84,6 +82,8 @@ compileNat (Ite eb e1 e2)
        e1' <- compileNat e1
        e2' <- compileNat e2
        mkIte eb' e1' e2'
+compileNat (App _)
+  = error "Function application not supported for Naturals"
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"

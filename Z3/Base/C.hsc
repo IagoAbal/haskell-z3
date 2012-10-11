@@ -42,6 +42,9 @@ data Z3_ast
 -- | A kind of AST used to represent types.
 data Z3_sort
 
+-- | A kind of AST used to represent function symbols.
+data Z3_func_decl
+
 -- | A kind of AST used to represent constant and function declarations.
 data Z3_app
 
@@ -159,8 +162,28 @@ foreign import ccall unsafe "Z3_mk_real_sort"
 ---------------------------------------------------------------------
 -- * Constants and Applications
 
--- TODO Constants and Applications: Z3_mk_func_decl
--- TODO Constants and Applications: Z3_mk_app
+-- | Declare a constant or function.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa5c5e2602a44d5f1373f077434859ca2>
+--
+foreign import ccall unsafe "Z3_mk_func_decl"
+    z3_mk_func_decl :: Ptr Z3_context
+                         -> Ptr Z3_symbol
+                         -> CUInt
+                         -> Ptr (Ptr Z3_sort)
+                         -> Ptr Z3_sort
+                         -> IO (Ptr Z3_func_decl)
+
+-- | Create a constant or function application.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga33a202d86bf628bfab9b6f437536cebe>
+--
+foreign import ccall unsafe "Z3_mk_app"
+    z3_mk_app :: Ptr Z3_context
+                   -> Ptr Z3_func_decl
+                   -> CUInt
+                   -> Ptr (Ptr Z3_ast)
+                   -> IO (Ptr Z3_ast)
 
 -- | Declare and create a constant.
 --
