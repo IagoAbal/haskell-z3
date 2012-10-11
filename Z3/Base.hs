@@ -1,9 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module    : Z3.Base
@@ -24,6 +29,7 @@ module Z3.Base (
     , Symbol
     , AST
     , Sort
+    , FuncDecl
     , App
     , Pattern
     , Model
@@ -35,7 +41,7 @@ module Z3.Base (
 
     -- ** Z3 types
     , Z3Type(..)
-    , Z3Scalar(..)
+    , Z3Fun()
     , Z3Num
 
     -- * Configuration
@@ -57,6 +63,8 @@ module Z3.Base (
     , mkRealSort
 
     -- * Constants and Applications
+    , mkFuncDecl
+    , mkApp1, mkApp2, mkApp3, mkApp4, mkApp5, mkApp6
     , mkConst
     , mkTrue
     , mkFalse
@@ -115,12 +123,12 @@ import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Typeable ( Typeable, typeOf )
 import Data.Word
-import Foreign hiding ( newForeignPtr, toBool )
+import Foreign hiding ( newForeignPtr, addForeignPtrFinalizer, toBool )
 import Foreign.C
   ( CInt, CUInt, CLLong, CULLong
   , peekCString
   , withCString )
-import Foreign.Concurrent ( newForeignPtr )
+import Foreign.Concurrent ( newForeignPtr, addForeignPtrFinalizer )
 
 ---------------------------------------------------------------------
 -- Types
@@ -161,7 +169,7 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 --       complicating the higher-level layers such as 'Z3.Monad' ?
 --
 newtype AST a = AST { unAST :: Ptr Z3_ast }
-    deriving (Eq, Ord, Show, Storable)
+    deriving (Eq, Ord, Show, Storable, Typeable)
 
 -- | Cast an 'AST a' to 'AST b' when 'a' and 'b' are the same type.
 --
@@ -177,6 +185,11 @@ castAST (AST a)
 newtype Sort a = Sort { unSort :: Ptr Z3_sort }
     deriving (Eq, Ord, Show, Storable)
 
+-- | Kind of AST used to represent function symbols.
+--
+newtype FuncDecl a = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
+    deriving (Eq, Ord, Show, Storable, Typeable)
+
 -- | A kind of Z3 AST used to represent constant and function declarations.
 --
 newtype App a = App { _unApp :: Ptr Z3_app }
@@ -190,26 +203,22 @@ newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
 
 -- | A model for the constraints asserted into the logical context.
 --
-data Model
-    = Model {
-        modelContext :: Context
-      , unModel      :: ForeignPtr Z3_model
-      }
+newtype Model = Model { unModel :: Ptr Z3_model }
     deriving Eq
 
 -- | Result of a satisfiability check.
 --
-data Result
-    = Sat
+data Result a
+    = Sat a
     | Unsat
     | Undef
-    deriving (Eq, Ord, Enum, Bounded, Read, Show)
+    deriving (Eq, Ord, Read, Show)
 
 -- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
 --
-toResult :: Z3_lbool -> Result
+toResult :: Z3_lbool -> Result ()
 toResult lb
-    | lb == z3_l_true  = Sat
+    | lb == z3_l_true  = Sat ()
     | lb == z3_l_false = Unsat
     | lb == z3_l_undef = Undef
     | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
@@ -230,40 +239,49 @@ toBool b
 
 -- | A Z3 type
 --
-class Typeable a => Z3Type a where
+class (Eq a, Show a, Typeable a) => Z3Type a where
   mkSort :: Context -> IO (Sort a)
+  mkValue :: Context -> a -> IO (AST a)
+  getValue :: Context -> AST a -> IO a
 
 instance Z3Type Bool where
   mkSort = mkBoolSort
+  mkValue ctx True = mkTrue ctx
+  mkValue ctx False = mkFalse ctx
+  getValue ctx a = maybe False id <$> getBool ctx a
 
 instance Z3Type Integer where
   mkSort = mkIntSort
+  mkValue = mkInt
+  getValue = getInt
 
 instance Z3Type Rational where
   mkSort = mkRealSort
-
--- | A Z3 scalar type
---
-class (Eq a, Show a, Z3Type a) => Z3Scalar a where
-  mkValue :: Context -> a -> IO (AST a)
-  getValue :: Context -> AST a -> IO (Maybe a)
-
-instance Z3Scalar Bool where
-  mkValue ctx True = mkTrue ctx
-  mkValue ctx False = mkFalse ctx
-  getValue = getBool
-
-instance Z3Scalar Integer where
-  mkValue = mkInt
-  getValue ctx ast = Just <$> getInt ctx ast
-
-instance Z3Scalar Rational where
   mkValue = mkReal
-  getValue ctx ast = Just <$> getReal ctx ast
+  getValue = getReal
+
+-- | A Function type
+--
+class Z3Fun a where
+  -- Private functions: domain, range
+  domain :: Context -> TY a -> IO (CUInt, [Ptr Z3_sort])
+  range  :: Context -> TY a -> IO (Ptr Z3_sort)
+
+instance (Z3Type a, Z3Type b) => Z3Fun (a -> b) where
+  domain ctx _ = (1,) . (: []) . unSort <$> (mkSort ctx :: IO (Sort a))
+  range  ctx _ = unSort <$> (mkSort ctx :: IO (Sort b))
+
+instance (Z3Type a, Z3Fun (b -> c)) => Z3Fun (a -> b -> c) where
+  domain ctx _ = do
+    (srt1 :: Sort a) <- mkSort ctx
+    (n,lst)          <- domain ctx (TY :: TY  (b -> c))
+    return (n + 1, unSort srt1 : lst)
+  range ctx _ = range ctx (TY :: TY (b -> c))
+
 
 -- | A Z3 numeric type
 --
-class (Z3Scalar a, Num a) => Z3Num a where
+class (Z3Type a, Num a) => Z3Num a where
 instance Z3Num Integer where
 instance Z3Num Rational where
 
@@ -314,7 +332,7 @@ set_MODEL_PARTIAL cfg False = setParamValue cfg "MODEL_PARTIAL" "false"
 -- default: 'True', enable/disable type checker.
 --
 set_WELL_SORTED_CHECK :: Config -> Bool -> IO ()
-set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "MWELL_SORTED_CHECK" "true"
+set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "WELL_SORTED_CHECK" "true"
 set_WELL_SORTED_CHECK cfg False = setParamValue cfg "WELL_SORTED_CHECK" "false"
 
 ---------------------------------------------------------------------
@@ -378,14 +396,79 @@ mkRealSort c = withForeignPtr (unContext c) $ \cptr ->
 ---------------------------------------------------------------------
 -- Constants and Applications
 
--- TODO Constants and Applications: Z3_mk_func_decl
--- TODO Constants and Applications: Z3_mk_app
+-- | A Z3 function
+mkFuncDecl :: forall t. Z3Fun t => Context -> Symbol -> IO (FuncDecl t)
+mkFuncDecl ctx (Symbol smb) = withForeignPtr (unContext ctx) $ \ctxPtr -> do
+  (len, dom) <- domain ctx (TY :: TY t)
+  rng <- range  ctx (TY :: TY t)
+  withArray dom $ \c_dom ->
+    FuncDecl <$> z3_mk_func_decl ctxPtr smb len c_dom rng
+
+-- | Create a constant or function application.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga33a202d86bf628bfab9b6f437536cebe>
+--
+mkApp1 :: (Z3Type a, Z3Type b)
+            => Context
+                -> FuncDecl (a -> b)
+                -> AST a
+                -> IO (AST b)
+mkApp1 ctx fd a
+  = AST <$> mkApp ctx fd [unAST a]
+
+mkApp2 :: (Z3Type a, Z3Type b, Z3Type c)
+            => Context
+                -> FuncDecl (a -> b -> c)
+                -> AST a -> AST b
+                -> IO (AST c)
+mkApp2 ctx fd a b
+  = AST <$> mkApp ctx fd [unAST a,unAST b]
+
+mkApp3 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d)
+            => Context
+                -> FuncDecl (a -> b -> c -> d)
+                -> AST a -> AST b -> AST c
+                -> IO (AST d)
+mkApp3 ctx fd a b c
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c]
+
+mkApp4 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e)
+                -> AST a -> AST b -> AST c -> AST d
+                -> IO (AST e)
+mkApp4 ctx fd a b c d
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c,unAST d]
+
+mkApp5 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e -> f)
+                -> AST a -> AST b -> AST c -> AST d -> AST e
+                -> IO (AST f)
+mkApp5 ctx fd a b c d e
+  = AST <$> mkApp ctx fd [unAST a,unAST b ,unAST c,unAST d ,unAST e]
+
+mkApp6 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f, Z3Type g)
+            => Context
+                -> FuncDecl (a -> b -> c -> d -> e -> f -> g)
+                -> AST a -> AST b -> AST c -> AST d -> AST e -> AST f
+                -> IO (AST g)
+mkApp6 ctx fd a b c d e f
+  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c,unAST d,unAST e,unAST f]
+
+
+mkApp :: Context -> FuncDecl t -> [Ptr Z3_ast] -> IO (Ptr Z3_ast)
+mkApp ctx fd args =
+  withForeignPtr (unContext ctx) $ \ctxPtr ->
+    withArray args $ \pargs ->
+       z3_mk_app ctxPtr (unFuncDecl fd) (fromIntegral $ length args) pargs
+
 
 -- | Declare and create a constant.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
 --
-mkConst :: Context -> Symbol -> Sort a -> IO (AST a)
+mkConst :: Z3Type a => Context -> Symbol -> Sort a -> IO (AST a)
 mkConst c x s = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_const cptr (unSymbol x) (unSort s)
 
@@ -412,7 +495,7 @@ mkFalse c = withForeignPtr (unContext c) $ \cptr ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 --
-mkEq :: Z3Scalar a => Context -> AST a -> AST a -> IO (AST Bool)
+mkEq :: Z3Type a => Context -> AST a -> AST a -> IO (AST Bool)
 mkEq c e1 e2 = withForeignPtr (unContext c) $ \cptr ->
   AST <$> z3_mk_eq cptr (unAST e1) (unAST e2)
 
@@ -753,13 +836,13 @@ getNumeralString c a = withForeignPtr (unContext c) $ \ctxPtr ->
 
 -- | Return 'Z3Int' value
 --
-getInt :: Num a => Context -> AST Integer -> IO a
-getInt c a = fromInteger . read <$> getNumeralString c a
+getInt :: Context -> AST Integer -> IO Integer
+getInt c a = read <$> getNumeralString c a
 
 -- | Return 'Z3Real' value
 --
-getReal :: Fractional a => Context -> AST Rational -> IO a
-getReal c a = fromRational . parse <$> getNumeralString c a
+getReal :: Context -> AST Rational -> IO Rational
+getReal c a = parse <$> getNumeralString c a
   where parse :: String -> Rational
         parse s
           | [(i, sj)] <- reads s = i % parseDen (dropWhile (== ' ') sj)
@@ -777,16 +860,17 @@ getReal c a = fromRational . parse <$> getNumeralString c a
 -- Models
 
 mkModel :: Context -> Ptr Z3_model -> IO Model
-mkModel ctx ptr = withForeignPtr (unContext ctx) $ \ctxPtr ->
-    Model ctx <$> newForeignPtr ptr (z3_del_model ctxPtr ptr)
+mkModel ctx ptr = withForeignPtr fptr $ \ctxPtr -> do
+    addForeignPtrFinalizer fptr $ z3_del_model ctxPtr ptr
+    return $ Model ptr
+  where fptr = unContext ctx
 
 -- | Evaluate an AST node in the given model.
-eval :: Model -> AST a -> IO (Maybe (AST a))
-eval m a
-  = withForeignPtr (unContext $ modelContext m) $ \ctxPtr ->
-    withForeignPtr (unModel m) $ \mdlPtr ->
+eval :: Context -> Model -> AST a -> IO (Maybe (AST a))
+eval ctx m a
+  = withForeignPtr (unContext ctx) $ \ctxPtr ->
       alloca $ \aptr2 ->
-        z3_eval ctxPtr mdlPtr (unAST a) aptr2 >>= peekAST aptr2 . toBool
+        z3_eval ctxPtr (unModel m) (unAST a) aptr2 >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe (AST a))
         peekAST _p False = return Nothing
         peekAST  p True  = Just . AST <$> peek p
@@ -812,23 +896,25 @@ assertCnstr ctx ast =
 --
 -- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 --
-getModel :: Context -> IO (Result, Maybe Model)
+getModel :: Context -> IO (Result Model)
 getModel c = withForeignPtr (unContext c) $ \ctxPtr ->
   alloca $ \mptr ->
     z3_check_and_get_model ctxPtr mptr >>= peekModel mptr . toResult
   where peekModel :: Ptr (Ptr Z3_model)
-                  -> Result
-                  -> IO (Result, Maybe Model)
-        peekModel p r | p == nullPtr = return (r, Nothing)
-                      | otherwise    = do z3m <- peek p
-                                          m   <- mkModel c z3m
-                                          return (r, Just m)
+                  -> Result ()
+                  -> IO (Result Model)
+        peekModel _ Unsat                   = return Unsat
+        peekModel _ Undef                   = return Undef
+        peekModel p (Sat ()) | p == nullPtr = error "Z3.Base.getModel: Panic! nullPtr!"
+                             | otherwise    = do z3m <- peek p
+                                                 m <- mkModel c z3m
+                                                 return $ Sat m
 
 -- | Check whether the given logical context is consistent or not. 
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --
-check :: Context -> IO Result
+check :: Context -> IO (Result ())
 check ctx = toResult <$> withForeignPtr (unContext ctx) z3_check
 
 -- TODO Constraints: Z3_check_assumptions

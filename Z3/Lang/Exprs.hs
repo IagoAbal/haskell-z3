@@ -19,7 +19,7 @@ module Z3.Lang.Exprs (
     -- * Types
       TypeZ3
     , IsTy(..)
-    , IsScalar(..)
+    , IsFun
     
     -- ** Numeric types
     , IsNum
@@ -29,6 +29,7 @@ module Z3.Lang.Exprs (
     -- * Abstract syntax
     , Uniq
     , Expr (..)
+    , FunApp (..)
     , BoolBinOp (..)
     , BoolMultiOp (..)
     , CRingOp (..)
@@ -53,7 +54,7 @@ type family TypeZ3 a
 
 -- | Types for expressions.
 --
-class (Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
+class (Eq a, Show a, Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
   -- | Type invariant.
   -- Introduced when creating a variable.
   --
@@ -61,12 +62,19 @@ class (Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
   -- | Create a 'Base.AST' from a 'Expr'.
   --
   compile :: Expr a -> Z3 (Base.AST (TypeZ3 a))
-
--- | Scalar types.
---
-class (Eq a, Show a, IsTy a, Base.Z3Scalar(TypeZ3 a)) => IsScalar a where
+  
+  -- | Convert from underlying Z3 type to type.
+  --
   fromZ3Type :: TypeZ3 a -> a
+  
+  -- | Convert from a type to its underlying Z3 type.
+  --
   toZ3Type   :: a -> TypeZ3 a
+
+
+-- | Function types.
+--
+class Base.Z3Fun (TypeZ3 a) => IsFun a where
 
 ------------------------------------------------------------
 -- Numeric types
@@ -80,7 +88,7 @@ class (Eq a, Show a, IsTy a, Base.Z3Scalar(TypeZ3 a)) => IsScalar a where
 
 -- | Numeric types.
 --
-class (IsScalar a, Num a, Base.Z3Num (TypeZ3 a)) => IsNum a where
+class (IsTy a, Num a, Base.Z3Num (TypeZ3 a)) => IsNum a where
 
 -- | Typeclass for Haskell Z3 numbers of /int/ sort in Z3.
 --
@@ -101,9 +109,9 @@ type Uniq = Int
 --
 data Expr :: * -> * where
   --  | Literals
-  Lit :: IsScalar a => a -> Expr a
+  Lit :: IsTy a => a -> Expr a
   --  | Constants
-  Const :: !Uniq -> Expr a
+  Const :: !Uniq -> Base.AST (TypeZ3 a) -> Expr a
   --  | Logical negation
   Not :: Expr Bool -> Expr Bool
   --  | Binary boolean expressions
@@ -119,10 +127,22 @@ data Expr :: * -> * where
   --  | Real arithmetic
   RealArith :: IsReal a => RealOp -> Expr a -> Expr a -> Expr a
   --  | Comparison expressions
-  CmpE :: IsScalar a => CmpOpE -> Expr a -> Expr a -> Expr Bool
+  CmpE :: IsTy a => CmpOpE -> Expr a -> Expr a -> Expr Bool
   CmpI :: IsNum a => CmpOpI -> Expr a -> Expr a -> Expr Bool
   --  | if-then-else expressions
   Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
+
+  -- | Application
+  App :: IsTy a  => FunApp a -> Expr a
+
+
+-- | Z3 function
+--
+data FunApp :: * -> * where
+  -- | Function declaration
+  FuncDecl :: IsFun a => Base.FuncDecl (TypeZ3 a) -> FunApp a
+  -- | Partial application
+  PApp :: IsTy a => FunApp (a -> b) -> Expr a -> FunApp b
 
 -- | Boolean binary operations.
 data BoolBinOp = Xor | Implies | Iff
