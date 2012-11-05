@@ -60,6 +60,7 @@ instance IsInt Nat where
 tcNat :: Expr Nat -> TCM ()
 tcNat (Lit _) = ok
 tcNat (Const _ _) = ok
+tcNat (Tag _) = ok
 tcNat (Neg e) = do
   newTCC [e ==* 0]
   tcNat e
@@ -84,6 +85,10 @@ compileNat (Lit a)
   = mkLiteral (toZ3Type a)
 compileNat (Const _ u)
   = return u
+compileNat (Tag lyt)
+  = do ix <- deBruijnIx lyt
+       srt <- mkSort
+       mkBound ix srt
 compileNat (Neg e)
   = mkUnaryMinus =<< compileNat e
 compileNat (CRingArith op es)

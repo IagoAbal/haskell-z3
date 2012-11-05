@@ -55,6 +55,7 @@ module Z3.Lang.Prelude (
     , xor
     , implies, (==>)
     , iff, (<=>)
+    , forall
     , (//), (%*), (%%)
     , (==*), (/=*)
     , (<=*), (<*)
@@ -289,6 +290,11 @@ p &&* q = and_ [p,q]
 p ||* (BoolMulti Or qs) = or_ (p:qs)
 p ||* q = or_ [p,q]
 
+-- | Forall formula.
+--
+forall :: IsTy a => (Expr a -> Expr Bool) -> Expr Bool
+forall = ForAll
+
 -- | Integer division.
 --
 (//) :: IsInt a => Expr a -> Expr a -> Expr a
@@ -358,6 +364,7 @@ instance IsTy Bool where
 tcBool :: Expr Bool -> TCM ()
 tcBool (Lit _)     = ok
 tcBool (Const _ _) = ok
+tcBool (Tag _) = ok
 tcBool (Not b)     = tcBool b
 tcBool (BoolBin Implies e1 e2) = do
   tcBool e1
@@ -366,6 +373,7 @@ tcBool (BoolBin _op e1 e2) = do
   tcBool e1
   tcBool e2
 tcBool (BoolMulti _op es) = mapM_ tcBool es
+tcBool (ForAll _f) = ok
 tcBool (CmpE _op e1 e2) = do
   tc e1
   tc e2
@@ -385,6 +393,10 @@ compileBool (Lit a)
     = mkLiteral a
 compileBool (Const _ u)
     = return u
+compileBool (Tag lyt)
+    = do ix <- deBruijnIx lyt
+         srt <- mkSort
+         mkBound ix srt
 compileBool (Not b)
     = do b'  <- compileBool b
          mkNot b'
@@ -395,9 +407,12 @@ compileBool (BoolBin op e1 e2)
 compileBool (BoolMulti op es)
     = do es' <- mapM compileBool es
          mkBoolMulti op es'
--- compileBool (Neg e)
---     = do e'  <- compileBool e
---          mkUnaryMinus e'
+compileBool (ForAll (f :: Expr a -> Expr Bool))
+    = do (_,n) <- fresh
+         x <- mkStringSymbol n
+         srt :: Base.Sort (TypeZ3 a) <- mkSort
+         mkForall x srt =<< newQLayout (compileBool . mkBody)
+  where mkBody x = let b = f x in and_ (typeInv x:typecheck b) ==> b
 compileBool (CmpE op e1 e2)
     = do e1' <- compile e1
          e2' <- compile e2
@@ -434,6 +449,7 @@ instance IsInt Integer where
 tcInteger :: Expr Integer -> TCM ()
 tcInteger (Lit _) = ok
 tcInteger (Const _ _) = ok
+tcInteger (Tag _) = ok
 tcInteger (Neg e) = tcInteger e
 tcInteger (CRingArith _op es) = mapM_ tcInteger es
 tcInteger (IntArith _op e1 e2) = do
@@ -453,6 +469,10 @@ compileInteger (Lit a)
   = mkLiteral a
 compileInteger (Const _ u)
   = return u
+compileInteger (Tag lyt)
+  = do ix <- deBruijnIx lyt
+       srt <- mkSort
+       mkBound ix srt
 compileInteger (Neg e)
   = mkUnaryMinus =<< compileInteger e
 compileInteger (CRingArith op es)
@@ -489,6 +509,7 @@ instance IsReal Rational where
 tcRational :: Expr Rational -> TCM ()
 tcRational (Lit _) = ok
 tcRational (Const _ _) = ok
+tcRational (Tag _) = ok
 tcRational (Neg e) = tcRational e
 tcRational (CRingArith _op es) = mapM_ tcRational es
 tcRational (RealArith Div e1 e2) = do
@@ -508,6 +529,10 @@ compileRational (Lit a)
   = mkLiteral a
 compileRational (Const _ u)
   = return u
+compileRational (Tag lyt)
+  = do ix <- deBruijnIx lyt
+       srt <- mkSort
+       mkBound ix srt
 compileRational (Neg e)
   = mkUnaryMinus =<< compileRational e
 compileRational (CRingArith op es)
