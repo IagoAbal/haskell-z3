@@ -256,11 +256,13 @@ iff = BoolBin Iff
 -- | Boolean variadic /and/.
 --
 and_ :: [Expr Bool] -> Expr Bool
-and_ = BoolMulti And
+and_ [] = true
+and_ bs = BoolMulti And bs
 -- | Boolean variadic /or/.
 --
 or_ :: [Expr Bool] -> Expr Bool
-or_  = BoolMulti Or
+or_ [] = false
+or_ bs = BoolMulti Or bs
 
 -- | Boolean binary /and/.
 --
