@@ -1,9 +1,10 @@
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 -- |
 -- Module    : Z3.Lang.Exprs
@@ -37,12 +38,21 @@ module Z3.Lang.Exprs (
     , RealOp (..)
     , CmpOpE (..)
     , CmpOpI (..)
+
+    -- * Type checking
+    , typecheck
+    , TCM
+    , TCC
+    , ok
+    , withHypo
+    , newTCC
+    , evalTCM
     ) where
 
 import {-# SOURCE #-} Z3.Lang.Monad ( Z3 )
-
 import qualified Z3.Base as Base
 
+import Control.Monad.RWS
 import Data.Typeable ( Typeable )
 
 ----------------------------------------------------------------------
@@ -59,6 +69,11 @@ class (Eq a, Show a, Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
   -- Introduced when creating a variable.
   --
   typeInv :: Expr a -> Expr Bool
+
+  -- | Typecheck an expression.
+  --
+  tc :: Expr a -> TCM ()
+  
   -- | Create a 'Base.AST' from a 'Expr'.
   --
   compile :: Expr a -> Z3 (Base.AST (TypeZ3 a))
@@ -70,7 +85,6 @@ class (Eq a, Show a, Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
   -- | Convert from a type to its underlying Z3 type.
   --
   toZ3Type   :: a -> TypeZ3 a
-
 
 -- | Function types.
 --
@@ -171,3 +185,32 @@ data CmpOpE = Eq | Neq
 -- | Inequality comparisons.
 data CmpOpI = Le | Lt | Ge | Gt
     deriving (Eq, Show, Typeable)
+
+----------------------------------------------------------------------
+-- Typecheck monad
+
+newtype TCM a = TCM { unTCM :: RWS Context [TCC] () a }
+    deriving Monad
+
+type TCC = Expr Bool
+
+type Context = [Expr Bool]
+
+ok :: TCM ()
+ok = return ()
+
+withHypo :: Expr Bool -> TCM a -> TCM a
+withHypo h = TCM . local (h:) . unTCM
+
+newTCC :: [Expr Bool] -> TCM ()
+newTCC tccs = TCM $ do
+  hs <- ask
+  tell $ map (mkTCC hs) tccs
+  where mkTCC [] = id
+        mkTCC hs = BoolBin Implies (BoolMulti And hs)
+
+evalTCM :: TCM a -> (a,[TCC])
+evalTCM m = evalRWS (unTCM m) [] ()
+
+typecheck :: IsTy a => Expr a -> [Expr Bool]
+typecheck e = snd $ evalTCM (tc e)
