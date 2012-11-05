@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
 -- |
@@ -18,6 +19,8 @@ module Z3.Lang.Monad (
     , Z3State(..)
     , evalZ3
     , fresh
+    , deBruijnIx
+    , newQLayout
 
     -- ** Lifted Z3.Base functions
     , liftZ3
@@ -35,6 +38,8 @@ module Z3.Lang.Monad (
     , mkNot
     , mkBoolBin
     , mkBoolMulti
+    , mkBound
+    , mkForall
     , mkEq
     , mkCmp
     , mkFuncDecl
@@ -77,8 +82,9 @@ instance MonadState Z3State Z3 where
 -- | Internal state of Z3 monad.
 --
 data Z3State
-    = Z3State { uniqVal   :: !Uniq
-              , context   :: Base.Context
+    = Z3State { uniqVal :: !Uniq
+              , context :: Base.Context
+              , qLayout :: !Layout
               }
 
 -- | Eval a Z3 script.
@@ -89,8 +95,9 @@ evalZ3 (Z3 s) = do
     Base.set_MODEL cfg True
     Base.set_MODEL_PARTIAL cfg False
     ctx  <- Base.mkContext cfg
-    evalStateT s Z3State { uniqVal   = 0
-                         , context   = ctx
+    evalStateT s Z3State { uniqVal = 0
+                         , context = ctx
+                         , qLayout = 0
                          }
 
 -- | Fresh symbol name.
@@ -101,6 +108,22 @@ fresh = do
     let i = uniqVal st
     put st { uniqVal = i + 1 }
     return (uniqVal st, 'v':show i)
+
+getQLayout :: Z3 Layout
+getQLayout = gets qLayout
+
+deBruijnIx :: Layout -> Z3 Int
+deBruijnIx k = do lyt <- getQLayout; return $ lyt-k-1
+
+newQLayout :: (Expr a -> Z3 b) -> Z3 b
+newQLayout f = do
+  lyt <- getQLayout
+  incQLayout
+  x <- f (Tag lyt)
+  decQLayout
+  return x
+  where incQLayout = modify (\st@Z3State{qLayout} -> st{ qLayout = qLayout+1 })
+        decQLayout = modify (\st@Z3State{qLayout} -> st{ qLayout = qLayout-1 })
 
 ---------------------------------------------------------------------
 -- Lifted Base functions
@@ -164,6 +187,12 @@ mkBoolBin Iff     = liftZ3Op3 Base.mkIff
 mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
 mkBoolMulti And = liftZ3Op2 Base.mkAnd
 mkBoolMulti Or  = liftZ3Op2 Base.mkOr
+
+mkBound :: Base.Z3Type a => Int -> Base.Sort a -> Z3 (Base.AST a)
+mkBound = liftZ3Op3 Base.mkBound
+
+mkForall :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkForall = liftZ3Op4 Base.mkForall
 
 mkEq :: Base.Z3Type a => CmpOpE
                            -> Base.AST a -> Base.AST a

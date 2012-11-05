@@ -29,6 +29,7 @@ module Z3.Lang.Exprs (
     
     -- * Abstract syntax
     , Uniq
+    , Layout
     , Expr (..)
     , FunApp (..)
     , BoolBinOp (..)
@@ -115,9 +116,13 @@ class (IsNum a, Fractional a, Real a, TypeZ3 a ~ Rational) => IsReal a where
 ------------------------------------------------------------
 -- Abstract syntax
 
--- | Unique identifiers
+-- | Unique identifiers.
 --
 type Uniq = Int
+
+-- | Quantifier layout level.
+--
+type Layout = Int
 
 -- | Abstract syntax.
 --
@@ -126,12 +131,16 @@ data Expr :: * -> * where
   Lit :: IsTy a => a -> Expr a
   --  | Constants
   Const :: !Uniq -> Base.AST (TypeZ3 a) -> Expr a
+  --  | Tag, for converting from HOAS to de-Bruijn
+  Tag :: !Layout -> Expr a
   --  | Logical negation
   Not :: Expr Bool -> Expr Bool
   --  | Binary boolean expressions
   BoolBin :: BoolBinOp -> Expr Bool -> Expr Bool -> Expr Bool
   --  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
+  --  | Forall formula
+  ForAll :: IsTy a => (Expr a -> Expr Bool) -> Expr Bool
   --  | Arithmetic negation
   Neg :: IsNum a => Expr a -> Expr a
   --  | Arithmetic expressions for commutative rings
