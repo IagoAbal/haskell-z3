@@ -69,13 +69,23 @@ import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
 import Control.Applicative ( (<$>) )
-import Control.Monad ( liftM, liftM2, liftM3, liftM4, liftM5, join )
+import Control.Monad ( (>=>), liftM, liftM2, liftM3, liftM4, liftM5, join )
 #if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
 #else
 import Data.Typeable ( Typeable1(..) )
 #endif
+
+---------------------------------------------------------------------
+-- Utils
+
+-- | Compile while introducing TCCs into the script.
+--
+compileWithTCC :: IsTy a => Expr a -> Z3 (Base.AST (TypeZ3 a))
+compileWithTCC e = do
+  mapM_ (compile >=> assertCnstr) $ typecheck e
+  compile e
 
 ---------------------------------------------------------------------
 -- Commands
@@ -147,7 +157,7 @@ fun = do
 --
 assert :: Expr Bool -> Z3 ()
 assert (Lit True) = return ()
-assert e          = compile e >>= assertCnstr
+assert e          = compileWithTCC e >>= assertCnstr
 
 -- | Introduce an auxiliary declaration to name a given expression.
 --
@@ -165,7 +175,7 @@ let_ e = do
 --
 checkModel :: forall a.IsTy a => Expr a -> Z3 (Result a)
 checkModel e = do
-  a <- compile e
+  a <- compileWithTCC e
   m <- getModel
   fixResult a m
   where fixResult :: Base.AST (TypeZ3 a) -> Result Base.Model -> Z3 (Result a)
@@ -327,6 +337,7 @@ ite = Ite
 
 ----------------------------------------------------------------------
 -- Functions
+
 type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
 
 instance (IsTy a, IsTy b) => IsFun (a -> b) where
@@ -339,9 +350,35 @@ type instance TypeZ3 Bool = Bool
 
 instance IsTy Bool where
   typeInv = const true
+  tc = tcBool
   compile = compileBool
   fromZ3Type = id
   toZ3Type = id
+
+tcBool :: Expr Bool -> TCM ()
+tcBool (Lit _)     = ok
+tcBool (Const _ _) = ok
+tcBool (Not b)     = tcBool b
+tcBool (BoolBin Implies e1 e2) = do
+  tcBool e1
+  withHypo e1 $ tcBool e2
+tcBool (BoolBin _op e1 e2) = do
+  tcBool e1
+  tcBool e2
+tcBool (BoolMulti _op es) = mapM_ tcBool es
+tcBool (CmpE _op e1 e2) = do
+  tc e1
+  tc e2
+tcBool (CmpI _op e1 e2) = do
+  tc e1
+  tc e2
+tcBool (Ite eb e1 e2) = do
+  tcBool eb
+  withHypo eb $ tcBool e1
+  withHypo (Not eb) $ tcBool e2
+tcBool (App _app) = ok
+tcBool _
+    = error "Z3.Lang.Prelude.tcBool: Panic! Impossible constructor in pattern matching!"
 
 compileBool :: Expr Bool -> Z3 (AST Bool)
 compileBool (Lit a)
@@ -358,9 +395,9 @@ compileBool (BoolBin op e1 e2)
 compileBool (BoolMulti op es)
     = do es' <- mapM compileBool es
          mkBoolMulti op es'
-compileBool (Neg e)
-    = do e'  <- compileBool e
-         mkUnaryMinus e'
+-- compileBool (Neg e)
+--     = do e'  <- compileBool e
+--          mkUnaryMinus e'
 compileBool (CmpE op e1 e2)
     = do e1' <- compile e1
          e2' <- compile e2
@@ -386,12 +423,30 @@ type instance TypeZ3 Integer = Integer
 
 instance IsTy Integer where
   typeInv = const true
+  tc = tcInteger
   compile = compileInteger
   fromZ3Type = id
   toZ3Type = id
 
 instance IsNum Integer where
 instance IsInt Integer where
+
+tcInteger :: Expr Integer -> TCM ()
+tcInteger (Lit _) = ok
+tcInteger (Const _ _) = ok
+tcInteger (Neg e) = tcInteger e
+tcInteger (CRingArith _op es) = mapM_ tcInteger es
+tcInteger (IntArith _op e1 e2) = do
+  newTCC [e2 /=* 0]
+  tcInteger e1
+  tcInteger e2
+tcInteger (Ite eb e1 e2) = do
+  tc eb
+  withHypo eb $ tcInteger e1
+  withHypo (Not eb) $ tcInteger e2
+tcInteger (App _) = ok
+tcInteger _
+    = error "Z3.Lang.Prelude.tcInteger: Panic! Impossible constructor in pattern matching!"
 
 compileInteger :: Expr Integer -> Z3 (AST Integer)
 compileInteger (Lit a)
@@ -402,12 +457,6 @@ compileInteger (Neg e)
   = mkUnaryMinus =<< compileInteger e
 compileInteger (CRingArith op es)
   = mkCRingArith op =<< mapM compileInteger es
-compileInteger (IntArith Quot e1 e2)
-  = do aux <- let_ e2
-       assert $ aux /=* 0
-       e1' <- compileInteger e1
-       aux' <- compileInteger aux
-       mkIntArith Quot e1' aux' 
 compileInteger (IntArith op e1 e2)
   = do e1' <- compileInteger e1
        e2' <- compileInteger e2
@@ -429,12 +478,30 @@ type instance TypeZ3 Rational = Rational
 
 instance IsTy Rational where
   typeInv = const true
+  tc = tcRational
   compile = compileRational
   fromZ3Type = id
   toZ3Type = id
 
 instance IsNum Rational where
 instance IsReal Rational where
+
+tcRational :: Expr Rational -> TCM ()
+tcRational (Lit _) = ok
+tcRational (Const _ _) = ok
+tcRational (Neg e) = tcRational e
+tcRational (CRingArith _op es) = mapM_ tcRational es
+tcRational (RealArith Div e1 e2) = do
+  newTCC [e2 /=* 0]
+  tcRational e1
+  tcRational e2
+tcRational (Ite eb e1 e2) = do
+  tc eb
+  withHypo eb $ tcRational e1
+  withHypo (Not eb) $ tcRational e2
+tcRational (App _) = ok
+tcRational _
+    = error "Z3.Lang.Prelude.tcRational: Panic! Impossible constructor in pattern matching!"
 
 compileRational :: Expr Rational -> Z3 (AST Rational)
 compileRational (Lit a)
@@ -446,11 +513,9 @@ compileRational (Neg e)
 compileRational (CRingArith op es)
   = mkCRingArith op =<< mapM compileRational es
 compileRational (RealArith op@Div e1 e2)
-  = do aux <- let_ e2
-       assert $ aux /=* 0
-       e1' <- compileRational e1
-       aux' <- compileRational aux
-       mkRealArith op e1' aux'
+  = do e1' <- compileRational e1
+       e2' <- compileRational e2
+       mkRealArith op e1' e2'
 compileRational (Ite eb e1 e2)
   = do eb' <- compile eb
        e1' <- compileRational e1

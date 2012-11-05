@@ -49,6 +49,7 @@ type instance TypeZ3 Nat = Integer
 
 instance IsTy Nat where
   typeInv e = e >=* 0
+  tc = tcNat
   compile = compileNat
   fromZ3Type = Nat
   toZ3Type = unNat
@@ -56,23 +57,37 @@ instance IsTy Nat where
 instance IsNum Nat where
 instance IsInt Nat where
 
+tcNat :: Expr Nat -> TCM ()
+tcNat (Lit _) = ok
+tcNat (Const _ _) = ok
+tcNat (Neg e) = do
+  newTCC [e ==* 0]
+  tcNat e
+tcNat (CRingArith Sub es) = do
+  newTCC $ zipWith (>=*) (scanl1 (-) es) (tail es)
+  mapM_ tcNat es
+tcNat (CRingArith _op es) = mapM_ tcNat es
+tcNat (IntArith _op e1 e2) = do
+  newTCC [e2 /=* 0]
+  tcNat e1
+  tcNat e2
+tcNat (Ite eb e1 e2) = do
+  tc eb
+  withHypo eb $ tcNat e1
+  withHypo (Not eb) $ tcNat e2
+tcNat (App _) = ok
+tcNat _ = error "Z3.Lang.Nat.tcNat: Panic!\
+            \ Impossible constructor in pattern matching!"
+
 compileNat :: Expr Nat -> Z3 (AST Integer)
 compileNat (Lit a)
   = mkLiteral (toZ3Type a)
 compileNat (Const _ u)
   = return u
-compileNat (Neg e) = do
-  assert $ e ==* 0
-  mkUnaryMinus =<< compileNat e
-compileNat (CRingArith Sub (e1:e2:es)) = compileNatSub e1 e2 es
+compileNat (Neg e)
+  = mkUnaryMinus =<< compileNat e
 compileNat (CRingArith op es)
   = mkCRingArith op =<< mapM compileNat es
-compileNat (IntArith Quot e1 e2)
-  = do aux <- let_ e2
-       assert $ aux /=* 0
-       e1' <- compileNat e1
-       aux' <- compileNat aux
-       mkIntArith Quot e1' aux' 
 compileNat (IntArith op e1 e2)
   = do e1' <- compileNat e1
        e2' <- compileNat e2
@@ -87,11 +102,3 @@ compileNat (App _)
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"
-
-compileNatSub :: Expr Nat -> Expr Nat -> [Expr Nat] -> Z3 (AST Integer)
-compileNatSub e1 e2 es = do
-  assert $ e1 >=* e2
-  case es of
-      []       -> mkCRingArith Sub =<< mapM compileNat [e1,e2]
-      (e':es') -> do aux <- let_ (e1 - e2)
-                     compileNatSub aux e' es'
