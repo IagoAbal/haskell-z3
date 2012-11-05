@@ -70,7 +70,7 @@ import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
 import Control.Applicative ( (<$>) )
-import Control.Monad ( (>=>), liftM, liftM2, liftM3, liftM4, liftM5, join )
+import Control.Monad ( liftM, liftM2, liftM3, liftM4, liftM5, join )
 #if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
@@ -85,7 +85,7 @@ import Data.Typeable ( Typeable1(..) )
 --
 compileWithTCC :: IsTy a => Expr a -> Z3 (Base.AST (TypeZ3 a))
 compileWithTCC e = do
-  mapM_ (compile >=> assertCnstr) $ typecheck e
+  assertCnstr =<< compile (and_ $ typecheck e)
   compile e
 
 ---------------------------------------------------------------------
