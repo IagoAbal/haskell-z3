@@ -57,6 +57,7 @@ module Z3.Lang.Prelude (
     , iff, (<=>)
     , forall
     , (//), (%*), (%%)
+    , divides
     , (==*), (/=*)
     , (<=*), (<*)
     , (>=*), (>*) 
@@ -310,6 +311,11 @@ forall = ForAll
 (%%) :: IsInt a => Expr a -> Expr a -> Expr a
 (%%) = IntArith Rem
 
+-- | @k `divides` n == n %* k ==* 0@
+--
+divides :: IsInt a => Expr a -> Expr a -> Expr Bool
+k `divides` n = n %* k ==* 0
+{-# INLINE divides #-}
 
 -- | Equals.
 --
