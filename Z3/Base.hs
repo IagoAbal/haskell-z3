@@ -97,6 +97,7 @@ module Z3.Base (
     , mkReal
 
     -- * Quantifiers
+    , mkPattern
     , mkBound
     , mkForall
 
@@ -793,18 +794,28 @@ mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 ---------------------------------------------------------------------
 -- Quantifiers
 
+mkPattern :: Context -> [AST a] -> IO Pattern
+mkPattern _ [] = error "Z3.Base.mkPattern: empty list of expressions"
+mkPattern c es
+  = withArray es $ \aptr ->
+    withForeignPtr (unContext c) $ \cptr ->
+      Pattern <$> z3_mk_pattern cptr n (castPtr aptr)
+  where n = fromIntegral $ length es
+
 mkBound :: Context -> Int -> Sort a -> IO (AST a)
 mkBound c i s
   | i >= 0    = withForeignPtr (unContext c) $ \cptr ->
                   AST <$> z3_mk_bound cptr (fromIntegral i) (unSort s)
   | otherwise = error "Z3.Base.mkBound: negative de-Bruijn index"
 
-mkForall :: Context -> Symbol -> Sort a -> AST Bool -> IO (AST Bool)
-mkForall c x s p
-  = with (unSymbol x) $ \xptr ->
-    with (unSort s) $ \sptr ->
+mkForall :: Context -> [Pattern] -> Symbol -> Sort a -> AST Bool -> IO (AST Bool)
+mkForall c pats x s p
+  = withArray pats $ \patsPtr ->
+    with (unSymbol x) $ \xptr ->
+    with (unSort s)   $ \sptr ->
     withForeignPtr (unContext c) $ \cptr ->
-      AST <$> z3_mk_forall cptr 0 0 nullPtr 1 sptr xptr (unAST p)
+      AST <$> z3_mk_forall cptr 0 n (castPtr patsPtr) 1 sptr xptr (unAST p)
+  where n = fromIntegral $ length pats
 
 ---------------------------------------------------------------------
 -- Accessors

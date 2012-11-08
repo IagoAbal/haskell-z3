@@ -38,6 +38,7 @@ module Z3.Lang.Monad (
     , mkNot
     , mkBoolBin
     , mkBoolMulti
+    , mkPattern
     , mkBound
     , mkForall
     , mkEq
@@ -143,6 +144,9 @@ liftZ3Op3 f a b = gets context >>= \ctx -> liftZ3 (f ctx a b)
 liftZ3Op4 :: (Base.Context -> a -> b -> c -> IO d) -> a -> b -> c -> Z3 d
 liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
 
+liftZ3Op5 :: (Base.Context -> a -> b -> c -> d -> IO e) -> a -> b -> c -> d -> Z3 e
+liftZ3Op5 f a b c d = gets context >>= \ctx -> liftZ3 (f ctx a b c d)
+
 assertCnstr :: Base.AST Bool -> Z3 ()
 assertCnstr = liftZ3Op2 Base.assertCnstr
 
@@ -188,11 +192,14 @@ mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
 mkBoolMulti And = liftZ3Op2 Base.mkAnd
 mkBoolMulti Or  = liftZ3Op2 Base.mkOr
 
+mkPattern :: Base.Z3Type a => [Base.AST a] -> Z3 Base.Pattern
+mkPattern = liftZ3Op2 Base.mkPattern
+
 mkBound :: Base.Z3Type a => Int -> Base.Sort a -> Z3 (Base.AST a)
 mkBound = liftZ3Op3 Base.mkBound
 
-mkForall :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Base.AST Bool -> Z3 (Base.AST Bool)
-mkForall = liftZ3Op4 Base.mkForall
+mkForall :: Base.Z3Type a => [Base.Pattern] -> Base.Symbol -> Base.Sort a -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkForall = liftZ3Op5 Base.mkForall
 
 mkEq :: Base.Z3Type a => CmpOpE
                            -> Base.AST a -> Base.AST a

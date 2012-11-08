@@ -31,6 +31,7 @@ module Z3.Lang.Exprs (
     , Uniq
     , Layout
     , Expr (..)
+    , Pattern (..)
     , FunApp (..)
     , BoolBinOp (..)
     , BoolMultiOp (..)
@@ -140,7 +141,9 @@ data Expr :: * -> * where
   --  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
   --  | Forall formula
-  ForAll :: IsTy a => (Expr a -> Expr Bool) -> Expr Bool
+  ForAll :: IsTy a => (Expr a -> Expr Bool)       -- ^ body
+                    -> Maybe (Expr a -> Pattern)  -- ^ pattern
+                    -> Expr Bool
   --  | Arithmetic negation
   Neg :: IsNum a => Expr a -> Expr a
   --  | Arithmetic expressions for commutative rings
@@ -158,6 +161,10 @@ data Expr :: * -> * where
   -- | Application
   App :: IsTy a  => FunApp a -> Expr a
 
+-- | Quantifier pattern.
+--
+data Pattern where
+  Pat :: IsTy a => Expr a -> Pattern
 
 -- | Z3 function
 --
