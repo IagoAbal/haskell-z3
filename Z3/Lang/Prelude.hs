@@ -572,7 +572,7 @@ compileRational (App e)
 compileRational _
     = error "Z3.Lang.Prelude.compileRational: Panic! Impossible constructor in pattern matching!"
 
-app2AST :: forall a. IsTy a => FunApp a -> Z3 (Base.AST (TypeZ3 a))
+app2AST :: IsTy a => FunApp a -> Z3 (Base.AST (TypeZ3 a))
 app2AST (PApp(FuncDecl fd)e1) = join $
   liftM  (mkApp1 fd) (compile e1)
 app2AST (PApp(PApp(FuncDecl fd)e1)e2) = join $
