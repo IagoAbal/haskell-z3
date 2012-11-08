@@ -421,7 +421,12 @@ foreign import ccall unsafe "Z3_mk_unsigned_int64"
 ---------------------------------------------------------------------
 -- * Quantifiers
 
--- TODO Function 'Z3_mk_pattern'.
+-- | Create a pattern for quantifier instantiation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf15c95b66dc3b0af735774ee401a6f85>
+--
+foreign import ccall unsafe "Z3_mk_pattern"
+  z3_mk_pattern :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_pattern)
 
 -- | Create a bound variable.
 --

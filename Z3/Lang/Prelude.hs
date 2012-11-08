@@ -42,6 +42,7 @@ module Z3.Lang.Prelude (
 
     -- * Expressions
     , Expr
+    , Pattern(..)
     , IsTy
     , IsFun
     , IsNum
@@ -55,7 +56,7 @@ module Z3.Lang.Prelude (
     , xor
     , implies, (==>)
     , iff, (<=>)
-    , forall
+    , forall, forallP
     , (//), (%*), (%%)
     , divides
     , (==*), (/=*)
@@ -70,8 +71,10 @@ import qualified Z3.Base as Base
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 
-import Control.Applicative ( (<$>) )
+import Control.Applicative ( (<$>), (<*>), pure )
 import Control.Monad ( liftM, liftM2, liftM3, liftM4, liftM5, join )
+import Data.Maybe ( maybeToList )
+import qualified Data.Traversable as T
 #if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
@@ -295,8 +298,13 @@ p ||* q = or_ [p,q]
 
 -- | Forall formula.
 --
-forall :: IsTy a => (Expr a -> Expr Bool) -> Expr Bool
-forall = ForAll
+forall :: forall a. IsTy a => (Expr a -> Expr Bool) -> Expr Bool
+forall f = ForAll f Nothing
+
+forallP :: IsTy a => (Expr a -> Expr Bool)    -- ^ body
+                      -> (Expr a -> Pattern)  -- ^ pattern
+                      -> Expr Bool
+forallP f = ForAll f . Just
 
 -- | Integer division.
 --
@@ -381,7 +389,7 @@ tcBool (BoolBin _op e1 e2) = do
   tcBool e1
   tcBool e2
 tcBool (BoolMulti _op es) = mapM_ tcBool es
-tcBool (ForAll _f) = ok
+tcBool (ForAll _f _p) = ok
 tcBool (CmpE _op e1 e2) = do
   tc e1
   tc e2
@@ -415,12 +423,17 @@ compileBool (BoolBin op e1 e2)
 compileBool (BoolMulti op es)
     = do es' <- mapM compileBool es
          mkBoolMulti op es'
-compileBool (ForAll (f :: Expr a -> Expr Bool))
+compileBool (ForAll (f :: Expr a -> Expr Bool)
+                    (mb_mk_pat :: Maybe (Expr a -> Pattern)))
     = do (_,n) <- fresh
-         x <- mkStringSymbol n
+         sx <- mkStringSymbol n
          srt :: Base.Sort (TypeZ3 a) <- mkSort
-         mkForall x srt =<< newQLayout (compileBool . mkBody)
+         (body,mb_pat) <- newQLayout $ \x -> liftM2 (,)
+                              (compileBool $ mkBody x)
+                              (T.mapM mkPat (mb_mk_pat <*> pure x))
+         mkForall (maybeToList mb_pat) sx srt body
   where mkBody x = let b = f x in and_ (typeInv x:typecheck b) ==> b
+        mkPat (Pat e) = do ast <- compile e; mkPattern [ast]
 compileBool (CmpE op e1 e2)
     = do e1' <- compile e1
          e2' <- compile e2
