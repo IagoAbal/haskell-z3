@@ -250,7 +250,9 @@ xor = BoolBin Xor
 -- | Boolean implication
 --
 implies :: Expr Bool -> Expr Bool -> Expr Bool
-implies = BoolBin Implies
+p `implies` (BoolBin Implies q r)
+  = (p &&* q) `implies` r
+p `implies` q = BoolBin Implies p q
 -- | An alias for 'implies'.
 --
 (==>) :: Expr Bool -> Expr Bool -> Expr Bool
