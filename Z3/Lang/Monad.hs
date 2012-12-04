@@ -91,10 +91,17 @@ data Z3State
 -- | Eval a Z3 script.
 --
 evalZ3 :: Z3 a -> IO a
-evalZ3 (Z3 s) = do
+evalZ3 p = evalZ3With p stdArgs
+
+-- | Eval a Z3 script.
+--
+evalZ3With :: Z3 a -> Args -> IO a
+evalZ3With (Z3 s) args = do
     cfg  <- Base.mkConfig
     Base.set_MODEL cfg True
     Base.set_MODEL_PARTIAL cfg False
+    Base.setParamValue cfg "WARNING" "false"
+    iniConfig cfg args
     ctx  <- Base.mkContext cfg
     evalStateT s Z3State { uniqVal = 0
                          , context = ctx
@@ -109,6 +116,28 @@ fresh = do
     let i = uniqVal st
     put st { uniqVal = i + 1 }
     return (uniqVal st, 'v':show i)
+
+-------------------------------------------------
+-- Arguments
+
+data Args
+  = Args {
+      softTimeout :: Maybe Int
+    }
+
+stdArgs :: Args
+stdArgs 
+  = Args {
+      softTimeout = Nothing
+    }      
+
+iniConfig :: Base.Config -> Args -> IO ()
+iniConfig cfg args = do
+  Base.setParamValue cfg "SOFT_TIMEOUT" soft_timeout_val
+  where soft_timeout_val = show $ maybe 0 id $ softTimeout args 
+
+-------------------------------------------------
+-- HOAX-deBruijn conversion
 
 getQLayout :: Z3 Layout
 getQLayout = gets qLayout
