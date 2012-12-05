@@ -37,6 +37,8 @@ Library
         Z3.Lang
         Z3.Lang.Prelude
         Z3.Lang.Nat
+        Z3.Lang.Lg2
+        Z3.Lang.Pow2
 
     Other-modules:
         
