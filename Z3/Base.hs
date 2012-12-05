@@ -64,7 +64,7 @@ module Z3.Base (
 
     -- * Constants and Applications
     , mkFuncDecl
-    , mkApp1, mkApp2, mkApp3, mkApp4, mkApp5, mkApp6
+    , mkApp1, mkApp2, mkApp3, mkApp4, mkApp5
     , mkConst
     , mkTrue
     , mkFalse
@@ -465,14 +465,6 @@ mkApp5 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f)
                 -> IO (AST f)
 mkApp5 ctx fd a b c d e
   = AST <$> mkApp ctx fd [unAST a,unAST b ,unAST c,unAST d ,unAST e]
-
-mkApp6 :: (Z3Type a, Z3Type b, Z3Type c , Z3Type d, Z3Type e, Z3Type f, Z3Type g)
-            => Context
-                -> FuncDecl (a -> b -> c -> d -> e -> f -> g)
-                -> AST a -> AST b -> AST c -> AST d -> AST e -> AST f
-                -> IO (AST g)
-mkApp6 ctx fd a b c d e f
-  = AST <$> mkApp ctx fd [unAST a,unAST b,unAST c,unAST d,unAST e,unAST f]
 
 
 mkApp :: Context -> FuncDecl t -> [Ptr Z3_ast] -> IO (Ptr Z3_ast)
