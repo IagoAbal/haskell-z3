@@ -197,7 +197,7 @@ let_ e = do
 
 -- | Check satisfiability and evaluate the given expression if a model exists.
 --
-checkModel :: forall a.IsTy a => Expr a -> Z3 (Result a)
+checkModel :: forall a. IsTy a => Expr a -> Z3 (Result a)
 checkModel e = do
   a <- compileWithTCC e
   m <- getModel
