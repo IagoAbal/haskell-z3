@@ -358,22 +358,16 @@ ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
 ite = Ite
 
 ----------------------------------------------------------------------
--- Functions
-
-type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
-
-instance (IsTy a, IsTy b) => IsFun (a -> b) where
-instance (IsTy a, IsFun (b -> c)) => IsFun (a -> b -> c) where
-
-----------------------------------------------------------------------
 -- Booleans
 
 type instance TypeZ3 Bool = Bool
 
+instance Compilable (Expr Bool) where
+  compile = compileBool
+
 instance IsTy Bool where
   typeInv = const true
   tc = tcBool
-  compile = compileBool
   fromZ3Type = id
   toZ3Type = id
 
@@ -448,7 +442,7 @@ compileBool (Ite b e1 e2)
          e2' <- compileBool e2
          mkIte b' e1' e2'
 compileBool (App e)
-    = app2AST e
+    = compile e
 compileBool _
     = error "Z3.Lang.Prelude.compileBool: Panic! Impossible constructor in pattern matching!"
 
@@ -457,10 +451,12 @@ compileBool _
 
 type instance TypeZ3 Integer = Integer
 
+instance Compilable (Expr Integer) where
+  compile = compileInteger
+
 instance IsTy Integer where
   typeInv = const true
   tc = tcInteger
-  compile = compileInteger
   fromZ3Type = id
   toZ3Type = id
 
@@ -508,7 +504,7 @@ compileInteger (Ite eb e1 e2)
        e2' <- compileInteger e2
        mkIte eb' e1' e2'
 compileInteger (App e)
-    = app2AST e
+    = compile e
 compileInteger _
     = error "Z3.Lang.Prelude.compileInteger: Panic! Impossible constructor in pattern matching!"
 
@@ -517,10 +513,12 @@ compileInteger _
 
 type instance TypeZ3 Rational = Rational
 
+instance Compilable (Expr Rational) where
+  compile = compileRational
+
 instance IsTy Rational where
   typeInv = const true
   tc = tcRational
-  compile = compileRational
   fromZ3Type = id
   toZ3Type = id
 
@@ -568,9 +566,20 @@ compileRational (Ite eb e1 e2)
        e2' <- compileRational e2
        mkIte eb' e1' e2'
 compileRational (App e)
-    = app2AST e
+    = compile e
 compileRational _
     = error "Z3.Lang.Prelude.compileRational: Panic! Impossible constructor in pattern matching!"
+
+----------------------------------------------------------------------
+-- Functions
+
+type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
+
+instance (IsTy a, IsTy b) => IsFun (a -> b) where
+instance (IsTy a, IsFun (b -> c)) => IsFun (a -> b -> c) where
+
+instance IsTy a => Compilable (FunApp a) where
+  compile = app2AST
 
 app2AST :: IsTy a => FunApp a -> Z3 (Base.AST (TypeZ3 a))
 app2AST (PApp(FuncDecl fd)e1) = join $

@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 -- |
 -- Module    : Z3.Lang.Nat
@@ -47,10 +48,12 @@ instance Integral Nat where
 
 type instance TypeZ3 Nat = Integer
 
+instance Compilable (Expr Nat) where
+  compile = compileNat
+
 instance IsTy Nat where
   typeInv e = e >=* 0
   tc = tcNat
-  compile = compileNat
   fromZ3Type = Nat
   toZ3Type = unNat
 
@@ -107,3 +110,4 @@ compileNat (App _)
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"
+

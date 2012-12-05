@@ -19,6 +19,7 @@
 module Z3.Lang.Exprs (
     -- * Types
       TypeZ3
+    , Compilable(..)
     , IsTy(..)
     , IsFun
     
@@ -64,9 +65,17 @@ import Data.Typeable ( Typeable )
 --
 type family TypeZ3 a
 
+type instance TypeZ3 (Expr a)   = TypeZ3 a
+type instance TypeZ3 (FunApp a) = TypeZ3 a
+
+-- | Compilable /things/.
+--
+class Base.Z3Type (TypeZ3 t) => Compilable t where
+  compile :: t -> Z3 (Base.AST (TypeZ3 t))
+
 -- | Types for expressions.
 --
-class (Eq a, Show a, Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
+class (Eq a, Show a, Typeable a, Compilable (Expr a)) => IsTy a where
   -- | Type invariant.
   -- Introduced when creating a variable.
   --
@@ -75,10 +84,6 @@ class (Eq a, Show a, Typeable a, Base.Z3Type (TypeZ3 a)) => IsTy a where
   -- | Typecheck an expression.
   --
   tc :: Expr a -> TCM ()
-  
-  -- | Create a 'Base.AST' from a 'Expr'.
-  --
-  compile :: Expr a -> Z3 (Base.AST (TypeZ3 a))
   
   -- | Convert from underlying Z3 type to type.
   --
@@ -157,7 +162,6 @@ data Expr :: * -> * where
   CmpI :: IsNum a => CmpOpI -> Expr a -> Expr a -> Expr Bool
   --  | if-then-else expressions
   Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
-
   -- | Application
   App :: IsTy a  => FunApp a -> Expr a
 
