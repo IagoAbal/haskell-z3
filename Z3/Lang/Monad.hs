@@ -178,6 +178,7 @@ liftZ3Op5 f a b c d = gets context >>= \ctx -> liftZ3 (f ctx a b c d)
 assertCnstr :: Base.AST Bool -> Z3 ()
 assertCnstr = liftZ3Op2 Base.assertCnstr
 
+-- | Check satisfiability.
 check :: Z3 (Base.Result ())
 check = liftZ3Op Base.check
 

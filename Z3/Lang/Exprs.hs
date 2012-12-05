@@ -146,8 +146,8 @@ data Expr :: * -> * where
   --  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
   --  | Forall formula
-  ForAll :: IsTy a => (Expr a -> Expr Bool)       -- ^ body
-                    -> Maybe (Expr a -> Pattern)  -- ^ pattern
+  ForAll :: IsTy a => (Expr a -> Expr Bool)       --  ^ body
+                    -> Maybe (Expr a -> Pattern)  --  ^ pattern
                     -> Expr Bool
   --  | Arithmetic negation
   Neg :: IsNum a => Expr a -> Expr a
@@ -157,12 +157,13 @@ data Expr :: * -> * where
   IntArith :: IsInt a => IntOp -> Expr a -> Expr a -> Expr a
   --  | Real arithmetic
   RealArith :: IsReal a => RealOp -> Expr a -> Expr a -> Expr a
-  --  | Comparison expressions
+  --  | Equality testing.
   CmpE :: IsTy a => CmpOpE -> Expr a -> Expr a -> Expr Bool
+  --  | Ordering comparisons.
   CmpI :: IsNum a => CmpOpI -> Expr a -> Expr a -> Expr Bool
   --  | if-then-else expressions
   Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
-  -- | Application
+  --  | Application
   App :: IsTy a  => FunApp a -> Expr a
 
 -- | Quantifier pattern.
@@ -173,9 +174,9 @@ data Pattern where
 -- | Z3 function
 --
 data FunApp :: * -> * where
-  -- | Function declaration
+  --  | Function declaration
   FuncDecl :: IsFun a => Base.FuncDecl (TypeZ3 a) -> FunApp a
-  -- | Partial application
+  --  | Partial application
   PApp :: IsTy a => FunApp (a -> b) -> Expr a -> FunApp b
 
 -- | Boolean binary operations.
@@ -202,7 +203,7 @@ data RealOp = Div
 data CmpOpE = Eq | Neq
     deriving (Eq, Show, Typeable)
 
--- | Inequality comparisons.
+-- | Ordering comparisons.
 data CmpOpI = Le | Lt | Ge | Gt
     deriving (Eq, Show, Typeable)
 
