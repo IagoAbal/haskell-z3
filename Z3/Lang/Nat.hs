@@ -105,8 +105,8 @@ compileNat (Ite eb e1 e2)
        e1' <- compileNat e1
        e2' <- compileNat e2
        mkIte eb' e1' e2'
-compileNat (App _)
-  = error "Function application not supported for Naturals"
+compileNat (App e)
+    = compile e
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"

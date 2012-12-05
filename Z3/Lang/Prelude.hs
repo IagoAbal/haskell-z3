@@ -109,50 +109,69 @@ var = do
 
 -- | Declare uninterpreted function of arity 1
 --
-fun1 :: (IsTy a, IsTy b, b ~ TypeZ3 b) => Z3 (Expr a -> Expr b)
+fun1 :: (IsTy a, IsTy b) => Z3 (Expr a -> Expr b)
 fun1 = do
-    (fd :: FunApp (a -> b)) <- fun 
-    return $ \e -> App $ PApp fd e
+    (fd :: FunApp (a -> b)) <- funDecl
+    let f e = App $ PApp fd e
+    assert $ forall $ \a -> typeInv (f a)
+    return f
 
 -- | Declare uninterpreted function of arity 2
 --
-fun2 :: (IsTy a, IsTy b, IsTy c, c ~ TypeZ3 c) => Z3 (Expr a -> Expr b -> Expr c)
+fun2 :: (IsTy a, IsTy b, IsTy c) => Z3 (Expr a -> Expr b -> Expr c)
 fun2 = do
-    (fd :: FunApp (a -> b -> c)) <- fun 
-    return $ \e1 e2 -> App $ PApp (PApp fd e1) e2
+    (fd :: FunApp (a -> b -> c)) <- funDecl 
+    let f e1 e2 = App $ PApp (PApp fd e1) e2
+    assert $ forall $ \a -> forall $ \b -> typeInv (f a b)
+    return f
 
 
 -- | Declare uninterpreted function of arity 3
 --
-fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d, d ~ TypeZ3 d)
+fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d)
 fun3 = do
-    (fd :: FunApp (a -> b -> c -> d)) <- fun 
-    return $ \e1 e2 e3 ->
-        App $ PApp (PApp (PApp fd e1) e2) e3
+    (fd :: FunApp (a -> b -> c -> d)) <- funDecl
+    let f e1 e2 e3 = App $ PApp (PApp (PApp fd e1) e2) e3
+    assert $ forall $ \a -> 
+             forall $ \b -> 
+             forall $ \c -> 
+               typeInv (f a b c)
+    return f
 
 -- | Declare uninterpreted function of arity 4
 --
-fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, e ~ TypeZ3 e)
+fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e)
 fun4 = do
-    (fd :: FunApp (a -> b -> c -> d -> e)) <- fun 
-    return $ \e1 e2 e3 e4 ->
-        App $ PApp (PApp (PApp (PApp fd e1) e2) e3) e4
+    (fd :: FunApp (a -> b -> c -> d -> e)) <- funDecl
+    let f e1 e2 e3 e4 = App $ PApp (PApp (PApp (PApp fd e1) e2) e3) e4
+    assert $ forall $ \a -> 
+             forall $ \b -> 
+             forall $ \c -> 
+             forall $ \d -> 
+               typeInv (f a b c d)
+    return f
 
 -- | Declare uninterpreted function of arity 5
 --
-fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f, f ~ TypeZ3 f)
+fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e -> Expr f)
 fun5 = do
-    (fd :: FunApp (a -> b -> c -> d -> e -> f)) <- fun 
-    return $ \e1 e2 e3 e4 e5 ->
-        App $ PApp (PApp (PApp (PApp (PApp fd e1) e2) e3) e4) e5
+    (fd :: FunApp (a -> b -> c -> d -> e -> f)) <- funDecl
+    let f e1 e2 e3 e4 e5 = App $ PApp (PApp (PApp (PApp (PApp fd e1) e2) e3) e4) e5
+    assert $ forall $ \a -> 
+             forall $ \b -> 
+             forall $ \c -> 
+             forall $ \d -> 
+             forall $ \e ->
+               typeInv (f a b c d e)
+    return f
 
 -- | Declare uninterpreted function
 --
-fun :: forall a. IsFun a => Z3 (FunApp a)
-fun = do
+funDecl :: forall a. IsFun a => Z3 (FunApp a)
+funDecl = do
   (_u, str) <- fresh
   smb <- mkStringSymbol str
   (fd :: Base.FuncDecl (TypeZ3 a)) <- mkFuncDecl smb
