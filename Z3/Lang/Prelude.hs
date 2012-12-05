@@ -107,7 +107,7 @@ var = do
     assert $ typeInv e
     return e
 
--- | Declare uninterpreted function of arity 1
+-- | Declare uninterpreted function of arity 1.
 --
 fun1 :: (IsTy a, IsTy b) => Z3 (Expr a -> Expr b)
 fun1 = do
@@ -116,7 +116,7 @@ fun1 = do
     assert $ forall $ \a -> typeInv (f a)
     return f
 
--- | Declare uninterpreted function of arity 2
+-- | Declare uninterpreted function of arity 2.
 --
 fun2 :: (IsTy a, IsTy b, IsTy c) => Z3 (Expr a -> Expr b -> Expr c)
 fun2 = do
@@ -126,7 +126,7 @@ fun2 = do
     return f
 
 
--- | Declare uninterpreted function of arity 3
+-- | Declare uninterpreted function of arity 3.
 --
 fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d)
@@ -139,7 +139,7 @@ fun3 = do
                typeInv (f a b c)
     return f
 
--- | Declare uninterpreted function of arity 4
+-- | Declare uninterpreted function of arity 4.
 --
 fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e)
@@ -153,7 +153,7 @@ fun4 = do
                typeInv (f a b c d)
     return f
 
--- | Declare uninterpreted function of arity 5
+-- | Declare uninterpreted function of arity 5.
 --
 fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e -> Expr f)
@@ -195,7 +195,7 @@ let_ e = do
   assert (aux ==* e)
   return aux
 
--- | Check expression in current model (checks current model if none exists)
+-- | Check satisfiability and evaluate the given expression if a model exists.
 --
 checkModel :: forall a.IsTy a => Expr a -> Z3 (Result a)
 checkModel e = do
