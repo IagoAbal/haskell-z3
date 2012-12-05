@@ -49,7 +49,6 @@ module Z3.Lang.Monad (
     , mkApp3
     , mkApp4
     , mkApp5
-    , mkApp6
     , mkConst
     , mkUnaryMinus
     , mkCRingArith
@@ -281,13 +280,6 @@ mkApp5 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3T
                 -> Z3 (Base.AST f)
 mkApp5 fd a b c d e
   = gets context >>= \ctx -> liftZ3 $ Base.mkApp5 ctx fd a b c d e
-
-mkApp6 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e, Base.Z3Type f, Base.Z3Type g)
-            => Base.FuncDecl (a -> b -> c -> d -> e -> f -> g)
-                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d -> Base.AST e -> Base.AST f
-                -> Z3 (Base.AST g)
-mkApp6 fd a b c d e f
-  = gets context >>= \ctx -> liftZ3 $ Base.mkApp6 ctx fd a b c d e f
 
 mkConst :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
 mkConst = liftZ3Op3 Base.mkConst
