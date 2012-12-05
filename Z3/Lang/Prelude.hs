@@ -31,6 +31,9 @@ module Z3.Lang.Prelude (
       Z3
     , Base.Result(..)
     , evalZ3
+    , Args(..)
+    , stdArgs
+    , evalZ3With
 
     -- ** Commands
     , var
@@ -44,7 +47,6 @@ module Z3.Lang.Prelude (
     , Expr
     , Pattern(..)
     , IsTy
-    , IsFun
     , IsNum
     , IsInt
     , IsReal

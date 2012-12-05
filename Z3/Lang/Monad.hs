@@ -18,6 +18,9 @@ module Z3.Lang.Monad (
       Z3
     , Z3State(..)
     , evalZ3
+    , Args(..)
+    , stdArgs
+    , evalZ3With
     , fresh
     , deBruijnIx
     , newQLayout
