@@ -7,11 +7,17 @@ Description:
     This package is still a work in progress. Low and medium-level bindings
     to the Z3 API are provided ("Z3.Base.C" and "Z3.Base") in the spirit
     of yices-painless. These APIs are still incomplete but usable.
-    The high-level API ("Z3.Monad") is still very experimental.
+    The high-level API ("Z3.Lang") is still very experimental and likely to change.
+    .
+    Installation (Unix-like): Just be sure to use the standard locations for 
+    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else use 
+    the appropriate Cabal flags.
+    .
+    Haddock documentation: <http://www.iagoabal.eu/p/z3-haskell/doc>
     .
     More information about Z3:
     .
-    * <http://research.microsoft.com/en-us/um/redmond/projects/z3/>
+    * <http://z3.codeplex.com>
 Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE
