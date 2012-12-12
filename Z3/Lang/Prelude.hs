@@ -64,7 +64,7 @@ module Z3.Lang.Prelude (
     , divides
     , (==*), (/=*)
     , (<=*), (<*)
-    , (>=*), (>*) 
+    , (>=*), (>*)
     , min_, max_
     , ite
 
@@ -124,7 +124,7 @@ fun1 = do
 --
 fun2 :: (IsTy a, IsTy b, IsTy c) => Z3 (Expr a -> Expr b -> Expr c)
 fun2 = do
-    (fd :: FunApp (a -> b -> c)) <- funDecl 
+    (fd :: FunApp (a -> b -> c)) <- funDecl
     let f e1 e2 = App $ PApp (PApp fd e1) e2
     assert $ forall $ \a -> forall $ \b -> typeInv (f a b)
     return f
@@ -137,9 +137,9 @@ fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d)
 fun3 = do
     (fd :: FunApp (a -> b -> c -> d)) <- funDecl
     let f e1 e2 e3 = App $ PApp (PApp (PApp fd e1) e2) e3
-    assert $ forall $ \a -> 
-             forall $ \b -> 
-             forall $ \c -> 
+    assert $ forall $ \a ->
+             forall $ \b ->
+             forall $ \c ->
                typeInv (f a b c)
     return f
 
@@ -150,10 +150,10 @@ fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e)
 fun4 = do
     (fd :: FunApp (a -> b -> c -> d -> e)) <- funDecl
     let f e1 e2 e3 e4 = App $ PApp (PApp (PApp (PApp fd e1) e2) e3) e4
-    assert $ forall $ \a -> 
-             forall $ \b -> 
-             forall $ \c -> 
-             forall $ \d -> 
+    assert $ forall $ \a ->
+             forall $ \b ->
+             forall $ \c ->
+             forall $ \d ->
                typeInv (f a b c d)
     return f
 
@@ -164,10 +164,10 @@ fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f)
 fun5 = do
     (fd :: FunApp (a -> b -> c -> d -> e -> f)) <- funDecl
     let f e1 e2 e3 e4 e5 = App $ PApp (PApp (PApp (PApp (PApp fd e1) e2) e3) e4) e5
-    assert $ forall $ \a -> 
-             forall $ \b -> 
-             forall $ \c -> 
-             forall $ \d -> 
+    assert $ forall $ \a ->
+             forall $ \b ->
+             forall $ \c ->
+             forall $ \d ->
              forall $ \e ->
                typeInv (f a b c d e)
     return f
@@ -357,19 +357,21 @@ k `divides` n = n %* k ==* 0
 (/=*) :: IsTy a => Expr a -> Expr a -> Expr Bool
 (/=*) = CmpE Neq
 
-
 -- | Less or equals than.
 --
 (<=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<=*) = CmpI Le
+
 -- | Less than.
 --
 (<*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<*) = CmpI Lt
+
 -- | Greater or equals than.
 --
 (>=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>=*) = CmpI Ge
+
 -- | Greater than.
 --
 (>*) :: IsNum a => Expr a -> Expr a -> Expr Bool

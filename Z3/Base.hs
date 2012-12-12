@@ -35,7 +35,7 @@ module Z3.Base (
     , Model
 
     , castAST
-    
+
     -- ** Satisfiability result
     , Result(..)
 
@@ -136,7 +136,7 @@ import Foreign.Concurrent ( newForeignPtr, addForeignPtrFinalizer )
 --
 
 -- | A Z3 /configuration object/.
--- 
+--
 --
 -- /Notes:/
 --
@@ -157,7 +157,7 @@ withConfig = withForeignPtr . unConfig
 
 
 -- | A Z3 /logical context/.
--- 
+--
 --
 -- /Notes:/
 --
@@ -177,12 +177,12 @@ withContext :: Context -> (Ptr Z3_context -> IO a) -> IO a
 withContext = withForeignPtr . unContext
 
 -- | A Z3 /Lisp-link symbol/.
--- 
+--
 newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A Z3 /AST node/.
--- 
+--
 -- TODO: Does the extra type safety provided by the phantom type worth
 --       complicating the higher-level layers such as 'Z3.Monad' ?
 --
@@ -194,7 +194,7 @@ newtype AST a = AST { unAST :: Ptr Z3_ast }
 -- This is useful when unpacking an existentially quantified AST.
 --
 castAST :: forall a b. (Z3Type a, Z3Type b) => AST a -> Maybe (AST b)
-castAST (AST a) 
+castAST (AST a)
     | typeOf (TY::TY a) == typeOf (TY::TY b) = Just (AST a)
     | otherwise                              = Nothing
 
@@ -213,7 +213,7 @@ newtype FuncDecl a = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
 newtype App a = App { _unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
--- | A kind of AST used to represent pattern and multi-patterns used to 
+-- | A kind of AST used to represent pattern and multi-patterns used to
 --   guide quantifier instantiation.
 --
 newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
@@ -536,7 +536,7 @@ mkIte :: Context -> AST Bool -> AST a -> AST a -> IO (AST a)
 mkIte c g e1 e2 = withContext c $ \cptr ->
   AST <$> z3_mk_ite cptr (unAST g) (unAST e1) (unAST e2)
 
--- | Create an AST node representing t1 iff t2. 
+-- | Create an AST node representing t1 iff t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga930a8e844d345fbebc498ac43a696042>
 --
@@ -544,7 +544,7 @@ mkIff :: Context -> AST Bool -> AST Bool -> IO (AST Bool)
 mkIff c p q = withContext c $ \cptr ->
   AST <$> z3_mk_iff cptr (unAST p) (unAST q)
 
--- | Create an AST node representing t1 implies t2. 
+-- | Create an AST node representing t1 implies t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac829c0e25bbbd30343bf073f7b524517>
 --
@@ -552,7 +552,7 @@ mkImplies :: Context -> AST Bool -> AST Bool -> IO (AST Bool)
 mkImplies c p q = withContext c $ \cptr ->
   AST <$> z3_mk_implies cptr (unAST p) (unAST q)
 
--- | Create an AST node representing t1 xor t2. 
+-- | Create an AST node representing t1 xor t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc6d1b848032dec0c4617b594d4229ec>
 --
@@ -567,45 +567,45 @@ mkXor c p q = withContext c $ \cptr ->
 mkAnd :: Context -> [AST Bool] -> IO (AST Bool)
 mkAnd _ [] = error "Z3.Base.mkAnd: empty list of expressions"
 mkAnd c es =
-  withArray es $ \aptr -> 
+  withArray es $ \aptr ->
     withContext c $ \cptr ->
-      AST <$> z3_mk_and cptr n (castPtr aptr) 
+      AST <$> z3_mk_and cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
--- | Create an AST node representing args[0] or ... or args[num_args-1]. 
+-- | Create an AST node representing args[0] or ... or args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 --
 mkOr :: Context -> [AST Bool] -> IO (AST Bool)
 mkOr _ [] = error "Z3.Base.mkOr: empty list of expressions"
 mkOr c es =
-  withArray es $ \aptr -> 
+  withArray es $ \aptr ->
     withContext c $ \cptr ->
-      AST <$> z3_mk_or cptr n (castPtr aptr) 
+      AST <$> z3_mk_or cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
--- | Create an AST node representing args[0] + ... + args[num_args-1].  
+-- | Create an AST node representing args[0] + ... + args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e4ac0a4e53eee0b4b0ef159ed7d0cd5>
 --
 mkAdd :: Z3Num a => Context -> [AST a] -> IO (AST a)
 mkAdd _ [] = error "Z3.Base.mkAdd: empty list of expressions"
 mkAdd c es =
-  withArray es $ \aptr -> 
+  withArray es $ \aptr ->
     withContext c $ \cptr ->
-      AST <$> z3_mk_add cptr n (castPtr aptr) 
+      AST <$> z3_mk_add cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
--- | Create an AST node representing args[0] * ... * args[num_args-1].  
+-- | Create an AST node representing args[0] * ... * args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab9affbf8401a18eea474b59ad4adc890>
 --
 mkMul :: Z3Num a => Context -> [AST a] -> IO (AST a)
 mkMul _ [] = error "Z3.Base.mkMul: empty list of expressions"
 mkMul c es =
-  withArray es $ \aptr -> 
+  withArray es $ \aptr ->
     withContext c $ \cptr ->
-      AST <$> z3_mk_mul cptr n (castPtr aptr) 
+      AST <$> z3_mk_mul cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
@@ -615,9 +615,9 @@ mkMul c es =
 mkSub ::Z3Num a => Context -> [AST a] -> IO (AST a)
 mkSub _ [] = error "Z3.Base.mkSub: empty list of expressions"
 mkSub c es =
-  withArray es $ \aptr -> 
+  withArray es $ \aptr ->
     withContext c $ \cptr ->
-      AST <$> z3_mk_sub cptr n (castPtr aptr) 
+      AST <$> z3_mk_sub cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing -arg.
@@ -857,7 +857,7 @@ getBool :: Context -> AST Bool -> IO (Maybe Bool)
 getBool c a = withContext c $ \ctxPtr ->
   castLBool <$> z3_get_bool_value ctxPtr (unAST a)
 
--- | Return numeral value, as a string of a numeric constant term.  
+-- | Return numeral value, as a string of a numeric constant term.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
 --
@@ -883,7 +883,7 @@ getReal c a = parse <$> getNumeralString c a
         parseDen ""       = 1
         parseDen ('/':sj) = read sj
         parseDen _        = error "Z3.Base.getReal: no parse"
-        
+
 
 -- TODO Modifiers
 
@@ -940,7 +940,7 @@ getModel c = withContext c $ \ctxPtr ->
                                                  m <- mkModel c z3m
                                                  return $ Sat m
 
--- | Check whether the given logical context is consistent or not. 
+-- | Check whether the given logical context is consistent or not.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --

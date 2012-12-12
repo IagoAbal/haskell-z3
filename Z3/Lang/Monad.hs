@@ -58,10 +58,10 @@ module Z3.Lang.Monad (
     , mkIntArith
     , mkRealArith
     , mkIte
-    
+
     -- * Satisfiability result
     , Base.Result(..)
-    
+
     ) where
 
 import Z3.Lang.Exprs
@@ -129,15 +129,15 @@ data Args
     }
 
 stdArgs :: Args
-stdArgs 
+stdArgs
   = Args {
       softTimeout = Nothing
-    }      
+    }
 
 iniConfig :: Base.Config -> Args -> IO ()
 iniConfig cfg args = do
   Base.setParamValue cfg "SOFT_TIMEOUT" soft_timeout_val
-  where soft_timeout_val = show $ maybe 0 id $ softTimeout args 
+  where soft_timeout_val = show $ maybe 0 id $ softTimeout args
 
 -------------------------------------------------
 -- HOAX-deBruijn conversion
@@ -172,7 +172,7 @@ liftZ3Op2 f a = gets context >>= \ctx -> liftZ3 (f ctx a)
 
 liftZ3Op3 :: (Base.Context -> a -> b -> IO c) -> a -> b -> Z3 c
 liftZ3Op3 f a b = gets context >>= \ctx -> liftZ3 (f ctx a b)
- 
+
 liftZ3Op4 :: (Base.Context -> a -> b -> c -> IO d) -> a -> b -> c -> Z3 d
 liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
 
