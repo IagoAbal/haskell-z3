@@ -68,6 +68,7 @@ import Z3.Lang.Exprs
 
 import qualified Z3.Base as Base
 
+import Control.Applicative ( Applicative )
 import Control.Monad.State
 
 ---------------------------------------------------------------------
@@ -76,7 +77,7 @@ import Control.Monad.State
 -- | Z3 monad.
 --
 newtype Z3 a = Z3 (StateT Z3State IO a)
-    deriving (Functor, Monad)
+    deriving (Functor, Applicative, Monad)
 
 instance MonadState Z3State Z3 where
     get = Z3 $ StateT $ \s -> return (s,s)
