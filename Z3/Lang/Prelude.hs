@@ -50,6 +50,7 @@ module Z3.Lang.Prelude (
     , IsNum
     , IsInt
     , IsReal
+    , literal
     , true
     , false
     , not_
