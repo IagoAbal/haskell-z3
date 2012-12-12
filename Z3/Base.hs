@@ -232,6 +232,17 @@ data Result a
     | Undef
     deriving (Eq, Ord, Read, Show)
 
+instance Functor Result where
+  fmap f (Sat x) = Sat $ f x
+  fmap _ Unsat   = Unsat
+  fmap _ Undef   = Undef
+
+instance Monad Result where
+  return = Sat
+  Sat x >>= f = f x
+  Unsat >>= _ = Unsat
+  Undef >>= _ = Undef
+
 -- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
 --
 toResult :: Z3_lbool -> Result ()
