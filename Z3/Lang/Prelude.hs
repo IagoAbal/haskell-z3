@@ -65,6 +65,7 @@ module Z3.Lang.Prelude (
     , (==*), (/=*)
     , (<=*), (<*)
     , (>=*), (>*) 
+    , min_, max_
     , ite
 
     ) where
@@ -373,6 +374,16 @@ k `divides` n = n %* k ==* 0
 --
 (>*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>*) = CmpI Gt
+
+-- | Minimum.
+--
+min_ :: IsNum a => Expr a -> Expr a -> Expr a
+min_ x y = ite (x <=* y) x y
+
+-- | Maximum.
+--
+max_ :: IsNum a => Expr a -> Expr a -> Expr a
+max_ x y = ite (x >=* y) x y
 
 -- | /if-then-else/.
 --
