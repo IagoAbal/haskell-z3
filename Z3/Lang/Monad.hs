@@ -94,12 +94,12 @@ data Z3State
 -- | Eval a Z3 script.
 --
 evalZ3 :: Z3 a -> IO a
-evalZ3 p = evalZ3With p stdArgs
+evalZ3 = evalZ3With stdArgs
 
 -- | Eval a Z3 script.
 --
-evalZ3With :: Z3 a -> Args -> IO a
-evalZ3With (Z3 s) args = do
+evalZ3With :: Args -> Z3 a -> IO a
+evalZ3With args (Z3 s) = do
     cfg  <- Base.mkConfig
     Base.set_MODEL cfg True
     Base.set_MODEL_PARTIAL cfg False
