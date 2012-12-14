@@ -126,6 +126,7 @@ fresh = do
 data Args
   = Args {
       softTimeout :: Maybe Int
+        -- ^ soft timeout (in milliseconds)
     }
 
 stdArgs :: Args
