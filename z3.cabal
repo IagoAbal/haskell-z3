@@ -13,7 +13,7 @@ Description:
     dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else use 
     the appropriate Cabal flags.
     .
-    Haddock documentation: <http://www.iagoabal.eu/p/z3-haskell/doc>
+    Haddock documentation: <http://www.iagoabal.eu/z3-haskell/doc>
     .
     More information about Z3:
     .
