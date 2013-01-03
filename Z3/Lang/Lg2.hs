@@ -28,13 +28,14 @@ declareLg2 = do
                    (\x -> Pat $ lg2 x)
   assert $ forallP (\x -> x >* 0 ==> lg2 x <* x)
                    (\x -> Pat $ lg2 x)
+  assert $ forall $ \x -> 
+              x >* 0 ==> (lg2 (x+1) == lg2 x ||*  lg2 (x+1) == 1 + lg2 x)
   -- base cases
   assert $ lg2 1 ==* 0
   assert $ lg2 2 ==* 1
   -- recursive definition
-  assert $ forallP (\x -> x >* 2 &&* (2 `divides` x) ==> lg2 x ==* 1 + lg2 (x//2))
-                   (\x -> Pat $ lg2 x)
-  assert $ forallP (\x -> x >* 2 &&* not_ (2 `divides` x) ==> lg2 x ==* lg2 (x+1))
-                   (\x -> Pat $ lg2 x)
+  assert $ forall (\x -> lg2 (2*x) ==* 1 + lg2 x)
+  assert $ forall (\x -> lg2 (2*x+1) ==* lg2 (x+1))
   -- and that's it!
   return lg2
+
