@@ -119,7 +119,7 @@ module Z3.Base (
 import Z3.Base.C
 import Z3.Lang.TY
 
-import Control.Applicative ( (<$>) )
+import Control.Applicative ( Applicative(..), (<$>) )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Typeable ( Typeable, typeOf )
@@ -236,6 +236,12 @@ instance Functor Result where
   fmap f (Sat x) = Sat $ f x
   fmap _ Unsat   = Unsat
   fmap _ Undef   = Undef
+
+instance Applicative Result where
+  pure = return
+  Sat f <*> x = f <$> x
+  Unsat <*> _ = Unsat
+  Undef <*> _ = Undef
 
 instance Monad Result where
   return = Sat
