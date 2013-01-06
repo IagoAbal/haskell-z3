@@ -3,8 +3,8 @@
 
 -- |
 -- Module    : Z3.Base.C
--- Copyright : (c) Iago Abal, 2012
---             (c) David Castro, 2012
+-- Copyright : (c) Iago Abal, 2012-2013
+--             (c) David Castro, 2012-2013
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
@@ -156,7 +156,16 @@ foreign import ccall unsafe "Z3_mk_int_sort"
 foreign import ccall unsafe "Z3_mk_real_sort"
     z3_mk_real_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
 
--- TODO Sorts: from Z3_mk_real_sort on
+-- | Create a bit-vector type of the given size.
+--
+-- This type can also be seen as a machine integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeed000a1bbb84b6ca6fdaac6cf0c1688>
+--
+foreign import ccall unsafe "Z3_mk_bv_sort"
+    z3_mk_bv_sort :: Ptr Z3_context -> CUInt -> IO (Ptr Z3_sort)
+
+-- TODO Sorts: from Z3_mk_bv_sort on
 
 
 ---------------------------------------------------------------------
@@ -371,7 +380,360 @@ foreign import ccall unsafe "Z3_mk_real2int"
 foreign import ccall unsafe "Z3_mk_is_int"
     z3_mk_is_int :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- TODO Bit-vectors, Arrays, Sets
+---------------------------------------------------------------------
+-- * Bit-vectors
+
+-- | Bitwise negation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga36cf75c92c54c1ca633a230344f23080>
+--
+foreign import ccall unsafe "Z3_mk_bvnot"
+    z3_mk_bvnot :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Take conjunction of bits in vector, return vector of length 1.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaccc04f2b58903279b1b3be589b00a7d8>
+--
+foreign import ccall unsafe "Z3_mk_bvredand"
+    z3_mk_bvredand :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Take disjunction of bits in vector, return vector of length 1.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd18e127c0586abf47ad9cd96895f7d2>
+--
+foreign import ccall unsafe "Z3_mk_bvredor"
+    z3_mk_bvredor :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise and.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab96e0ea55334cbcd5a0e79323b57615d>
+--
+foreign import ccall unsafe "Z3_mk_bvand"
+    z3_mk_bvand :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise or.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga77a6ae233fb3371d187c6d559b2843f5>
+--
+foreign import ccall unsafe "Z3_mk_bvor"
+    z3_mk_bvor :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise exclusive-or.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a3821ea00b1c762205f73e4bc29e7d8>
+--
+foreign import ccall unsafe "Z3_mk_bvxor"
+    z3_mk_bvxor :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise nand.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga96dc37d36efd658fff5b2b4df49b0e61>
+--
+foreign import ccall unsafe "Z3_mk_bvnand"
+    z3_mk_bvnand :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise nor.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabf15059e9e8a2eafe4929fdfd259aadb>
+--
+foreign import ccall unsafe "Z3_mk_bvnor"
+    z3_mk_bvnor :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Bitwise xnor.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga784f5ca36a4b03b93c67242cc94b21d6>
+--
+foreign import ccall unsafe "Z3_mk_bvxnor"
+    z3_mk_bvxnor :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Standard two's complement unary minus.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0c78be00c03eda4ed6a983224ed5c7b7
+--
+foreign import ccall unsafe "Z3_mk_bvneg"
+    z3_mk_bvneg :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Standard two's complement addition.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga819814e33573f3f9948b32fdc5311158>
+--
+foreign import ccall unsafe "Z3_mk_bvadd"
+    z3_mk_bvadd :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Standard two's complement subtraction.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga688c9aa1347888c7a51be4e46c19178e>
+--
+foreign import ccall unsafe "Z3_mk_bvsub"
+    z3_mk_bvsub :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Standard two's complement multiplication.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6abd3dde2a1ceff1704cf7221a72258c>
+--
+foreign import ccall unsafe "Z3_mk_bvmul"
+    z3_mk_bvmul :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned division.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga56ce0cd61666c6f8cf5777286f590544>
+--
+foreign import ccall unsafe "Z3_mk_bvudiv"
+    z3_mk_bvudiv :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed division.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad240fedb2fda1c1005b8e9d3c7f3d5a0>
+--
+foreign import ccall unsafe "Z3_mk_bvsdiv"
+    z3_mk_bvsdiv :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned remainder.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5df4298ec835e43ddc9e3e0bae690c8d>
+--
+foreign import ccall unsafe "Z3_mk_bvurem"
+    z3_mk_bvurem :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed remainder (sign follows dividend).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46c18a3042fca174fe659d3185693db1>
+--
+foreign import ccall unsafe "Z3_mk_bvsrem"
+    z3_mk_bvsrem :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed remainder (sign follows divisor).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95dac8e6eecb50f63cb82038560e0879>
+--
+foreign import ccall unsafe "Z3_mk_bvsmod"
+    z3_mk_bvsmod :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned less than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5774b22e93abcaf9b594672af6c7c3c4>
+--
+foreign import ccall unsafe "Z3_mk_bvult"
+    z3_mk_bvult :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed less than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8ce08af4ed1fbdf08d4d6e63d171663a>
+--
+foreign import ccall unsafe "Z3_mk_bvslt"
+    z3_mk_bvslt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned less than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab738b89de0410e70c089d3ac9e696e87>
+--
+foreign import ccall unsafe "Z3_mk_bvule"
+    z3_mk_bvule :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed less than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab7c026feb93e7d2eab180e96f1e6255d>
+--
+foreign import ccall unsafe "Z3_mk_bvsle"
+    z3_mk_bvsle :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned greater than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gade58fbfcf61b67bf8c4a441490d3c4df>
+--
+foreign import ccall unsafe "Z3_mk_bvuge"
+    z3_mk_bvuge :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed greater than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeec3414c0e8a90a6aa5a23af36bf6dc5>
+--
+foreign import ccall unsafe "Z3_mk_bvsge"
+    z3_mk_bvsge :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Unsigned greater than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga063ab9f16246c99e5c1c893613927ee3>
+--
+foreign import ccall unsafe "Z3_mk_bvugt"
+    z3_mk_bvugt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Two's complement signed greater than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e93a985aa2a7812c7c11a2c65d7c5f0>
+--
+foreign import ccall unsafe "Z3_mk_bvsgt"
+    z3_mk_bvsgt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Concatenate the given bit-vectors.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae774128fa5e9ff7458a36bd10e6ca0fa>
+--
+foreign import ccall unsafe "Z3_mk_concat"
+    z3_mk_concat :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Extract the bits high down to low from a bitvector of size m to yield a new
+-- bitvector of size /n/, where /n = high - low + 1/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga32d2fe7563f3e6b114c1b97b205d4317>
+--
+foreign import ccall unsafe "Z3_mk_extract"
+    z3_mk_extract :: Ptr Z3_context -> CUInt -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Sign-extend of the given bit-vector to the (signed) equivalent bitvector
+-- of size /m+i/, where /m/ is the size of the given bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad29099270b36d0680bb54b560353c10e>
+--
+foreign import ccall unsafe "Z3_mk_sign_ext"
+    z3_mk_sign_ext :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Extend the given bit-vector with zeros to the (unsigned) equivalent
+-- bitvector of size /m+i/, where /m/ is the size of the given bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac9322fae11365a78640baf9078c428b3>
+--
+foreign import ccall unsafe "Z3_mk_zero_ext"
+    z3_mk_zero_ext :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Repeat the given bit-vector up length /i/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga03e81721502ea225c264d1f556c9119d>
+--
+foreign import ccall unsafe "Z3_mk_repeat"
+    z3_mk_repeat :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Shift left.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8d5e776c786c1172fa0d7dfede454e1>
+--
+foreign import ccall unsafe "Z3_mk_bvshl"
+    z3_mk_bvshl :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Logical shift right.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac59645a6edadad79a201f417e4e0c512>
+--
+foreign import ccall unsafe "Z3_mk_bvlshr"
+    z3_mk_bvlshr :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Arithmetic shift right.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga674b580ad605ba1c2c9f9d3748be87c4>
+--
+foreign import ccall unsafe "Z3_mk_bvashr"
+    z3_mk_bvashr :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Rotate bits of /t1/ to the left /i/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4932b7d08fea079dd903cd857a52dcda>
+--
+foreign import ccall unsafe "Z3_mk_rotate_left"
+    z3_mk_rotate_left :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Rotate bits of /t1/ to the right /i/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3b94e1bf87ecd1a1858af8ebc1da4a1c>
+--
+foreign import ccall unsafe "Z3_mk_rotate_right"
+    z3_mk_rotate_right :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Rotate bits of /t1/ to the left /t2/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf46f1cb80e5a56044591a76e7c89e5e7>
+--
+foreign import ccall unsafe "Z3_mk_ext_rotate_left"
+    z3_mk_ext_rotate_left :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Rotate bits of /t1/ to the right /t2/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb227526c592b523879083f12aab281f>
+--
+foreign import ccall unsafe "Z3_mk_ext_rotate_right"
+    z3_mk_ext_rotate_right :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create an /n/ bit bit-vector from the integer argument /t1/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga35f89eb05df43fbd9cce7200cc1f30b5>
+--
+foreign import ccall unsafe "Z3_mk_"
+    z3_mk_int2bv :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create an integer from the bit-vector argument /t1/. If /is_signed/ is false,
+-- then the bit-vector /t1/ is treated as unsigned. So the result is non-negative
+-- and in the range [0..2^/N/-1], where /N/ are the number of bits in /t1/.
+-- If /is_signed/ is true, /t1/ is treated as a signed bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac87b227dc3821d57258d7f53a28323d4>
+--
+foreign import ccall unsafe "Z3_mk_bv2int"
+    z3_mk_bv2int :: Ptr Z3_context -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise addition of /t1/ and /t2/
+-- does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga88f6b5ec876f05e0d7ba51e96c4b077f>
+--
+foreign import ccall unsafe "Z3_mk_bvadd_no_overflow"
+    z3_mk_bvadd_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise signed addition of /t1/
+-- and /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1e2b1927cf4e50000c1600d47a152947>
+--
+foreign import ccall unsafe "Z3_mk_bvadd_no_underflow"
+    z3_mk_bvadd_no_underflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise signed subtraction of /t1/
+-- and /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga785f8127b87e0b42130e6d8f52167d7c>
+--
+foreign import ccall unsafe "Z3_mk_bvsub_no_overflow"
+    z3_mk_bvsub_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise subtraction of /t1/ and
+-- /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6480850f9fa01e14aea936c88ff184c4>
+--
+foreign import ccall unsafe "Z3_mk_bvsub_no_underflow"
+    z3_mk_bvsub_no_underflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise signed division of /t1/
+-- and /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa17e7b2c33dfe2abbd74d390927ae83e>
+--
+foreign import ccall unsafe "Z3_mk_bvsdiv_no_overflow"
+    z3_mk_bvsdiv_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Check that bit-wise negation does not overflow when /t1/ is interpreted as
+-- a signed bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae9c5d72605ddcd0e76657341eaccb6c7>
+--
+foreign import ccall unsafe "Z3_mk_bvneg_no_overflow"
+    z3_mk_bvneg_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise multiplication of /t1/ and
+-- /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga86f4415719d295a2f6845c70b3aaa1df>
+--
+foreign import ccall unsafe "Z3_mk_bvmul_no_overflow"
+    z3_mk_bvmul_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+
+-- | Create a predicate that checks that the bit-wise signed multiplication of
+-- /t1/ and /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga501ccc01d737aad3ede5699741717fda>
+--
+foreign import ccall unsafe "Z3_mk_bvmul_no_underflow"
+    z3_mk_bvmul_no_underflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- TODO Arrays, Sets
 
 ---------------------------------------------------------------------
 -- * Numerals
@@ -450,6 +812,20 @@ foreign import ccall unsafe "Z3_mk_forall"
 
 ---------------------------------------------------------------------
 -- * Accessors
+
+-- | Return the size of the given bit-vector sort.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
+--
+foreign import ccall unsafe "Z3_get_bv_sort_size"
+    z3_get_bv_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
+
+-- | Return the sort of an AST node.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a4dac7e9397ff067136354cd33cb933>
+--
+foreign import ccall unsafe "Z3_get_sort"
+    z3_get_sort :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_sort)
 
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
