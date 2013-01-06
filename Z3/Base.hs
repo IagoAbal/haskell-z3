@@ -114,6 +114,8 @@ module Z3.Base (
     , assertCnstr
     , check
     , getModel
+    , push
+    , pop
 
     ) where
 
@@ -925,6 +927,16 @@ eval ctx m a =
 -- Constraints
 
 -- TODO Constraints: Z3_push
+push :: Context -> IO ()
+push ctx =
+  withContext ctx $ \ctxPtr ->
+    z3_push ctxPtr
+
+pop :: Context -> Int -> IO ()
+pop ctx cnt =
+  withContext ctx $ \ctxPtr ->
+    z3_pop ctxPtr (fromIntegral cnt)
+
 -- TODO Constraints: Z3_pop
 -- TODO Constraints: Z3_get_num_scopes
 -- TODO Constraints: Z3_persist_ast

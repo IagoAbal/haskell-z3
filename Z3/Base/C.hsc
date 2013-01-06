@@ -488,8 +488,13 @@ foreign import ccall unsafe "Z3_eval"
 ---------------------------------------------------------------------
 -- * Constraints
 
--- TODO Constraints: Z3_push
+foreign import ccall unsafe "Z3_push"
+    z3_push :: Ptr Z3_context -> IO ()
+
 -- TODO Constraints: Z3_pop
+foreign import ccall unsafe "Z3_pop"
+    z3_pop :: Ptr Z3_context -> CUInt -> IO ()
+
 -- TODO Constraints: Z3_get_num_scopes
 -- TODO Constraints: Z3_persist_ast
 

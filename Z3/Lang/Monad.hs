@@ -58,6 +58,8 @@ module Z3.Lang.Monad (
     , mkIntArith
     , mkRealArith
     , mkIte
+    , pop
+    , push
 
     -- * Satisfiability result
     , Base.Result(..)
@@ -192,6 +194,12 @@ eval = liftZ3Op3 Base.eval
 
 getBool :: Base.AST Bool -> Z3 (Maybe Bool)
 getBool = liftZ3Op2 Base.getBool
+
+push :: Z3 ()
+push = liftZ3Op Base.push
+
+pop :: Int -> Z3 ()
+pop = liftZ3Op2 Base.pop
 
 getInt :: Base.AST Integer -> Z3 Integer
 getInt = liftZ3Op2 Base.getInt
