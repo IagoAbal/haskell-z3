@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE IncoherentInstances #-}
@@ -125,8 +127,10 @@ import Z3.Base.C
 import Z3.Lang.TY
 
 import Control.Applicative ( Applicative(..), (<$>) )
+import Data.Foldable ( Foldable )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
+import Data.Traversable ( Traversable )
 import Data.Typeable ( Typeable, typeOf )
 import Data.Word
 import Foreign hiding ( newForeignPtr, addForeignPtrFinalizer, toBool )
@@ -235,7 +239,7 @@ data Result a
     = Sat a
     | Unsat
     | Undef
-    deriving (Eq, Ord, Read, Show)
+    deriving (Eq, Ord, Read, Show, Foldable, Traversable)
 
 instance Functor Result where
   fmap f (Sat x) = Sat $ f x

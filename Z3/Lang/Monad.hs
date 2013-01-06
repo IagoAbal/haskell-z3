@@ -74,6 +74,7 @@ import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
 import Control.Monad.State
+import Data.Traversable ( traverse )
 
 ---------------------------------------------------------------------
 -- The Z3 Monad
@@ -216,10 +217,7 @@ showModel :: Z3 (Base.Result String)
 showModel = do
   c <- gets context
   mm <- getModel
-  case mm of
-    Base.Sat m -> liftZ3 . liftM Base.Sat $ Base.showModel c m
-    Base.Unsat -> return Base.Unsat
-    Base.Undef -> return Base.Undef
+  liftZ3 $ traverse (Base.showModel c) mm
 
 showContext :: Z3 String
 showContext = do
