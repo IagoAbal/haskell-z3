@@ -29,7 +29,7 @@ declareLg2 = do
   assert $ forallP (\x -> x >* 0 ==> lg2 x <* x)
                    (\x -> Pat $ lg2 x)
   assert $ forall $ \x -> 
-              x >* 0 ==> (lg2 (x+1) == lg2 x ||*  lg2 (x+1) == 1 + lg2 x)
+              x >* 0 ==> (lg2 (x+1) ==* lg2 x ||*  lg2 (x+1) ==* 1 + lg2 x)
   -- base cases
   assert $ lg2 1 ==* 0
   assert $ lg2 2 ==* 1
