@@ -82,11 +82,7 @@ import Data.Traversable ( traverse )
 -- | Z3 monad.
 --
 newtype Z3 a = Z3 (StateT Z3State IO a)
-    deriving (Functor, Applicative, Monad)
-
-instance MonadState Z3State Z3 where
-    get = Z3 $ StateT $ \s -> return (s,s)
-    put st = Z3 $ StateT $ \_ -> return ((), st)
+    deriving (Functor, Applicative, Monad, MonadState Z3State)
 
 -- | Internal state of Z3 monad.
 --
