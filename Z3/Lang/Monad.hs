@@ -60,6 +60,8 @@ module Z3.Lang.Monad (
     , mkIte
     , pop
     , push
+    , showContext
+    , showModel
 
     -- * Satisfiability result
     , Base.Result(..)
@@ -209,6 +211,20 @@ getReal = liftZ3Op2 Base.getReal
 
 getModel :: Z3 (Base.Result Base.Model)
 getModel = liftZ3Op Base.getModel
+
+showModel :: Z3 (Base.Result String)
+showModel = do
+  c <- gets context
+  mm <- getModel
+  case mm of
+    Base.Sat m -> liftZ3 . liftM Base.Sat $ Base.showModel c m
+    Base.Unsat -> return Base.Unsat
+    Base.Undef -> return Base.Undef
+
+showContext :: Z3 String
+showContext = do
+  c <- gets context
+  liftZ3 $ Base.showContext c
 
 getValue :: Base.Z3Type a => Base.AST a -> Z3 a
 getValue = liftZ3Op2 Base.getValue
