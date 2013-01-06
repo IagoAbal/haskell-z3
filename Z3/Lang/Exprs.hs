@@ -184,7 +184,7 @@ data BoolBinOp = Xor | Implies | Iff
     deriving (Eq,Show)
 
 -- | Boolean variadic operations.
-data BoolMultiOp = And | Or
+data BoolMultiOp = And | Or | Distinct
     deriving (Eq,Show)
 
 -- | Commutative ring operations.

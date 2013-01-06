@@ -223,8 +223,9 @@ mkBoolBin Implies = liftZ3Op3 Base.mkImplies
 mkBoolBin Iff     = liftZ3Op3 Base.mkIff
 
 mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
-mkBoolMulti And = liftZ3Op2 Base.mkAnd
-mkBoolMulti Or  = liftZ3Op2 Base.mkOr
+mkBoolMulti And      = liftZ3Op2 Base.mkAnd
+mkBoolMulti Or       = liftZ3Op2 Base.mkOr
+mkBoolMulti Distinct = liftZ3Op2 Base.mkDistinct
 
 mkPattern :: Base.Z3Type a => [Base.AST a] -> Z3 Base.Pattern
 mkPattern = liftZ3Op2 Base.mkPattern
