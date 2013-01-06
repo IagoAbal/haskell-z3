@@ -76,6 +76,7 @@ module Z3.Base (
     , mkXor
     , mkAnd
     , mkOr
+    , mkDistinct
     , mkAdd
     , mkMul
     , mkSub
@@ -588,6 +589,14 @@ mkOr c es =
   withArray es $ \aptr ->
     withContext c $ \cptr ->
       AST <$> z3_mk_or cptr n (castPtr aptr)
+  where n = fromIntegral $ length es
+
+mkDistinct :: Context -> [AST Bool] -> IO (AST Bool)
+mkDistinct _ [] = error "Z3.Base.mkDistinct: empty list of expressions"
+mkDistinct c es =
+  withArray es $ \aptr ->
+    withContext c $ \cptr ->
+      AST <$> z3_mk_distinct cptr n (castPtr aptr)
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].

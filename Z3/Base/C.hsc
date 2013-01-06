@@ -220,6 +220,8 @@ foreign import ccall unsafe "Z3_mk_eq"
     z3_mk_eq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 -- TODO: Z3_mk_distinct
+foreign import ccall unsafe "Z3_mk_distinct"
+    z3_mk_distinct :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 -- | Create an AST node representing not(a).
 --

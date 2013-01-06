@@ -56,6 +56,7 @@ module Z3.Lang.Prelude (
     , not_
     , and_, (&&*)
     , or_, (||*)
+    , distinct_
     , xor
     , implies, (==>)
     , iff, (<=>)
@@ -303,6 +304,10 @@ and_ bs = BoolMulti And bs
 or_ :: [Expr Bool] -> Expr Bool
 or_ [] = false
 or_ bs = BoolMulti Or bs
+-- | Boolean variadic /distinct/.
+distinct_ :: [Expr Bool] -> Expr Bool
+distinct_ [] = true
+distinct_ bs = BoolMulti Distinct bs
 
 -- | Boolean binary /and/.
 --
