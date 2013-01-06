@@ -42,6 +42,7 @@ module Z3.Lang.Prelude (
     , let_
     , check
     , checkModel
+    , push, pop
 
     -- * Expressions
     , Expr
