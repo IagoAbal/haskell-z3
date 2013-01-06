@@ -48,9 +48,9 @@ data Z3_func_decl
 -- | A kind of AST used to represent constant and function declarations.
 data Z3_app
 
--- | A kind of AST used to represent pattern and multi-patterns used to 
+-- | A kind of AST used to represent pattern and multi-patterns used to
 -- guide quantifier instantiation.
-data Z3_pattern 
+data Z3_pattern
 
 -- | A model for the constraints asserted into the logical context.
 data Z3_model
@@ -244,21 +244,21 @@ foreign import ccall unsafe "Z3_mk_not"
 foreign import ccall unsafe "Z3_mk_ite"
     z3_mk_ite :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- | Create an AST node representing t1 iff t2. 
+-- | Create an AST node representing t1 iff t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga930a8e844d345fbebc498ac43a696042>
 --
 foreign import ccall unsafe "Z3_mk_iff"
     z3_mk_iff :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- | Create an AST node representing t1 implies t2. 
+-- | Create an AST node representing t1 implies t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac829c0e25bbbd30343bf073f7b524517>
 --
 foreign import ccall unsafe "Z3_mk_implies"
     z3_mk_implies :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- | Create an AST node representing t1 xor t2. 
+-- | Create an AST node representing t1 xor t2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc6d1b848032dec0c4617b594d4229ec>
 --
@@ -272,7 +272,7 @@ foreign import ccall unsafe "Z3_mk_xor"
 foreign import ccall unsafe "Z3_mk_and"
     z3_mk_and :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
--- | Create an AST node representing args[0] or ... or args[num_args-1]. 
+-- | Create an AST node representing args[0] or ... or args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 --
@@ -282,14 +282,14 @@ foreign import ccall unsafe "Z3_mk_or"
 ---------------------------------------------------------------------
 -- * Arithmetic: Integers and Reals
 
--- | Create an AST node representing args[0] + ... + args[num_args-1].  
+-- | Create an AST node representing args[0] + ... + args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e4ac0a4e53eee0b4b0ef159ed7d0cd5>
 --
 foreign import ccall unsafe "Z3_mk_add"
     z3_mk_add :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
--- | Create an AST node representing args[0] * ... * args[num_args-1].  
+-- | Create an AST node representing args[0] * ... * args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab9affbf8401a18eea474b59ad4adc890>
 --
@@ -881,7 +881,7 @@ foreign import ccall unsafe "Z3_assert_cnstr"
 foreign import ccall unsafe "Z3_check_and_get_model"
     z3_check_and_get_model :: Ptr Z3_context -> Ptr (Ptr Z3_model) -> IO Z3_lbool
 
--- | Check whether the given logical context is consistent or not. 
+-- | Check whether the given logical context is consistent or not.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --
