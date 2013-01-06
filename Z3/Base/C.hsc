@@ -529,5 +529,11 @@ foreign import ccall unsafe "Z3_check"
 foreign import ccall unsafe "Z3_del_model"
     z3_del_model :: Ptr Z3_context -> Ptr Z3_model -> IO ()
 
+foreign import ccall unsafe "Z3_model_to_string"
+    z3_model_to_string :: Ptr Z3_context -> Ptr Z3_model -> IO CString
+
+foreign import ccall unsafe "Z3_context_to_string"
+    z3_context_to_string :: Ptr Z3_context -> IO CString
+
 
 -- TODO From section 'Constraints' on.

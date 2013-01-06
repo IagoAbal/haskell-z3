@@ -109,6 +109,8 @@ module Z3.Base (
 
     -- * Models
     , eval
+    , showModel
+    , showContext
 
     -- * Constraints
     , assertCnstr
@@ -966,6 +968,16 @@ getModel c = withContext c $ \ctxPtr ->
                              | otherwise    = do z3m <- peek p
                                                  m <- mkModel c z3m
                                                  return $ Sat m
+
+showModel :: Context -> Model -> IO String
+showModel (Context fpc) (Model pm) =
+  withForeignPtr fpc $ \ pc ->
+    z3_model_to_string pc pm >>= peekCString
+ 
+showContext :: Context -> IO String
+showContext (Context fpc) =
+  withForeignPtr fpc $ \ pc ->
+    z3_context_to_string pc >>= peekCString
 
 -- | Check whether the given logical context is consistent or not.
 --
