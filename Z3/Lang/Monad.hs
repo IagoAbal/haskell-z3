@@ -37,22 +37,26 @@ module Z3.Lang.Monad (
     , getValue
     , mkSort
     , mkStringSymbol
+    , mkBoolSort
+    , mkIntSort
+    , mkRealSort
     , mkLiteral
     , mkNot
     , mkBoolBin
     , mkBoolMulti
+    , mkNumeral
+    , mkInt
+    , mkReal
     , mkPattern
     , mkBound
     , mkForall
     , mkEq
     , mkCmp
     , mkFuncDecl
-    , mkApp1
-    , mkApp2
-    , mkApp3
-    , mkApp4
-    , mkApp5
+    , mkApp
     , mkConst
+    , mkTrue
+    , mkFalse
     , mkUnaryMinus
     , mkCRingArith
     , mkIntArith
@@ -181,17 +185,17 @@ liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
 liftZ3Op5 :: (Base.Context -> a -> b -> c -> d -> IO e) -> a -> b -> c -> d -> Z3 e
 liftZ3Op5 f a b c d = gets context >>= \ctx -> liftZ3 (f ctx a b c d)
 
-assertCnstr :: Base.AST Bool -> Z3 ()
+assertCnstr :: Base.AST -> Z3 ()
 assertCnstr = liftZ3Op2 Base.assertCnstr
 
 -- | Check satisfiability.
 check :: Z3 (Base.Result ())
 check = liftZ3Op Base.check
 
-eval :: Base.Model -> Base.AST a -> Z3 (Maybe (Base.AST a))
+eval :: Base.Model -> Base.AST -> Z3 (Maybe Base.AST)
 eval = liftZ3Op3 Base.eval
 
-getBool :: Base.AST Bool -> Z3 (Maybe Bool)
+getBool :: Base.AST -> Z3 (Maybe Bool)
 getBool = liftZ3Op2 Base.getBool
 
 push :: Z3 ()
@@ -200,10 +204,10 @@ push = liftZ3Op Base.push
 pop :: Int -> Z3 ()
 pop = liftZ3Op2 Base.pop
 
-getInt :: Base.AST Integer -> Z3 Integer
+getInt :: Base.AST -> Z3 Integer
 getInt = liftZ3Op2 Base.getInt
 
-getReal :: Base.AST Rational -> Z3 Rational
+getReal :: Base.AST -> Z3 Rational
 getReal = liftZ3Op2 Base.getReal
 
 getModel :: Z3 (Base.Result Base.Model)
@@ -220,114 +224,90 @@ showContext = do
   c <- gets context
   liftZ3 $ Base.showContext c
 
-getValue :: Base.Z3Type a => Base.AST a -> Z3 a
-getValue = liftZ3Op2 Base.getValue
-
-mkSort :: Base.Z3Type a => Z3 (Base.Sort a)
-mkSort = liftZ3Op Base.mkSort
-
 mkStringSymbol :: String -> Z3 Base.Symbol
 mkStringSymbol = liftZ3Op2 Base.mkStringSymbol
 
-mkLiteral :: forall a. Base.Z3Type a => a -> Z3 (Base.AST a)
-mkLiteral = liftZ3Op2 Base.mkValue
+mkBoolSort :: Z3 Base.Sort
+mkBoolSort = liftZ3Op Base.mkBoolSort
 
-mkNot :: Base.AST Bool -> Z3 (Base.AST Bool)
+mkIntSort :: Z3 Base.Sort
+mkIntSort = liftZ3Op Base.mkIntSort
+
+mkRealSort :: Z3 Base.Sort
+mkRealSort = liftZ3Op Base.mkRealSort
+
+mkNot :: Base.AST -> Z3 Base.AST
 mkNot = liftZ3Op2 Base.mkNot
 
-mkBoolBin :: BoolBinOp -> Base.AST Bool -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkBoolBin :: BoolBinOp -> Base.AST -> Base.AST -> Z3 Base.AST
 mkBoolBin Xor     = liftZ3Op3 Base.mkXor
 mkBoolBin Implies = liftZ3Op3 Base.mkImplies
 mkBoolBin Iff     = liftZ3Op3 Base.mkIff
 
-mkBoolMulti :: BoolMultiOp -> [Base.AST Bool] -> Z3 (Base.AST Bool)
+mkBoolMulti :: BoolMultiOp -> [Base.AST] -> Z3 Base.AST
 mkBoolMulti And      = liftZ3Op2 Base.mkAnd
 mkBoolMulti Or       = liftZ3Op2 Base.mkOr
 mkBoolMulti Distinct = liftZ3Op2 Base.mkDistinct
 
-mkPattern :: Base.Z3Type a => [Base.AST a] -> Z3 Base.Pattern
+mkNumeral :: String -> Base.Sort -> Z3 Base.AST
+mkNumeral = liftZ3Op3 Base.mkNumeral
+
+mkInt  :: Integral a => a -> Z3 Base.AST
+mkInt = liftZ3Op2 Base.mkInt
+
+mkReal :: Real r => r -> Z3 Base.AST
+mkReal = liftZ3Op2 Base.mkReal
+
+mkPattern :: [Base.AST] -> Z3 Base.Pattern
 mkPattern = liftZ3Op2 Base.mkPattern
 
-mkBound :: Base.Z3Type a => Int -> Base.Sort a -> Z3 (Base.AST a)
+mkBound :: Int -> Base.Sort -> Z3 Base.AST
 mkBound = liftZ3Op3 Base.mkBound
 
-mkForall :: Base.Z3Type a => [Base.Pattern] -> Base.Symbol -> Base.Sort a -> Base.AST Bool -> Z3 (Base.AST Bool)
+mkForall :: [Base.Pattern] -> Base.Symbol -> Base.Sort -> Base.AST -> Z3 Base.AST
 mkForall = liftZ3Op5 Base.mkForall
 
-mkEq :: Base.Z3Type a => CmpOpE
-                           -> Base.AST a -> Base.AST a
-                           -> Z3 (Base.AST Bool)
+mkEq :: CmpOpE -> Base.AST -> Base.AST -> Z3 Base.AST
 mkEq Eq  = liftZ3Op3 Base.mkEq
 mkEq Neq = liftZ3Op3 mkNeq
   where mkNeq ctx b1 = Base.mkNot ctx <=< Base.mkEq ctx b1
 
-mkCmp :: Base.Z3Num a => CmpOpI
-                          -> Base.AST a -> Base.AST a
-                          -> Z3 (Base.AST Bool)
+mkCmp :: CmpOpI -> Base.AST -> Base.AST -> Z3 Base.AST
 mkCmp Le = liftZ3Op3 Base.mkLe
 mkCmp Lt = liftZ3Op3 Base.mkLt
 mkCmp Ge = liftZ3Op3 Base.mkGe
 mkCmp Gt = liftZ3Op3 Base.mkGt
 
-mkFuncDecl :: Base.Z3Fun a => Base.Symbol
-                                -> Z3 (Base.FuncDecl a)
-mkFuncDecl = liftZ3Op2 Base.mkFuncDecl
+mkFuncDecl :: Base.Symbol -> [Base.Sort] -> Base.Sort -> Z3 Base.FuncDecl
+mkFuncDecl = liftZ3Op4 Base.mkFuncDecl
 
-mkApp1 :: (Base.Z3Type a, Base.Z3Type b)
-            => Base.FuncDecl (a -> b)
-                -> Base.AST a
-                -> Z3 (Base.AST b)
-mkApp1 = liftZ3Op3 Base.mkApp1
+mkApp :: Base.FuncDecl -> [Base.AST] -> Z3 Base.AST
+mkApp = liftZ3Op3 Base.mkApp
 
-mkApp2 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c)
-            => Base.FuncDecl (a -> b -> c)
-                -> Base.AST a -> Base.AST b
-                -> Z3 (Base.AST c)
-mkApp2 = liftZ3Op4 Base.mkApp2
-
-mkApp3 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d)
-            => Base.FuncDecl (a -> b -> c -> d)
-                -> Base.AST a -> Base.AST b -> Base.AST c
-                -> Z3 (Base.AST d)
-mkApp3 fd a b c
-  = gets context >>= \ctx -> liftZ3 $ Base.mkApp3 ctx fd a b c
-
-mkApp4 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e)
-            => Base.FuncDecl (a -> b -> c -> d -> e)
-                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d
-                -> Z3 (Base.AST e)
-mkApp4 fd a b c d
-  = gets context >>= \ctx -> liftZ3 $ Base.mkApp4 ctx fd a b c d
-
-mkApp5 :: (Base.Z3Type a, Base.Z3Type b, Base.Z3Type c , Base.Z3Type d, Base.Z3Type e, Base.Z3Type f)
-            => Base.FuncDecl (a -> b -> c -> d -> e -> f)
-                -> Base.AST a -> Base.AST b -> Base.AST c -> Base.AST d -> Base.AST e
-                -> Z3 (Base.AST f)
-mkApp5 fd a b c d e
-  = gets context >>= \ctx -> liftZ3 $ Base.mkApp5 ctx fd a b c d e
-
-mkConst :: Base.Z3Type a => Base.Symbol -> Base.Sort a -> Z3 (Base.AST a)
+mkConst :: Base.Symbol -> Base.Sort -> Z3 Base.AST
 mkConst = liftZ3Op3 Base.mkConst
 
-mkUnaryMinus :: Base.Z3Num a => Base.AST a -> Z3 (Base.AST a)
+mkTrue :: Z3 Base.AST
+mkTrue = liftZ3Op Base.mkTrue
+
+mkFalse :: Z3 Base.AST
+mkFalse = liftZ3Op Base.mkFalse
+
+mkUnaryMinus :: Base.AST -> Z3 Base.AST
 mkUnaryMinus = liftZ3Op2 Base.mkUnaryMinus
 
-mkCRingArith :: Base.Z3Num a => CRingOp -> [Base.AST a] -> Z3 (Base.AST a)
+mkCRingArith :: CRingOp -> [Base.AST] -> Z3 Base.AST
 mkCRingArith Add = liftZ3Op2 Base.mkAdd
 mkCRingArith Mul = liftZ3Op2 Base.mkMul
 mkCRingArith Sub = liftZ3Op2 Base.mkSub
 
-mkIntArith :: IntOp
-               -> Base.AST Integer -> Base.AST Integer
-               -> Z3 (Base.AST Integer)
+mkIntArith :: IntOp -> Base.AST -> Base.AST -> Z3 Base.AST
 mkIntArith Quot = liftZ3Op3 Base.mkDiv
 mkIntArith Mod  = liftZ3Op3 Base.mkMod
 mkIntArith Rem  = liftZ3Op3 Base.mkRem
 
-mkRealArith :: RealOp
-                -> Base.AST Rational -> Base.AST Rational
-                -> Z3 (Base.AST Rational)
+mkRealArith :: RealOp -> Base.AST -> Base.AST -> Z3 Base.AST
 mkRealArith Div = liftZ3Op3 Base.mkDiv
 
-mkIte :: Base.AST Bool -> Base.AST a -> Base.AST a -> Z3 (Base.AST a)
+mkIte :: Base.AST -> Base.AST -> Base.AST -> Z3 Base.AST
 mkIte = liftZ3Op4 Base.mkIte

@@ -21,7 +21,7 @@ module Z3.Lang.Exprs (
       TypeZ3
     , Compilable(..)
     , IsTy(..)
-    , IsFun
+    , IsFun(..)
     
     -- ** Numeric types
     , IsNum
@@ -53,6 +53,7 @@ module Z3.Lang.Exprs (
     ) where
 
 import {-# SOURCE #-} Z3.Lang.Monad ( Z3 )
+import Z3.Lang.TY
 import qualified Z3.Base as Base
 
 import Control.Monad.RWS
@@ -70,8 +71,8 @@ type instance TypeZ3 (FunApp a) = TypeZ3 a
 
 -- | Compilable /things/.
 --
-class Base.Z3Type (TypeZ3 t) => Compilable t where
-  compile :: t -> Z3 (Base.AST (TypeZ3 t))
+class Compilable t where
+  compile :: t -> Z3 Base.AST
 
 -- | Types for expressions.
 --
@@ -93,9 +94,24 @@ class (Eq a, Show a, Typeable a, Compilable (Expr a)) => IsTy a where
   --
   toZ3Type   :: a -> TypeZ3 a
 
+  -- | Create a sort of the underlying Z3 type.
+  --
+  mkSort :: TY a -> Z3 Base.Sort
+
+  -- | Create a value of the .
+  --
+  mkLiteral :: a -> Z3 Base.AST
+
+  -- | Value extractor
+  --
+  getValue :: Base.AST -> Z3 a
+
+
 -- | Function types.
 --
-class Base.Z3Fun (TypeZ3 a) => IsFun a where
+class IsFun a where
+  domain :: TY a -> Z3 [Base.Sort]
+  range  :: TY a -> Z3 Base.Sort
 
 ------------------------------------------------------------
 -- Numeric types
@@ -109,7 +125,7 @@ class Base.Z3Fun (TypeZ3 a) => IsFun a where
 
 -- | Numeric types.
 --
-class (IsTy a, Num a, Base.Z3Num (TypeZ3 a)) => IsNum a where
+class (IsTy a, Num a) => IsNum a where
 
 -- | Typeclass for Haskell Z3 numbers of /int/ sort in Z3.
 --
@@ -136,7 +152,7 @@ data Expr :: * -> * where
   --  | Literals
   Lit :: IsTy a => a -> Expr a
   --  | Constants
-  Const :: !Uniq -> Base.AST (TypeZ3 a) -> Expr a
+  Const :: !Uniq -> Base.AST -> Expr a
   --  | Tag, for converting from HOAS to de-Bruijn
   Tag :: !Layout -> Expr a
   --  | Logical negation
@@ -175,7 +191,7 @@ data Pattern where
 --
 data FunApp :: * -> * where
   --  | Function declaration
-  FuncDecl :: IsFun a => Base.FuncDecl (TypeZ3 a) -> FunApp a
+  FuncDecl :: IsFun a => Base.FuncDecl -> FunApp a
   --  | Partial application
   PApp :: IsTy a => FunApp (a -> b) -> Expr a -> FunApp b
 
