@@ -658,7 +658,7 @@ foreign import ccall unsafe "Z3_mk_ext_rotate_right"
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga35f89eb05df43fbd9cce7200cc1f30b5>
 --
-foreign import ccall unsafe "Z3_mk_"
+foreign import ccall unsafe "Z3_mk_int2bv"
     z3_mk_int2bv :: Ptr Z3_context -> CUInt -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 -- | Create an integer from the bit-vector argument /t1/. If /is_signed/ is false,

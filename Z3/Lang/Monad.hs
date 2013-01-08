@@ -104,7 +104,7 @@ evalZ3With args (Z3 s) = do
     cfg  <- Base.mkConfig
     Base.set_MODEL cfg True
     Base.set_MODEL_PARTIAL cfg False
-    Base.setParamValue cfg "WARNING" "false"
+--    Base.setParamValue cfg "WARNING" "false"
     iniConfig cfg args
     ctx  <- Base.mkContext cfg
     evalStateT s Z3State { uniqVal = 0
