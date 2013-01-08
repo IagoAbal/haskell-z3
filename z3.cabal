@@ -38,7 +38,6 @@ Library
     Exposed-modules: 
 
         Z3.Base
-        Z3.Base.C 
 
         Z3.Lang
         Z3.Lang.Prelude
@@ -47,6 +46,8 @@ Library
         Z3.Lang.Pow2
 
     Other-modules:
+
+        Z3.Base.C 
         
         Z3.Lang.Exprs
         Z3.Lang.Monad
