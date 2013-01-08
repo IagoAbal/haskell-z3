@@ -79,9 +79,10 @@ import Z3.Base ( AST )
 import qualified Z3.Base as Base
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
+import Z3.Lang.TY
 
 import Control.Applicative ( (<$>), (<*>), pure )
-import Control.Monad ( liftM, liftM2, liftM3, liftM4, liftM5, join )
+import Control.Monad ( liftM2 )
 import Data.Maybe ( maybeToList )
 import qualified Data.Traversable as T
 #if __GLASGOW_HASKELL__ < 704
@@ -96,7 +97,7 @@ import Data.Typeable ( Typeable1(..) )
 
 -- | Compile while introducing TCCs into the script.
 --
-compileWithTCC :: IsTy a => Expr a -> Z3 (Base.AST (TypeZ3 a))
+compileWithTCC :: IsTy a => Expr a -> Z3 Base.AST
 compileWithTCC e = do
   assertCnstr =<< compile (and_ $ typecheck e)
   compile e
@@ -106,8 +107,8 @@ compileWithTCC e = do
 
 createVar :: forall a. IsTy a => Int -> String -> Z3 (Expr a)
 createVar u str = do
-    smb <- mkStringSymbol str
-    (srt :: Base.Sort (TypeZ3 a)) <- mkSort
+    smb  <- mkStringSymbol str
+    srt  <- mkSort  (TY :: TY a)
     cnst <- mkConst smb srt
     let e = Const u cnst
     assert $ typeInv e
@@ -194,7 +195,9 @@ funDecl :: forall a. IsFun a => Z3 (FunApp a)
 funDecl = do
   (_u, str) <- fresh
   smb <- mkStringSymbol str
-  (fd :: Base.FuncDecl (TypeZ3 a)) <- mkFuncDecl smb
+  dom <- domain (TY :: TY a)
+  rng <- range  (TY :: TY a)
+  fd  <- mkFuncDecl smb dom rng
   return (FuncDecl fd)
 
 -- | Make assertion in current context.
@@ -222,13 +225,13 @@ checkModel e = do
   a <- compileWithTCC e
   m <- getModel
   fixResult a m
-  where fixResult :: Base.AST (TypeZ3 a) -> Result Base.Model -> Z3 (Result a)
+  where fixResult :: Base.AST -> Result Base.Model -> Z3 (Result a)
         fixResult _ (Base.Undef)  = return Base.Undef
         fixResult _ (Base.Unsat)  = return Base.Unsat
         fixResult a (Base.Sat m)  = peek =<< eval m a
 
-        peek :: Maybe (Base.AST (TypeZ3 a)) -> Z3 (Base.Result a)
-        peek (Just a) = Base.Sat . fromZ3Type <$> getValue a
+        peek :: Maybe Base.AST -> Z3 (Base.Result a)
+        peek (Just a) = Base.Sat <$> getValue a
         peek Nothing  = error "Z3.Lang.Monad.eval: quantified expression or partial model!"
 
 ----------------------------------------------------------------------
@@ -426,6 +429,11 @@ instance IsTy Bool where
   fromZ3Type = id
   toZ3Type = id
 
+  mkSort     _  = mkBoolSort
+  getValue   v  = maybe False id <$> getBool v
+  mkLiteral True  = mkTrue
+  mkLiteral False = mkFalse
+
 tcBool :: Expr Bool -> TCM ()
 tcBool (Lit _)     = ok
 tcBool (Const _ _) = ok
@@ -453,14 +461,14 @@ tcBool (App _app) = ok
 tcBool _
     = error "Z3.Lang.Prelude.tcBool: Panic! Impossible constructor in pattern matching!"
 
-compileBool :: Expr Bool -> Z3 (AST Bool)
+compileBool :: Expr Bool -> Z3 AST
 compileBool (Lit a)
     = mkLiteral a
 compileBool (Const _ u)
     = return u
 compileBool (Tag lyt)
     = do ix <- deBruijnIx lyt
-         srt <- mkSort
+         srt <- mkSort (TY :: TY Bool)
          mkBound ix srt
 compileBool (Not b)
     = do b'  <- compileBool b
@@ -475,8 +483,8 @@ compileBool (BoolMulti op es)
 compileBool (ForAll (f :: Expr a -> Expr Bool)
                     (mb_mk_pat :: Maybe (Expr a -> Pattern)))
     = do (_,n) <- fresh
-         sx <- mkStringSymbol n
-         srt :: Base.Sort (TypeZ3 a) <- mkSort
+         sx  <- mkStringSymbol n
+         srt <- mkSort (TY :: TY a)
          (body,mb_pat) <- newQLayout $ \x -> liftM2 (,)
                               (compileBool $ mkBody x)
                               (T.mapM mkPat (mb_mk_pat <*> pure x))
@@ -514,6 +522,10 @@ instance IsTy Integer where
   tc = tcInteger
   fromZ3Type = id
   toZ3Type = id
+  
+  mkSort   _ = mkIntSort
+  getValue   = getInt
+  mkLiteral  = mkInt
 
 instance IsNum Integer where
 instance IsInt Integer where
@@ -536,14 +548,14 @@ tcInteger (App _) = ok
 tcInteger _
     = error "Z3.Lang.Prelude.tcInteger: Panic! Impossible constructor in pattern matching!"
 
-compileInteger :: Expr Integer -> Z3 (AST Integer)
+compileInteger :: Expr Integer -> Z3 AST
 compileInteger (Lit a)
   = mkLiteral a
 compileInteger (Const _ u)
   = return u
 compileInteger (Tag lyt)
   = do ix <- deBruijnIx lyt
-       srt <- mkSort
+       srt <- mkSort (TY :: TY Integer)
        mkBound ix srt
 compileInteger (Neg e)
   = mkUnaryMinus =<< compileInteger e
@@ -576,6 +588,10 @@ instance IsTy Rational where
   tc = tcRational
   fromZ3Type = id
   toZ3Type = id
+  
+  mkSort _ = mkRealSort
+  getValue   = getReal
+  mkLiteral  = mkReal
 
 instance IsNum Rational where
 instance IsReal Rational where
@@ -598,14 +614,14 @@ tcRational (App _) = ok
 tcRational _
     = error "Z3.Lang.Prelude.tcRational: Panic! Impossible constructor in pattern matching!"
 
-compileRational :: Expr Rational -> Z3 (AST Rational)
+compileRational :: Expr Rational -> Z3 AST
 compileRational (Lit a)
   = mkLiteral a
 compileRational (Const _ u)
   = return u
 compileRational (Tag lyt)
   = do ix <- deBruijnIx lyt
-       srt <- mkSort
+       srt <- mkSort (TY :: TY Rational)
        mkBound ix srt
 compileRational (Neg e)
   = mkUnaryMinus =<< compileRational e
@@ -631,20 +647,20 @@ compileRational _
 type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
 
 instance (IsTy a, IsTy b) => IsFun (a -> b) where
+  domain _ = (: []) <$> mkSort (TY :: TY a)
+  range  _ = mkSort (TY :: TY b)
 instance (IsTy a, IsFun (b -> c)) => IsFun (a -> b -> c) where
+  domain _ = do
+    srt <- mkSort (TY :: TY a)
+    lst <- domain (TY :: TY  (b -> c))
+    return (srt : lst)
+  range  _ = range (TY :: TY (b -> c))
 
 instance IsTy a => Compilable (FunApp a) where
   compile = app2AST
 
-app2AST :: IsTy a => FunApp a -> Z3 (Base.AST (TypeZ3 a))
-app2AST (PApp(FuncDecl fd)e1) = join $
-  liftM  (mkApp1 fd) (compile e1)
-app2AST (PApp(PApp(FuncDecl fd)e1)e2) = join $
-  liftM2 (mkApp2 fd) (compile e1) (compile e2)
-app2AST (PApp(PApp(PApp(FuncDecl fd)e1)e2)e3) = join $
-  liftM3 (mkApp3 fd) (compile e1) (compile e2) (compile e3)
-app2AST (PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4) = join $
-  liftM4 (mkApp4 fd) (compile e1) (compile e2) (compile e3) (compile e4)
-app2AST (PApp(PApp(PApp(PApp(PApp(FuncDecl fd)e1)e2)e3)e4)e5) = join $
-  liftM5 (mkApp5 fd) (compile e1) (compile e2) (compile e3) (compile e4) (compile e5)
-app2AST _ = error "Z3.Lang.Prelude.app2AST: Panic! Impossible function application!"
+app2AST :: IsTy a => FunApp a -> Z3 Base.AST
+app2AST f = doApp2AST f []
+  where doApp2AST :: FunApp t -> [Base.AST] -> Z3 Base.AST
+        doApp2AST (FuncDecl fd) acc = mkApp fd acc
+        doApp2AST (PApp e1 e2)  acc = compile e2 >>= doApp2AST e1 . (: acc)

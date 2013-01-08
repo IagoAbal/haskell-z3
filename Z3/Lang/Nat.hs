@@ -19,7 +19,9 @@ import Z3.Base ( AST )
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 import Z3.Lang.Prelude
+import Z3.Lang.TY
 
+import Control.Applicative ( (<$>) )
 import Data.Typeable
 
 newtype Nat = Nat { unNat :: Integer }
@@ -56,6 +58,11 @@ instance IsTy Nat where
   tc = tcNat
   fromZ3Type = Nat
   toZ3Type = unNat
+  
+  mkSort    _ = mkIntSort
+  mkLiteral   = mkInt . unNat
+  getValue  v = Nat <$> getInt v
+
 
 instance IsNum Nat where
 instance IsInt Nat where
@@ -83,14 +90,14 @@ tcNat (App _) = ok
 tcNat _ = error "Z3.Lang.Nat.tcNat: Panic!\
             \ Impossible constructor in pattern matching!"
 
-compileNat :: Expr Nat -> Z3 (AST Integer)
+compileNat :: Expr Nat -> Z3 AST
 compileNat (Lit a)
   = mkLiteral (toZ3Type a)
 compileNat (Const _ u)
   = return u
 compileNat (Tag lyt)
   = do ix <- deBruijnIx lyt
-       srt <- mkSort
+       srt <- mkSort (TY :: TY Nat)
        mkBound ix srt
 compileNat (Neg e)
   = mkUnaryMinus =<< compileNat e
