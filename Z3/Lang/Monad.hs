@@ -247,7 +247,6 @@ mkBoolBin Iff     = liftZ3Op3 Base.mkIff
 mkBoolMulti :: BoolMultiOp -> [Base.AST] -> Z3 Base.AST
 mkBoolMulti And      = liftZ3Op2 Base.mkAnd
 mkBoolMulti Or       = liftZ3Op2 Base.mkOr
-mkBoolMulti Distinct = liftZ3Op2 Base.mkDistinct
 
 mkNumeral :: String -> Base.Sort -> Z3 Base.AST
 mkNumeral = liftZ3Op3 Base.mkNumeral
@@ -267,10 +266,18 @@ mkBound = liftZ3Op3 Base.mkBound
 mkForall :: [Base.Pattern] -> Base.Symbol -> Base.Sort -> Base.AST -> Z3 Base.AST
 mkForall = liftZ3Op5 Base.mkForall
 
-mkEq :: CmpOpE -> Base.AST -> Base.AST -> Z3 Base.AST
-mkEq Eq  = liftZ3Op3 Base.mkEq
-mkEq Neq = liftZ3Op3 mkNeq
-  where mkNeq ctx b1 = Base.mkNot ctx <=< Base.mkEq ctx b1
+mkEq :: CmpOpE -> [Base.AST] -> Z3 Base.AST
+mkEq Distinct = liftZ3Op2 Base.mkDistinct
+mkEq Neq      = mkNot <=< mkEq Eq
+mkEq Eq       = doMkEq
+  where doMkEq [e1,e2]
+          = (liftZ3Op3 Base.mkEq) e1 e2
+        doMkEq es
+          | length es < 2 = error "Z3.Lang.Monad.mkEq:\
+              \ Invalid number of parameters."
+          | otherwise     = join $ liftM (mkBoolMulti And) doEqs
+          where doEqs = mapM (uncurry $ liftZ3Op3 Base.mkEq) pairs
+                pairs = init $ zip es $ tail $ cycle es
 
 mkCmp :: CmpOpI -> Base.AST -> Base.AST -> Z3 Base.AST
 mkCmp Le = liftZ3Op3 Base.mkLe

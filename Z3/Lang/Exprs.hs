@@ -174,7 +174,7 @@ data Expr :: * -> * where
   --  | Real arithmetic
   RealArith :: IsReal a => RealOp -> Expr a -> Expr a -> Expr a
   --  | Equality testing.
-  CmpE :: IsTy a => CmpOpE -> Expr a -> Expr a -> Expr Bool
+  CmpE :: IsTy a => CmpOpE -> [Expr a] -> Expr Bool
   --  | Ordering comparisons.
   CmpI :: IsNum a => CmpOpI -> Expr a -> Expr a -> Expr Bool
   --  | if-then-else expressions
@@ -200,7 +200,7 @@ data BoolBinOp = Xor | Implies | Iff
     deriving (Eq,Show)
 
 -- | Boolean variadic operations.
-data BoolMultiOp = And | Or | Distinct
+data BoolMultiOp = And | Or
     deriving (Eq,Show)
 
 -- | Commutative ring operations.
@@ -216,7 +216,7 @@ data RealOp = Div
     deriving (Eq,Show)
 
 -- | Equality testing.
-data CmpOpE = Eq | Neq
+data CmpOpE = Eq | Neq | Distinct
     deriving (Eq, Show, Typeable)
 
 -- | Ordering comparisons.

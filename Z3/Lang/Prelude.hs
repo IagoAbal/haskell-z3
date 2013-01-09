@@ -60,7 +60,7 @@ module Z3.Lang.Prelude (
     , not_
     , and_, (&&*)
     , or_, (||*)
-    , distinct_
+    , distinct
     , xor
     , implies, (==>)
     , iff, (<=>)
@@ -323,9 +323,9 @@ or_ :: [Expr Bool] -> Expr Bool
 or_ [] = false
 or_ bs = BoolMulti Or bs
 -- | Boolean variadic /distinct/.
-distinct_ :: [Expr Bool] -> Expr Bool
-distinct_ [] = true
-distinct_ bs = BoolMulti Distinct bs
+distinct :: IsTy a => [Expr a] -> Expr Bool
+distinct [] = true
+distinct bs = CmpE Distinct bs
 
 -- | Boolean binary /and/.
 --
@@ -374,11 +374,11 @@ k `divides` n = n %* k ==* 0
 -- | Equals.
 --
 (==*) :: IsTy a => Expr a -> Expr a -> Expr Bool
-(==*) = CmpE Eq
+e1 ==* e2 = CmpE Eq [e1,e2]
 -- | Not equals.
 --
 (/=*) :: IsTy a => Expr a -> Expr a -> Expr Bool
-(/=*) = CmpE Neq
+e1 /=* e2 = CmpE Neq [e1,e2]
 
 -- | Less or equals than.
 --
@@ -447,9 +447,8 @@ tcBool (BoolBin _op e1 e2) = do
   tcBool e2
 tcBool (BoolMulti _op es) = mapM_ tcBool es
 tcBool (ForAll _f _p) = ok
-tcBool (CmpE _op e1 e2) = do
-  tc e1
-  tc e2
+tcBool (CmpE _op es) = do
+  mapM_ tc es
 tcBool (CmpI _op e1 e2) = do
   tc e1
   tc e2
@@ -491,10 +490,9 @@ compileBool (ForAll (f :: Expr a -> Expr Bool)
          mkForall (maybeToList mb_pat) sx srt body
   where mkBody x = let b = f x in and_ (typeInv x:typecheck b) ==> b
         mkPat (Pat e) = do ast <- compile e; mkPattern [ast]
-compileBool (CmpE op e1 e2)
-    = do e1' <- compile e1
-         e2' <- compile e2
-         mkEq op e1' e2'
+compileBool (CmpE op es)
+    = do es' <- mapM compile es
+         mkEq op es'
 compileBool (CmpI op e1 e2)
     = do e1' <- compile e1
          e2' <- compile e2
