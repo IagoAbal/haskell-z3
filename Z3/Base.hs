@@ -115,6 +115,7 @@ module Z3.Base (
     , assertCnstr
     , check
     , getModel
+    , delModel
     , push
     , pop
 
@@ -809,6 +810,13 @@ getModel c =
         peekModel _ Undef                   = return Undef
         peekModel p (Sat ()) | p == nullPtr = error "Z3.Base.getModel: Panic! nullPtr!"
                              | otherwise    = Sat . Model <$> peek p
+
+-- | Delete a model object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0cc98d3ce68047f873e119bccaabdbee>
+--
+delModel :: Context -> Model -> IO ()
+delModel c m = z3_del_model (unContext c) (unModel m)
 
 showModel :: Context -> Model -> IO String
 showModel (Context fpc) (Model pm) = z3_model_to_string fpc pm >>= peekCString

@@ -223,15 +223,12 @@ let_ e = do
 checkModel :: forall a. IsTy a => Expr a -> Z3 (Result a)
 checkModel e = do
   a <- compileWithTCC e
-  m <- getModel
-  fixResult a m
-  where fixResult :: Base.AST -> Result Base.Model -> Z3 (Result a)
-        fixResult _ (Base.Undef)  = return Base.Undef
-        fixResult _ (Base.Unsat)  = return Base.Unsat
-        fixResult a (Base.Sat m)  = peek =<< eval m a
+  withModel (fixResult a)
+  where fixResult :: Base.AST -> Base.Model -> Z3 a
+        fixResult a m = peek =<< eval m a
 
-        peek :: Maybe Base.AST -> Z3 (Base.Result a)
-        peek (Just a) = Base.Sat <$> getValue a
+        peek :: Maybe Base.AST -> Z3 a
+        peek (Just a) = getValue a
         peek Nothing  = error "Z3.Lang.Monad.eval: quantified expression or partial model!"
 
 ----------------------------------------------------------------------
