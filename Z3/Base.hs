@@ -37,7 +37,7 @@ module Z3.Base (
     , Model
 
     -- ** Satisfiability result
-    , Result(..)
+    , Result
 
     -- * Configuration
     , mkConfig
@@ -123,12 +123,10 @@ module Z3.Base (
 
 import Z3.Base.C
 
-import Control.Applicative ( Applicative(..), (<$>) )
+import Control.Applicative ( (<$>) )
 import Control.Exception ( bracket )
-import Data.Foldable ( Foldable )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
-import Data.Traversable ( Traversable )
 import Data.Typeable ( Typeable )
 import Data.Word
 import Foreign hiding ( toBool )
@@ -199,34 +197,17 @@ newtype Model = Model { unModel :: Ptr Z3_model }
 
 -- | Result of a satisfiability check.
 --
-data Result a
-    = Sat a
+data Result
+    = Sat
     | Unsat
     | Undef
-    deriving (Eq, Ord, Read, Show, Foldable, Traversable)
-
-instance Functor Result where
-  fmap f (Sat x) = Sat $ f x
-  fmap _ Unsat   = Unsat
-  fmap _ Undef   = Undef
-
-instance Applicative Result where
-  pure = return
-  Sat f <*> x = f <$> x
-  Unsat <*> _ = Unsat
-  Undef <*> _ = Undef
-
-instance Monad Result where
-  return = Sat
-  Sat x >>= f = f x
-  Unsat >>= _ = Unsat
-  Undef >>= _ = Undef
+    deriving (Eq, Ord, Read, Show)
 
 -- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
 --
-toResult :: Z3_lbool -> Result ()
+toResult :: Z3_lbool -> Result
 toResult lb
-    | lb == z3_l_true  = Sat ()
+    | lb == z3_l_true  = Sat
     | lb == z3_l_false = Unsat
     | lb == z3_l_undef = Undef
     | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
@@ -799,17 +780,14 @@ assertCnstr ctx ast = z3_assert_cnstr (unContext ctx) (unAST ast)
 --
 -- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 --
-getModel :: Context -> IO (Result Model)
+getModel :: Context -> IO (Result, Maybe Model)
 getModel c =
   alloca $ \mptr ->
-    z3_check_and_get_model (unContext c) mptr >>= peekModel mptr . toResult
-  where peekModel :: Ptr (Ptr Z3_model)
-                  -> Result ()
-                  -> IO (Result Model)
-        peekModel _ Unsat                   = return Unsat
-        peekModel _ Undef                   = return Undef
-        peekModel p (Sat ()) | p == nullPtr = error "Z3.Base.getModel: Panic! nullPtr!"
-                             | otherwise    = Sat . Model <$> peek p
+    z3_check_and_get_model (unContext c) mptr >>= \lb ->
+      (toResult lb,) <$> peekModel mptr
+  where peekModel :: Ptr (Ptr Z3_model) -> IO (Maybe Model)
+        peekModel p | p == nullPtr = return Nothing
+                    | otherwise    = Just . Model <$> peek p
 
 -- | Delete a model object.
 --
@@ -828,7 +806,7 @@ showContext (Context fpc) = z3_context_to_string fpc >>= peekCString
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 --
-check :: Context -> IO (Result ())
+check :: Context -> IO Result
 check ctx = toResult <$> z3_check (unContext ctx)
 
 -- TODO Constraints: Z3_check_assumptions

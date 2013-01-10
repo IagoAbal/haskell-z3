@@ -29,7 +29,7 @@ module Z3.Lang.Prelude (
 
     -- * Z3 script
       Z3
-    , Base.Result(..)
+    , Base.Result
     , evalZ3
     , Args(..)
     , stdArgs
@@ -220,7 +220,7 @@ let_ e = do
 
 -- | Check satisfiability and evaluate the given expression if a model exists.
 --
-checkModel :: forall a. IsTy a => Expr a -> Z3 (Result a)
+checkModel :: forall a. IsTy a => Expr a -> Z3 (Maybe a)
 checkModel e = do
   a <- compileWithTCC e
   withModel (fixResult a)
