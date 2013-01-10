@@ -34,6 +34,8 @@ module Z3.Lang.Monad (
     , getInt
     , getReal
     , getModel
+    , delModel
+    , withModel
     , getValue
     , mkSort
     , mkStringSymbol
@@ -213,11 +215,18 @@ getReal = liftZ3Op2 Base.getReal
 getModel :: Z3 (Base.Result Base.Model)
 getModel = liftZ3Op Base.getModel
 
+delModel :: Base.Model -> Z3 ()
+delModel = liftZ3Op2 Base.delModel
+
+withModel :: (Base.Model -> Z3 a) -> Z3 (Base.Result a)
+withModel f = do
+ m <- getModel
+ r <- traverse f m
+ _ <- traverse delModel m
+ return r
+
 showModel :: Z3 (Base.Result String)
-showModel = do
-  c <- gets context
-  mm <- getModel
-  liftZ3 $ traverse (Base.showModel c) mm
+showModel = withModel (liftZ3Op2 Base.showModel)
 
 showContext :: Z3 String
 showContext = do
