@@ -117,7 +117,6 @@ foreign import ccall unsafe "Z3_mk_context"
 foreign import ccall unsafe "Z3_del_context"
     z3_del_context :: Ptr Z3_context -> IO ()
 
-
 ---------------------------------------------------------------------
 -- * Symbols
 

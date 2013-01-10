@@ -110,11 +110,11 @@ evalZ3With args (Z3 s) =
     Base.set_MODEL_PARTIAL cfg False
 --    Base.setParamValue cfg "WARNING" "false"
     iniConfig cfg args
-    ctx  <- Base.mkContext cfg
-    evalStateT s Z3State { uniqVal = 0
-                         , context = ctx
-                         , qLayout = 0
-                         }
+    Base.withContext cfg $ \ctx ->
+      evalStateT s Z3State { uniqVal = 0
+                           , context = ctx
+                           , qLayout = 0
+                           }
 
 -- | Fresh symbol name.
 --
