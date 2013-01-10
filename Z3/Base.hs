@@ -41,6 +41,8 @@ module Z3.Base (
 
     -- * Configuration
     , mkConfig
+    , delConfig
+    , withConfig
     , setParamValue
     , set_MODEL
     , set_MODEL_PARTIAL
@@ -119,6 +121,7 @@ module Z3.Base (
 import Z3.Base.C
 
 import Control.Applicative ( Applicative(..), (<$>) )
+import Control.Exception ( bracket )
 import Data.Foldable ( Foldable )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
@@ -141,21 +144,8 @@ import Foreign.Concurrent ( newForeignPtr, addForeignPtrFinalizer )
 --
 -- /Notes:/
 --
--- * The resource is automatically managed by the Haskell garbage
--- collector, and the structure is automatically deleted once it is out
--- of scope (no need to call 'z3_del_config').
---
-newtype Config = Config { unConfig :: ForeignPtr Z3_config }
+newtype Config = Config { unConfig :: Ptr Z3_config }
     deriving Eq
-
--- | withConfig.
---
--- Just an auxiliary function to avoid the "withForeignPtr . unConfig"
--- boilerplate
---
-withConfig :: Config -> (Ptr Z3_config -> IO a) -> IO a
-withConfig = withForeignPtr . unConfig
-
 
 -- | A Z3 /logical context/.
 --
@@ -265,10 +255,20 @@ toBool b
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d6c40d9b79fe8a8851cc8540970787f>
 --
 mkConfig :: IO Config
-mkConfig = do
-  ptr <- z3_mk_config
-  fptr <- newForeignPtr ptr (z3_del_config ptr)
-  return $! Config fptr
+mkConfig = Config <$> z3_mk_config
+
+-- | Delete a configuration.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e620acf5d55d0271097c9bb97219774>
+--
+delConfig :: Config -> IO ()
+delConfig = z3_del_config . unConfig
+
+-- | @withConfig f@ executes the computation @f@ passing as argument a
+-- temporally created configuration.
+--
+withConfig :: (Config -> IO a) -> IO a
+withConfig = bracket mkConfig delConfig
 
 -- | Set a configuration parameter.
 --
@@ -278,10 +278,9 @@ mkConfig = do
 --
 setParamValue :: Config -> String -> String -> IO ()
 setParamValue cfg s1 s2 =
-  withConfig  cfg $ \cfgPtr ->
-    withCString s1  $ \cs1 ->
-      withCString s2  $ \cs2 ->
-        z3_set_param_value cfgPtr cs1 cs2
+  withCString s1  $ \cs1 ->
+    withCString s2  $ \cs2 ->
+      z3_set_param_value (unConfig cfg) cs1 cs2
 
 -- | Set the /MODEL/ configuration parameter.
 --
@@ -315,8 +314,8 @@ set_WELL_SORTED_CHECK cfg False = setParamValue cfg "WELL_SORTED_CHECK" "false"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0bd93cfab4d749dd3e2f2a4416820a46>
 --
 mkContext :: Config -> IO Context
-mkContext cfg = withConfig cfg $ \cfgPtr -> do
-  ptr <- z3_mk_context cfgPtr
+mkContext cfg = do
+  ptr <- z3_mk_context $ unConfig cfg
   fptr <- newForeignPtr ptr (z3_del_context ptr)
   return $! Context fptr
 

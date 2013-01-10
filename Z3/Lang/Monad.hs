@@ -104,8 +104,8 @@ evalZ3 = evalZ3With stdArgs
 -- | Eval a Z3 script.
 --
 evalZ3With :: Args -> Z3 a -> IO a
-evalZ3With args (Z3 s) = do
-    cfg  <- Base.mkConfig
+evalZ3With args (Z3 s) =
+  Base.withConfig $ \cfg -> do
     Base.set_MODEL cfg True
     Base.set_MODEL_PARTIAL cfg False
 --    Base.setParamValue cfg "WARNING" "false"
