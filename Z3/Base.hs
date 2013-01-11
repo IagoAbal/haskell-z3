@@ -684,21 +684,21 @@ mkBound c i s
   | i >= 0    = AST <$> z3_mk_bound (unContext c) (fromIntegral i) (unSort s)
   | otherwise = error "Z3.Base.mkBound: negative de-Bruijn index"
 
-mkForall :: Context -> [Pattern] -> Symbol -> Sort -> AST -> IO AST
+mkForall :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkForall c pats x s p
-  = withArray pats    $ \patsPtr ->
-    with (unSymbol x) $ \xptr ->
-    with (unSort s)   $ \sptr ->
-      AST <$> z3_mk_forall cptr 0 n (castPtr patsPtr) 1 sptr xptr (unAST p)
+  = withArray (map unPattern pats) $ \patsPtr ->
+    withArray (map unSymbol  x   ) $ \xptr ->
+    withArray (map unSort    s   ) $ \sptr ->
+      AST <$> z3_mk_forall cptr 0 n patsPtr 1 sptr xptr (unAST p)
   where n    = fromIntegral $ length pats
         cptr = unContext c
 
-mkExists :: Context -> [Pattern] -> Symbol -> Sort -> AST -> IO AST
+mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkExists c pats x s p
-  = withArray pats    $ \patsPtr ->
-    with (unSymbol x) $ \xptr ->
-    with (unSort s)   $ \sptr ->
-      AST <$> z3_mk_exists cptr 0 n (castPtr patsPtr) 1 sptr xptr (unAST p)
+  = withArray (map unPattern pats) $ \patsPtr ->
+    withArray (map unSymbol  x   ) $ \xptr ->
+    withArray (map unSort    s   ) $ \sptr ->
+      AST <$> z3_mk_exists cptr 0 n patsPtr 1 sptr xptr (unAST p)
   where n    = fromIntegral $ length pats
         cptr = unContext c
 
