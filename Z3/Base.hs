@@ -188,7 +188,7 @@ newtype App = App { _unApp :: Ptr Z3_app }
 -- | A kind of AST used to represent pattern and multi-patterns used to
 --   guide quantifier instantiation.
 --
-newtype Pattern = Pattern { _unPattern :: Ptr Z3_pattern }
+newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A model for the constraints asserted into the logical context.
@@ -444,8 +444,8 @@ mkXor c p q = AST <$> z3_mk_xor (unContext c) (unAST p) (unAST q)
 mkAnd :: Context -> [AST] -> IO AST
 mkAnd _ [] = error "Z3.Base.mkAnd: empty list of expressions"
 mkAnd c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_and (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_and (unContext c) n aptr
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
@@ -455,15 +455,15 @@ mkAnd c es =
 mkOr :: Context -> [AST] -> IO AST
 mkOr _ [] = error "Z3.Base.mkOr: empty list of expressions"
 mkOr c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_or (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_or (unContext c) n aptr
   where n = fromIntegral $ length es
 
 mkDistinct :: Context -> [AST] -> IO AST
 mkDistinct _ [] = error "Z3.Base.mkDistinct: empty list of expressions"
 mkDistinct c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_distinct (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_distinct (unContext c) n aptr
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
@@ -473,8 +473,8 @@ mkDistinct c es =
 mkAdd :: Context -> [AST] -> IO AST
 mkAdd _ [] = error "Z3.Base.mkAdd: empty list of expressions"
 mkAdd c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_add (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_add (unContext c) n aptr
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] * ... * args[num_args-1].
@@ -484,8 +484,8 @@ mkAdd c es =
 mkMul :: Context -> [AST] -> IO AST
 mkMul _ [] = error "Z3.Base.mkMul: empty list of expressions"
 mkMul c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_mul (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_mul (unContext c) n aptr
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
@@ -495,8 +495,8 @@ mkMul c es =
 mkSub ::Context -> [AST] -> IO AST
 mkSub _ [] = error "Z3.Base.mkSub: empty list of expressions"
 mkSub c es =
-  withArray es $ \aptr ->
-    AST <$> z3_mk_sub (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    AST <$> z3_mk_sub (unContext c) n aptr
   where n = fromIntegral $ length es
 
 -- | Create an AST node representing -arg.
@@ -675,8 +675,8 @@ mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 mkPattern :: Context -> [AST] -> IO Pattern
 mkPattern _ [] = error "Z3.Base.mkPattern: empty list of expressions"
 mkPattern c es =
-  withArray es $ \aptr ->
-    Pattern <$> z3_mk_pattern (unContext c) n (castPtr aptr)
+  withArray (map unAST es) $ \aptr ->
+    Pattern <$> z3_mk_pattern (unContext c) n aptr
   where n = fromIntegral $ length es
 
 mkBound :: Context -> Int -> Sort -> IO AST
