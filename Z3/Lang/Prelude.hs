@@ -65,6 +65,7 @@ module Z3.Lang.Prelude (
     , implies, (==>)
     , iff, (<=>)
     , forall, forallP
+    , exists, existsP
     , (//), (%*), (%%)
     , divides
     , (==*), (/=*)
@@ -342,12 +343,21 @@ p ||* q = or_ [p,q]
 -- | Forall formula.
 --
 forall :: forall a. IsTy a => (Expr a -> Expr Bool) -> Expr Bool
-forall f = ForAll f Nothing
+forall f = Quant ForAll f Nothing
 
 forallP :: IsTy a => (Expr a -> Expr Bool)    -- ^ body
                       -> (Expr a -> Pattern)  -- ^ pattern
                       -> Expr Bool
-forallP f = ForAll f . Just
+forallP f = Quant ForAll f . Just
+
+-- | Exists formula.
+exists :: forall a. IsTy a => (Expr a -> Expr Bool) -> Expr Bool
+exists f = Quant Exists f Nothing
+
+existsP :: IsTy a => (Expr a -> Expr Bool)    -- ^ body
+                      -> (Expr a -> Pattern)  -- ^ pattern
+                      -> Expr Bool
+existsP f = Quant Exists f . Just
 
 -- | Integer division.
 --
@@ -443,7 +453,7 @@ tcBool (BoolBin _op e1 e2) = do
   tcBool e1
   tcBool e2
 tcBool (BoolMulti _op es) = mapM_ tcBool es
-tcBool (ForAll _f _p) = ok
+tcBool (Quant _q _f _p) = ok
 tcBool (CmpE _op es) = do
   mapM_ tc es
 tcBool (CmpI _op e1 e2) = do
@@ -476,17 +486,20 @@ compileBool (BoolBin op e1 e2)
 compileBool (BoolMulti op es)
     = do es' <- mapM compileBool es
          mkBoolMulti op es'
-compileBool (ForAll (f :: Expr a -> Expr Bool)
-                    (mb_mk_pat :: Maybe (Expr a -> Pattern)))
+compileBool (Quant q (f :: Expr a -> Expr Bool)
+                     (mb_mk_pat :: Maybe (Expr a -> Pattern)))
     = do (_,n) <- fresh
          sx  <- mkStringSymbol n
          srt <- mkSort (TY :: TY a)
          (body,mb_pat) <- newQLayout $ \x -> liftM2 (,)
-                              (compileBool $ mkBody x)
+                              (compileBool $ mkBody q x)
                               (T.mapM mkPat (mb_mk_pat <*> pure x))
-         mkForall (maybeToList mb_pat) sx srt body
-  where mkBody x = let b = f x in and_ (typeInv x:typecheck b) ==> b
+         mkQExpr q (maybeToList mb_pat) sx srt body
+  where mkBody ForAll x = let b = f x in and_ (typeInv x:typecheck b) ==> b
+        mkBody Exists x = let b = f x in and_ (b:typeInv x:typecheck b)
         mkPat (Pat e) = do ast <- compile e; mkPattern [ast]
+        mkQExpr ForAll = mkForall
+        mkQExpr Exists = mkExists
 compileBool (CmpE op es)
     = do es' <- mapM compile es
          mkEq op es'

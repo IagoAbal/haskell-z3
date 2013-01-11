@@ -100,6 +100,7 @@ module Z3.Base (
     , mkPattern
     , mkBound
     , mkForall
+    , mkExists
 
     -- * Accessors
     , getBool
@@ -689,6 +690,15 @@ mkForall c pats x s p
     with (unSymbol x) $ \xptr ->
     with (unSort s)   $ \sptr ->
       AST <$> z3_mk_forall cptr 0 n (castPtr patsPtr) 1 sptr xptr (unAST p)
+  where n    = fromIntegral $ length pats
+        cptr = unContext c
+
+mkExists :: Context -> [Pattern] -> Symbol -> Sort -> AST -> IO AST
+mkExists c pats x s p
+  = withArray pats    $ \patsPtr ->
+    with (unSymbol x) $ \xptr ->
+    with (unSort s)   $ \sptr ->
+      AST <$> z3_mk_exists cptr 0 n (castPtr patsPtr) 1 sptr xptr (unAST p)
   where n    = fromIntegral $ length pats
         cptr = unContext c
 

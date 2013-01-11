@@ -809,7 +809,18 @@ foreign import ccall unsafe "Z3_mk_forall"
                   -> Ptr Z3_ast
                   -> IO (Ptr Z3_ast)
 
--- TODO From 'Z3_mk_exists' on.
+-- | Create an exists formula.
+--
+-- Referece: http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4ffce34ff9117e6243283f11d87c1407
+foreign import ccall unsafe "Z3_mk_exists"
+  z3_mk_exists :: Ptr Z3_context -> CUInt
+                  -> CUInt -> Ptr (Ptr Z3_pattern)
+                  -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol)
+                  -> Ptr Z3_ast
+                  -> IO (Ptr Z3_ast)
+
+-- TODO: Z3_mk_quantifier, Z3_mk_quantifier_ex, Z3_mk_forall_const,
+-- Z3_mk_exists_const, Z3_mk_quantifier_const, Z3_mk_quantifier_const_ex 
 
 ---------------------------------------------------------------------
 -- * Accessors
