@@ -494,7 +494,7 @@ compileBool (Quant q (f :: Expr a -> Expr Bool)
          (body,mb_pat) <- newQLayout $ \x -> liftM2 (,)
                               (compileBool $ mkBody q x)
                               (T.mapM mkPat (mb_mk_pat <*> pure x))
-         mkQExpr q (maybeToList mb_pat) sx srt body
+         mkQExpr q (maybeToList mb_pat) [sx] [srt] body
   where mkBody ForAll x = let b = f x in and_ (typeInv x:typecheck b) ==> b
         mkBody Exists x = let b = f x in and_ (b:typeInv x:typecheck b)
         mkPat (Pat e) = do ast <- compile e; mkPattern [ast]
