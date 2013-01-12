@@ -52,6 +52,7 @@ module Z3.Lang.Monad (
     , mkPattern
     , mkBound
     , mkForall
+    , mkExists
     , mkEq
     , mkCmp
     , mkFuncDecl
@@ -272,8 +273,15 @@ mkPattern = liftZ3Op2 Base.mkPattern
 mkBound :: Int -> Base.Sort -> Z3 Base.AST
 mkBound = liftZ3Op3 Base.mkBound
 
-mkForall :: [Base.Pattern] -> Base.Symbol -> Base.Sort -> Base.AST -> Z3 Base.AST
+mkForall :: [Base.Pattern]
+            -> [Base.Symbol] -> [Base.Sort]
+            -> Base.AST -> Z3 Base.AST
 mkForall = liftZ3Op5 Base.mkForall
+
+mkExists :: [Base.Pattern]
+            -> [Base.Symbol] -> [Base.Sort]
+            -> Base.AST -> Z3 Base.AST
+mkExists = liftZ3Op5 Base.mkExists
 
 mkEq :: CmpOpE -> [Base.AST] -> Z3 Base.AST
 mkEq Distinct = liftZ3Op2 Base.mkDistinct
