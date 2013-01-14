@@ -34,6 +34,7 @@ module Z3.Lang.Exprs (
     , Expr (..)
     , Pattern (..)
     , Quantifier(..)
+    , QExpr(..)
     , FunApp (..)
     , BoolBinOp (..)
     , BoolMultiOp (..)
@@ -163,10 +164,7 @@ data Expr :: * -> * where
   --  | Variadic boolean expressions
   BoolMulti :: BoolMultiOp -> [Expr Bool] -> Expr Bool
   --  | Quantified formula
-  Quant :: IsTy a => Quantifier
-                     -> (Expr a -> Expr Bool)      --  ^ body
-                     -> Maybe (Expr a -> Pattern)  --  ^ pattern
-                     -> Expr Bool
+  Quant :: QExpr t => Quantifier -> t -> Expr Bool
   --  | Arithmetic negation
   Neg :: IsNum a => Expr a -> Expr a
   --  | Arithmetic expressions for commutative rings
@@ -183,6 +181,9 @@ data Expr :: * -> * where
   Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
   --  | Application
   App :: IsTy a  => FunApp a -> Expr a
+
+class QExpr t where
+  compileQuant :: Quantifier -> [Base.Symbol] -> [Base.Sort] -> t -> Z3 Base.AST
 
 -- | Quantifier pattern.
 --

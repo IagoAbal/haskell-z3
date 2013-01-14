@@ -64,8 +64,9 @@ module Z3.Lang.Prelude (
     , xor
     , implies, (==>)
     , iff, (<=>)
-    , forall, forallP
-    , exists, existsP
+    , forall
+    , exists
+    , instanceWhen
     , (//), (%*), (%%)
     , divides
     , (==*), (/=*)
@@ -82,10 +83,7 @@ import Z3.Lang.Exprs
 import Z3.Lang.Monad
 import Z3.Lang.TY
 
-import Control.Applicative ( (<$>), (<*>), pure )
-import Control.Monad ( liftM2 )
-import Data.Maybe ( maybeToList )
-import qualified Data.Traversable as T
+import Control.Applicative ( (<$>) )
 #if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
@@ -144,7 +142,7 @@ fun2 :: (IsTy a, IsTy b, IsTy c) => Z3 (Expr a -> Expr b -> Expr c)
 fun2 = do
     (fd :: FunApp (a -> b -> c)) <- funDecl
     let f e1 e2 = App $ PApp (PApp fd e1) e2
-    assert $ forall $ \a -> forall $ \b -> typeInv (f a b)
+    assert $ forall $ \a b -> typeInv (f a b)
     return f
 
 
@@ -155,10 +153,7 @@ fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d)
 fun3 = do
     (fd :: FunApp (a -> b -> c -> d)) <- funDecl
     let f e1 e2 e3 = App $ PApp (PApp (PApp fd e1) e2) e3
-    assert $ forall $ \a ->
-             forall $ \b ->
-             forall $ \c ->
-               typeInv (f a b c)
+    assert $ forall $ \a b c -> typeInv (f a b c)
     return f
 
 -- | Declare uninterpreted function of arity 4.
@@ -168,11 +163,7 @@ fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e)
 fun4 = do
     (fd :: FunApp (a -> b -> c -> d -> e)) <- funDecl
     let f e1 e2 e3 e4 = App $ PApp (PApp (PApp (PApp fd e1) e2) e3) e4
-    assert $ forall $ \a ->
-             forall $ \b ->
-             forall $ \c ->
-             forall $ \d ->
-               typeInv (f a b c d)
+    assert $ forall $ \a b c d -> typeInv (f a b c d)
     return f
 
 -- | Declare uninterpreted function of arity 5.
@@ -182,12 +173,7 @@ fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f)
 fun5 = do
     (fd :: FunApp (a -> b -> c -> d -> e -> f)) <- funDecl
     let f e1 e2 e3 e4 e5 = App $ PApp (PApp (PApp (PApp (PApp fd e1) e2) e3) e4) e5
-    assert $ forall $ \a ->
-             forall $ \b ->
-             forall $ \c ->
-             forall $ \d ->
-             forall $ \e ->
-               typeInv (f a b c d e)
+    assert $ forall $ \a b c d e -> typeInv (f a b c d e)
     return f
 
 -- | Declare uninterpreted function
@@ -340,24 +326,17 @@ p &&* q = and_ [p,q]
 p ||* (BoolMulti Or qs) = or_ (p:qs)
 p ||* q = or_ [p,q]
 
--- | Forall formula.
+-- | Quantified formulas.
 --
-forall :: forall a. IsTy a => (Expr a -> Expr Bool) -> Expr Bool
-forall f = Quant ForAll f Nothing
 
-forallP :: IsTy a => (Expr a -> Expr Bool)    -- ^ body
-                      -> (Expr a -> Pattern)  -- ^ pattern
-                      -> Expr Bool
-forallP f = Quant ForAll f . Just
+forall  :: QExpr t => t -> Expr Bool
+forall f = Quant ForAll f
 
--- | Exists formula.
-exists :: forall a. IsTy a => (Expr a -> Expr Bool) -> Expr Bool
-exists f = Quant Exists f Nothing
+exists  :: QExpr t => t -> Expr Bool
+exists f = Quant Exists f
 
-existsP :: IsTy a => (Expr a -> Expr Bool)    -- ^ body
-                      -> (Expr a -> Pattern)  -- ^ pattern
-                      -> Expr Bool
-existsP f = Quant Exists f . Just
+instanceWhen :: Expr Bool -> [Pattern] -> QBody
+instanceWhen = QBody
 
 -- | Integer division.
 --
@@ -453,7 +432,7 @@ tcBool (BoolBin _op e1 e2) = do
   tcBool e1
   tcBool e2
 tcBool (BoolMulti _op es) = mapM_ tcBool es
-tcBool (Quant _q _f _p) = ok
+tcBool (Quant _q _f) = ok
 tcBool (CmpE _op es) = do
   mapM_ tc es
 tcBool (CmpI _op e1 e2) = do
@@ -486,20 +465,8 @@ compileBool (BoolBin op e1 e2)
 compileBool (BoolMulti op es)
     = do es' <- mapM compileBool es
          mkBoolMulti op es'
-compileBool (Quant q (f :: Expr a -> Expr Bool)
-                     (mb_mk_pat :: Maybe (Expr a -> Pattern)))
-    = do (_,n) <- fresh
-         sx  <- mkStringSymbol n
-         srt <- mkSort (TY :: TY a)
-         (body,mb_pat) <- newQLayout $ \x -> liftM2 (,)
-                              (compileBool $ mkBody q x)
-                              (T.mapM mkPat (mb_mk_pat <*> pure x))
-         mkQExpr q (maybeToList mb_pat) [sx] [srt] body
-  where mkBody ForAll x = let b = f x in and_ (typeInv x:typecheck b) ==> b
-        mkBody Exists x = let b = f x in and_ (b:typeInv x:typecheck b)
-        mkPat (Pat e) = do ast <- compile e; mkPattern [ast]
-        mkQExpr ForAll = mkForall
-        mkQExpr Exists = mkExists
+compileBool (Quant q f)
+    = compileQuant q [] [] f
 compileBool (CmpE op es)
     = do es' <- mapM compile es
          mkEq op es'
@@ -516,6 +483,44 @@ compileBool (App e)
     = compile e
 compileBool _
     = error "Z3.Lang.Prelude.compileBool: Panic! Impossible constructor in pattern matching!"
+
+withSortedSymbol :: IsTy a => TY a -> (Base.Symbol -> Base.Sort -> Z3 b) -> Z3 b
+withSortedSymbol t f = do
+  (_,n) <- fresh
+  sx    <- mkStringSymbol n
+  srt   <- mkSort t
+  f sx srt
+
+instance IsTy a => QExpr (Expr a -> Expr Bool) where
+  compileQuant q smbs srts f = do
+    withSortedSymbol (TY :: TY a) $ \sx srt ->
+      newQLayout $ \x -> do
+        body    <- compileBool $ mkBody q x
+        mkQuant q [] (sx:smbs) (srt:srts) body
+    where mkBody ForAll x = let b = f x in and_ (typeInv x:typecheck b) ==> b
+          mkBody Exists x = let b = f x in and_ (b:typeInv x:typecheck b)
+
+data QBody = QBody (Expr Bool) [Pattern]
+
+instance IsTy a => QExpr (Expr a -> QBody) where
+  compileQuant q smbs srts f = do
+    withSortedSymbol (TY :: TY a) $ \sx srt ->
+      newQLayout $ \x -> do
+        let QBody body pats = mapFst (mkBody q x) (f x)
+        astbody <- compileBool body
+        pat_lst <- mkPat pats
+        mkQuant q pat_lst (sx:smbs) (srt:srts) astbody
+    where mkBody ForAll x b = and_ (typeInv x:typecheck b) ==> b
+          mkBody Exists x b = and_ (b:typeInv x:typecheck b)
+          mkPat []  = return []
+          mkPat lst = mapM compile lst >>= \args -> (:[]) <$> mkPattern args
+          mapFst mf (QBody a b) = QBody (mf a) b
+
+instance (IsTy a, QExpr (b -> c)) => QExpr (Expr a -> b -> c) where
+  compileQuant q smbs srts f =
+    withSortedSymbol (TY :: TY a) $ \sx srt ->
+      newQLayout $ \x ->
+        compileQuant q (sx:smbs) (srt:srts) (f x)
 
 ----------------------------------------------------------------------
 -- Integers
@@ -672,3 +677,10 @@ app2AST f = doApp2AST f []
   where doApp2AST :: FunApp t -> [Base.AST] -> Z3 Base.AST
         doApp2AST (FuncDecl fd) acc = mkApp fd acc
         doApp2AST (PApp e1 e2)  acc = compile e2 >>= doApp2AST e1 . (: acc)
+
+----------------------------------------------------------------------
+-- Patterns
+
+instance Compilable Pattern where
+  compile (Pat e) = compile e
+
