@@ -25,18 +25,18 @@ declarePow2 :: IsInt a => Z3 (Expr a -> Expr a)
 declarePow2 = do
   pow2::Expr a -> Expr a <- fun1
   -- invariants
-  assert $ forallP (\x -> x <* 0 ==> pow2 x ==* 0)
-                   (\x -> Pat $ pow2 x)
-  assert $ forallP (\x -> x >=* 0 ==> pow2 x >* 0)
-                   (\x -> Pat $ pow2 x)
-  assert $ forallP (\x -> x >=* 0 ==> pow2 x >* x)
-                   (\x -> Pat $ pow2 x)
+  assert $ forall $ \x -> (x <* 0 ==> pow2 x ==* 0)
+                          `instanceWhen` [Pat $ pow2 x]
+  assert $ forall $ \x -> (x >=* 0 ==> pow2 x >* 0)
+                          `instanceWhen` [Pat $ pow2 x]
+  assert $ forall $ \x -> (x >=* 0 ==> pow2 x >* x)
+                          `instanceWhen` [Pat $ pow2 x]
   -- base cases
   assert $ pow2 0 ==* 1
   assert $ pow2 1 ==* 2
   -- recursive definition
-  assert $ forallP (\x -> x >* 1 ==> pow2 x ==* 2 * pow2 (x-1))
-                   (\x -> Pat $ pow2 x)
+  assert $ forall $ \x -> (x >* 1 ==> pow2 x ==* 2 * pow2 (x-1))
+                          `instanceWhen` [Pat $ pow2 x]
   -- and that's it!
   return pow2
 

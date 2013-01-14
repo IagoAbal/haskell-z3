@@ -24,10 +24,8 @@ declareLg2 :: IsInt a => Z3 (Expr a -> Expr a)
 declareLg2 = do
   lg2::Expr a -> Expr a <- fun1
   -- invariants
-  assert $ forallP (\x -> x >* 0 ==> lg2 x >=* 0)
-                   (\x -> Pat $ lg2 x)
-  assert $ forallP (\x -> x >* 0 ==> lg2 x <* x)
-                   (\x -> Pat $ lg2 x)
+  assert $ forall $ \x -> (x >* 0 ==> lg2 x >=* 0) `instanceWhen` [Pat $ lg2 x]
+  assert $ forall $ \x -> (x >* 0 ==> lg2 x <* x)  `instanceWhen` [Pat $ lg2 x]
   assert $ forall $ \x -> 
               x >* 0 ==> (lg2 (x+1) ==* lg2 x ||*  lg2 (x+1) ==* 1 + lg2 x)
   -- base cases
