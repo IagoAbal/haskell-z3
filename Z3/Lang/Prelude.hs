@@ -535,7 +535,7 @@ instance IsTy Integer where
   tc = tcInteger
   fromZ3Type = id
   toZ3Type = id
-  
+
   mkSort   _ = mkIntSort
   getValue   = getInt
   mkLiteral  = mkInt
@@ -601,7 +601,7 @@ instance IsTy Rational where
   tc = tcRational
   fromZ3Type = id
   toZ3Type = id
-  
+
   mkSort _ = mkRealSort
   getValue   = getReal
   mkLiteral  = mkReal
