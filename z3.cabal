@@ -1,7 +1,7 @@
 Name:                z3
 Version:             0.3.0
 Synopsis:            Bindings for the Z3 Theorem Prover
-Description:         
+Description:
     Bindings for the Z3 Theorem Prover.
     .
     This package is still a work in progress. Low and medium-level bindings
@@ -9,8 +9,8 @@ Description:
     of yices-painless. These APIs are still incomplete but usable.
     The high-level API ("Z3.Lang") is still very experimental and likely to change.
     .
-    Installation (Unix-like): Just be sure to use the standard locations for 
-    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else use 
+    Installation (Unix-like): Just be sure to use the standard locations for
+    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else use
     the appropriate Cabal flags.
     .
     Haddock documentation: <http://www.iagoabal.eu/z3-haskell/doc>
@@ -35,7 +35,7 @@ source-repository head
   location: https://bitbucket.org/iago/z3-haskell
 
 Library
-    Exposed-modules: 
+    Exposed-modules:
 
         Z3.Base
 
@@ -47,8 +47,8 @@ Library
 
     Other-modules:
 
-        Z3.Base.C 
-        
+        Z3.Base.C
+
         Z3.Lang.Exprs
         Z3.Lang.Monad
         Z3.Lang.TY
