@@ -516,7 +516,7 @@ instance IsTy a => QExpr (Expr a -> QBody) where
           mkPat lst = mapM compile lst >>= \args -> (:[]) <$> mkPattern args
           mapFst mf (QBody a b) = QBody (mf a) b
 
-instance (IsTy a, QExpr (b -> c)) => QExpr (Expr a -> b -> c) where
+instance (IsTy a, QExpr t) => QExpr (Expr a -> t) where
   compileQuant q smbs srts f =
     withSortedSymbol (TY :: TY a) $ \sx srt ->
       newQLayout $ \x ->
