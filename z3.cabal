@@ -39,6 +39,8 @@ Library
 
         Z3.Base
 
+        Z3.Opts
+
         Z3.Lang
         Z3.Lang.Prelude
         Z3.Lang.Nat
