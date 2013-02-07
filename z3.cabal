@@ -62,4 +62,9 @@ Library
     Build-tools:         hsc2hs
     Extensions:          ForeignFunctionInterface
     includes:            z3.h
-    extra-libraries:     gomp z3 gomp
+
+    -- In OS X libz3 is linked statically against libgomp
+    if os(darwin)
+        extra-libraries:     z3
+    else
+        extra-libraries:     gomp z3 gomp
