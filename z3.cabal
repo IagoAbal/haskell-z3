@@ -60,7 +60,9 @@ Library
     Build-depends:       base > 3 && < 5, containers, mtl < 2.1 || > 2.1
 
     Build-tools:         hsc2hs
-    Extensions:          ForeignFunctionInterface
+    Extensions:          FlexibleInstances
+                         ForeignFunctionInterface
+
     includes:            z3.h
 
     -- In OS X libz3 is linked statically against libgomp
