@@ -15,8 +15,8 @@
 
 -- |
 -- Module    : Z3.Lang.Prelude
--- Copyright : (c) Iago Abal, 2012
---             (c) David Castro, 2012
+-- Copyright : (c) Iago Abal, 2012-2013
+--             (c) David Castro, 2012-2013
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>

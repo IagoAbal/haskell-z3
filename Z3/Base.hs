@@ -443,7 +443,7 @@ mkMul c es =
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4f5fea9b683f9e674fd8f14d676cc9a9>
-mkSub ::Context -> [AST] -> IO AST
+mkSub :: Context -> [AST] -> IO AST
 mkSub _ [] = error "Z3.Base.mkSub: empty list of expressions"
 mkSub c es =
   withArray (map unAST es) $ \aptr ->
@@ -616,6 +616,7 @@ mkPattern c es =
   withArray (map unAST es) $ \aptr ->
     Pattern <$> z3_mk_pattern (unContext c) n aptr
   where n = genericLength es
+
 mkBound :: Context -> Int -> Sort -> IO AST
 mkBound c i s
   | i >= 0    = AST <$> z3_mk_bound (unContext c) (fromIntegral i) (unSort s)
@@ -715,14 +716,12 @@ eval ctx m a =
 ---------------------------------------------------------------------
 -- Constraints
 
--- TODO Constraints: Z3_push
 push :: Context -> IO ()
 push = z3_push . unContext
 
 pop :: Context -> Int -> IO ()
 pop ctx cnt = z3_pop (unContext ctx) $ fromIntegral cnt
 
--- TODO Constraints: Z3_pop
 -- TODO Constraints: Z3_get_num_scopes
 -- TODO Constraints: Z3_persist_ast
 
@@ -745,7 +744,7 @@ getModel c =
                     | otherwise    = mkModel <$> peek p
         mkModel :: Ptr Z3_model -> Maybe Model
         mkModel p | p == nullPtr = Nothing
-                  | otherwise    = Just $ Model p 
+                  | otherwise    = Just $ Model p
 
 -- | Delete a model object.
 --
