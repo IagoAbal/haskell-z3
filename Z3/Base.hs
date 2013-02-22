@@ -34,6 +34,8 @@ module Z3.Base (
     , App
     , Pattern
     , Model
+    , Params
+    , Solver
 
     -- ** Satisfiability result
     , Result(..)
@@ -119,6 +121,29 @@ module Z3.Base (
     , push
     , pop
 
+
+    -- * Parameters
+    , mkParams
+    , paramsSetBool
+    , paramsSetUInt
+    , paramsSetDouble
+    , paramsSetSymbol
+    , paramsToString
+
+    -- * Solvers
+    , mkSolver
+    , mkSimpleSolver
+    , mkSolverForLogic
+    , solverSetParams
+    , solverPush
+    , solverPop
+    , solverReset
+    , solverAssertCnstr
+    , solverAssertAndTrack
+    , solverCheck
+    --, solverGetModel
+    , solverCheckAndGetModel
+    , solverGetReasonUnknown
     ) where
 
 import Z3.Base.C
@@ -174,6 +199,16 @@ newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
 
 -- | A model for the constraints asserted into the logical context.
 newtype Model = Model { unModel :: Ptr Z3_model }
+    deriving Eq
+
+-- | A Z3 parameter set. Starting at Z3 4.0, parameter sets are used
+-- to configure many components such as: simplifiers, tactics,
+-- solvers, etc.
+newtype Params = Params { unParams :: Ptr Z3_params }
+    deriving Eq
+
+-- | A Z3 solver engine
+newtype Solver = Solver { unSolver :: Ptr Z3_solver }
     deriving Eq
 
 -- | Result of a satisfiability check.
@@ -768,3 +803,88 @@ check ctx = toResult <$> z3_check (unContext ctx)
 -- TODO Constraints: Z3_get_implied_equalities
 
 -- TODO From section 'Constraints' on.
+
+
+---------------------------------------------------------------------
+-- * Parameters
+
+mkParams :: Context -> IO Params
+mkParams c = Params <$> z3_mk_params (unContext c)
+
+paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
+paramsSetBool c params sym b =
+  z3_params_set_bool (unContext c) (unParams params) (unSymbol sym)
+                     (if b then z3_true else z3_false)
+
+paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
+paramsSetUInt c params sym v =
+  z3_params_set_uint (unContext c) (unParams params) (unSymbol sym)
+                     (fromIntegral v)
+
+paramsSetDouble :: Context -> Params -> Symbol -> Double -> IO ()
+paramsSetDouble c params sym v =
+  z3_params_set_double (unContext c) (unParams params) (unSymbol sym)
+                       (realToFrac v)
+
+paramsSetSymbol :: Context -> Params -> Symbol -> Symbol -> IO ()
+paramsSetSymbol c params sym v =
+  z3_params_set_symbol (unContext c) (unParams params) (unSymbol sym)
+                       (unSymbol v)
+
+paramsToString :: Context -> Params -> IO String
+paramsToString (Context c) (Params params) =
+  z3_params_to_string c params >>= peekCString
+
+
+---------------------------------------------------------------------
+-- * Solvers
+
+mkSolver :: Context -> IO Solver
+mkSolver c = Solver <$> z3_mk_solver (unContext c)
+
+mkSimpleSolver :: Context -> IO Solver
+mkSimpleSolver c = Solver <$> z3_mk_simple_solver (unContext c)
+
+mkSolverForLogic :: Context -> String -> IO Solver
+mkSolverForLogic c str =
+  do sym <- mkStringSymbol c str
+     Solver <$> z3_mk_solver_for_logic (unContext c) (unSymbol sym)
+
+solverSetParams :: Context -> Solver -> Params -> IO ()
+solverSetParams c solver params =
+  z3_solver_set_params (unContext c) (unSolver solver) (unParams params)
+
+solverPush :: Context -> Solver -> IO ()
+solverPush c solver = z3_solver_push (unContext c) (unSolver solver)
+
+solverPop :: Context -> Solver -> Int -> IO ()
+solverPop c solver i =
+  z3_solver_pop (unContext c) (unSolver solver) (fromIntegral i)
+
+solverReset :: Context -> Solver -> IO ()
+solverReset c solver = z3_solver_reset (unContext c) (unSolver solver)
+
+solverAssertCnstr :: Context -> Solver -> AST -> IO ()
+solverAssertCnstr c solver ast =
+  z3_solver_assert (unContext c) (unSolver solver) (unAST ast)
+
+solverAssertAndTrack :: Context -> Solver -> AST -> AST -> IO ()
+solverAssertAndTrack c solver constraint var =
+  z3_solver_assert_and_track (unContext c) (unSolver solver)
+                             (unAST constraint) (unAST var)
+
+solverCheck :: Context -> Solver -> IO Result
+solverCheck c solver =
+  toResult <$> z3_solver_check (unContext c) (unSolver solver)
+
+solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
+solverCheckAndGetModel (Context c) (Solver s) =
+  do res <- toResult <$> z3_solver_check c s
+     mmodel <- case res of
+                 Sat -> (Just . Model) <$> z3_solver_get_model c s
+                 _ -> return Nothing
+     return (res, mmodel)
+
+solverGetReasonUnknown :: Context -> Solver -> IO String
+solverGetReasonUnknown c solver =
+  z3_solver_get_reason_unknown (unContext c) (unSolver solver) >>= peekCString

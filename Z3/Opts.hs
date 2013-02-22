@@ -53,8 +53,8 @@ setOpts baseCfg (Opts params) = mapM_ (setOpt baseCfg) params
 -- Options
 
 -- | Configuration option.
-data Opt = Opt String -- id
-               String -- value
+data Opt = Opt String  -- id
+               String  -- value
 
 -- | Set an option.
 setOpt :: Base.Config -> Opt -> IO ()
