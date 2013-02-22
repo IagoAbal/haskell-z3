@@ -55,6 +55,13 @@ data Z3_pattern
 -- | A model for the constraints asserted into the logical context.
 data Z3_model
 
+-- | A solver for Z3, that is, an engine for collecting and solving
+-- constraints using a specific algorithm or set of algorithms.
+data Z3_solver
+     
+-- | A parameter set for Z3.
+data Z3_params
+     
 -- | Lifted Boolean type: false, undefined, true.
 type Z3_lbool = CInt
 
@@ -923,3 +930,189 @@ foreign import ccall unsafe "Z3_context_to_string"
 
 
 -- TODO From section 'Constraints' on.
+
+
+---------------------------------------------------------------------
+-- * Parameters
+
+-- | Create a Z3 (empty) parameter set. Starting at Z3 4.0, parameter
+-- sets are used to configure many components such as: simplifiers,
+-- tactics, solvers, etc.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac7f883536538ab0ad234fde58988e673>
+--
+foreign import ccall unsafe "Z3_mk_params"
+    z3_mk_params :: Ptr Z3_context -> IO (Ptr Z3_params)
+
+-- | Increment the reference counter of the given parameter set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3a91c9f749b89e1dcf1493177d395d0c>
+-- 
+foreign import ccall unsafe "Z3_params_inc_ref"
+    z3_params_inc_ref :: Ptr Z3_context -> Ptr Z3_params -> IO ()
+
+-- | Decrement the reference counter of the given parameter set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae4df28ba713b81ee99abd929e32484ea>
+-- 
+foreign import ccall unsafe "Z3_params_dec_ref"
+    z3_params_dec_ref :: Ptr Z3_context -> Ptr Z3_params -> IO ()
+
+-- | Add a Boolean parameter k with value v to the parameter set p.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga39e3df967eaad45b343256d56c54e91c>
+-- 
+foreign import ccall unsafe "Z3_params_set_bool"
+    z3_params_set_bool :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
+                          Z3_bool -> IO ()
+
+-- | Add an unsigned parameter k with value v to the parameter set p.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4974397cb652c7f7f479012eb465e250>
+-- 
+foreign import ccall unsafe "Z3_params_set_uint"
+    z3_params_set_uint :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
+                          CUInt -> IO ()
+
+-- | Add a double parameter k with value v to the parameter set p.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga11498ce4b25d294f5f89ab7ac1b74c62>
+-- 
+foreign import ccall unsafe "Z3_params_set_double"
+    z3_params_set_double :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
+                            CDouble -> IO ()
+
+-- | Add a symbol parameter k with value v to the parameter set p.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac2e899a4906b6133a23fdb60ef992ec9>
+-- 
+foreign import ccall unsafe "Z3_params_set_symbol"
+    z3_params_set_symbol :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
+                            Ptr Z3_symbol -> IO ()
+
+-- | Convert a parameter set into a string. This function is mainly
+-- used for printing the contents of a parameter set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga624e692e180a8b2f617156b1e1ae9722>
+-- 
+foreign import ccall unsafe "Z3_params_to_string"
+    z3_params_to_string :: Ptr Z3_context -> Ptr Z3_params -> IO Z3_string
+
+{-
+-- | Validate the parameter set p against the parameter description
+-- set d.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1ae64e7f89201589424191a9b824d3ca>
+-- 
+foreign import ccall unsafe "Z3_params_validate"
+    z3_params_validate :: Ptr Z3_context -> Ptr Z3_params ->  Z3_param_descrs -> IO ()
+-}
+
+---------------------------------------------------------------------
+-- * Solvers
+
+-- | Create an SMT solver that uses a set of builtin tactics.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5735499ef0b46846c5d45982eaa0e74c>
+--
+foreign import ccall unsafe "Z3_mk_solver"
+    z3_mk_solver :: Ptr Z3_context -> IO (Ptr Z3_solver)
+
+-- | Create a simple solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5735499ef0b46846c5d45982eaa0e74c>
+--
+foreign import ccall unsafe "Z3_mk_simple_solver"
+    z3_mk_simple_solver :: Ptr Z3_context -> IO (Ptr Z3_solver)
+
+-- | Create a solver for a particular logic, as given by the SMTLIB
+-- standard here:
+--
+-- <http://smtlib.cs.uiowa.edu/logics.html>
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga54244cfc9d9cd2ca8f08c3909d700628>
+--
+foreign import ccall unsafe "Z3_mk_solver_for_logic"
+    z3_mk_solver_for_logic :: Ptr Z3_context -> Ptr Z3_symbol -> IO (Ptr Z3_solver)
+
+-- | Set the parameters for a solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga887441b3468a1bc605bbf564ddebf2ae>
+--
+foreign import ccall unsafe "Z3_solver_set_params"
+    z3_solver_set_params :: Ptr Z3_context -> Ptr Z3_solver -> Ptr Z3_params ->
+                            IO ()
+
+-- | Increment the reference counter of the given solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga388e25a8b477abbd49f08c6c29dfa12d>
+foreign import ccall unsafe "Z3_solver_inc_ref"
+    z3_solver_inc_ref :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
+ 
+-- | Decrement the reference counter of the given solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2362dcef4e9b8ede41298a50428902ff>
+foreign import ccall unsafe "Z3_solver_dec_ref"
+    z3_solver_dec_ref :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
+ 
+-- | Create a backtracking point in a solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae41bebe15b1b1105f9abb8690188d1e2>
+--
+foreign import ccall unsafe "Z3_solver_push"
+    z3_solver_push :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
+
+-- | Backtrack to the nth-most recent backtracking point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40aa98e15aceffa5be3afad2e065478a>
+--
+foreign import ccall unsafe "Z3_solver_pop"
+    z3_solver_pop :: Ptr Z3_context -> Ptr Z3_solver -> CUInt -> IO ()
+
+-- | Remove all assertions from a solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4a4a215b9130d7980e3c393fe857335f>
+--
+foreign import ccall unsafe "Z3_solver_reset"
+    z3_solver_reset :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
+
+-- | Add a constraint to a solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72afadf5e8b216f2c6ae675e872b8be4>
+--
+foreign import ccall unsafe "Z3_solver_assert"
+    z3_solver_assert :: Ptr Z3_context -> Ptr Z3_solver -> Ptr Z3_ast -> IO ()
+
+-- | Add a constraint to a solver and track it using a Boolean
+-- constant, given as the last argument.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf46fb6f3aa3ef451d6be01a737697810>
+--
+foreign import ccall unsafe "Z3_solver_assert_and_track"
+    z3_solver_assert_and_track :: Ptr Z3_context -> Ptr Z3_solver ->
+                                  Ptr Z3_ast -> Ptr Z3_ast -> IO ()
+
+-- | Check whether the assertions in a given solver are consistent.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga000e369de7b71caa4ee701089709c526>
+--
+foreign import ccall unsafe "Z3_solver_check"
+    z3_solver_check :: Ptr Z3_context -> Ptr Z3_solver -> IO Z3_lbool
+
+-- | Retrieve the model for the last call to Z3_solver_check or
+-- Z3_solver_check_assumptions on the given solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf14a54d904a7e45eecc00c5fb8a9d5c9>
+--
+foreign import ccall unsafe "Z3_solver_get_model"
+    z3_solver_get_model :: Ptr Z3_context -> Ptr Z3_solver -> IO (Ptr Z3_model)
+
+-- | Return a brief justification for an "unknown" result (i.e.,
+-- Z3_L_UNDEF) for the last call to Z3_solver_check or
+-- Z3_solver_check_assumptions on the given solver.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaed5d19000004b43dd75e487682e91b55>
+--
+foreign import ccall unsafe "Z3_solver_get_reason_unknown"
+    z3_solver_get_reason_unknown :: Ptr Z3_context -> Ptr Z3_solver ->
+                                    IO Z3_string
