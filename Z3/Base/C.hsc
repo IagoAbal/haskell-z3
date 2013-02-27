@@ -58,10 +58,10 @@ data Z3_model
 -- | A solver for Z3, that is, an engine for collecting and solving
 -- constraints using a specific algorithm or set of algorithms.
 data Z3_solver
-     
+
 -- | A parameter set for Z3.
 data Z3_params
-     
+
 -- | Lifted Boolean type: false, undefined, true.
 type Z3_lbool = CInt
 
@@ -171,7 +171,7 @@ foreign import ccall unsafe "Z3_mk_real_sort"
 foreign import ccall unsafe "Z3_mk_bv_sort"
     z3_mk_bv_sort :: Ptr Z3_context -> CUInt -> IO (Ptr Z3_sort)
 
--- TODO Sorts: from Z3_mk_bv_sort on
+-- TODO Sorts: from Z3_mk_finite_domain_sort on
 
 
 ---------------------------------------------------------------------
@@ -827,7 +827,7 @@ foreign import ccall unsafe "Z3_mk_exists"
                   -> IO (Ptr Z3_ast)
 
 -- TODO: Z3_mk_quantifier, Z3_mk_quantifier_ex, Z3_mk_forall_const,
--- Z3_mk_exists_const, Z3_mk_quantifier_const, Z3_mk_quantifier_const_ex 
+-- Z3_mk_exists_const, Z3_mk_quantifier_const, Z3_mk_quantifier_const_ex
 
 ---------------------------------------------------------------------
 -- * Accessors
@@ -947,21 +947,21 @@ foreign import ccall unsafe "Z3_mk_params"
 -- | Increment the reference counter of the given parameter set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3a91c9f749b89e1dcf1493177d395d0c>
--- 
+--
 foreign import ccall unsafe "Z3_params_inc_ref"
     z3_params_inc_ref :: Ptr Z3_context -> Ptr Z3_params -> IO ()
 
 -- | Decrement the reference counter of the given parameter set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae4df28ba713b81ee99abd929e32484ea>
--- 
+--
 foreign import ccall unsafe "Z3_params_dec_ref"
     z3_params_dec_ref :: Ptr Z3_context -> Ptr Z3_params -> IO ()
 
 -- | Add a Boolean parameter k with value v to the parameter set p.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga39e3df967eaad45b343256d56c54e91c>
--- 
+--
 foreign import ccall unsafe "Z3_params_set_bool"
     z3_params_set_bool :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
                           Z3_bool -> IO ()
@@ -969,7 +969,7 @@ foreign import ccall unsafe "Z3_params_set_bool"
 -- | Add an unsigned parameter k with value v to the parameter set p.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4974397cb652c7f7f479012eb465e250>
--- 
+--
 foreign import ccall unsafe "Z3_params_set_uint"
     z3_params_set_uint :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
                           CUInt -> IO ()
@@ -977,7 +977,7 @@ foreign import ccall unsafe "Z3_params_set_uint"
 -- | Add a double parameter k with value v to the parameter set p.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga11498ce4b25d294f5f89ab7ac1b74c62>
--- 
+--
 foreign import ccall unsafe "Z3_params_set_double"
     z3_params_set_double :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
                             CDouble -> IO ()
@@ -985,7 +985,7 @@ foreign import ccall unsafe "Z3_params_set_double"
 -- | Add a symbol parameter k with value v to the parameter set p.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac2e899a4906b6133a23fdb60ef992ec9>
--- 
+--
 foreign import ccall unsafe "Z3_params_set_symbol"
     z3_params_set_symbol :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
                             Ptr Z3_symbol -> IO ()
@@ -994,7 +994,7 @@ foreign import ccall unsafe "Z3_params_set_symbol"
 -- used for printing the contents of a parameter set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga624e692e180a8b2f617156b1e1ae9722>
--- 
+--
 foreign import ccall unsafe "Z3_params_to_string"
     z3_params_to_string :: Ptr Z3_context -> Ptr Z3_params -> IO Z3_string
 
@@ -1003,7 +1003,7 @@ foreign import ccall unsafe "Z3_params_to_string"
 -- set d.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1ae64e7f89201589424191a9b824d3ca>
--- 
+--
 foreign import ccall unsafe "Z3_params_validate"
     z3_params_validate :: Ptr Z3_context -> Ptr Z3_params ->  Z3_param_descrs -> IO ()
 -}
@@ -1048,13 +1048,13 @@ foreign import ccall unsafe "Z3_solver_set_params"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga388e25a8b477abbd49f08c6c29dfa12d>
 foreign import ccall unsafe "Z3_solver_inc_ref"
     z3_solver_inc_ref :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
- 
+
 -- | Decrement the reference counter of the given solver.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2362dcef4e9b8ede41298a50428902ff>
 foreign import ccall unsafe "Z3_solver_dec_ref"
     z3_solver_dec_ref :: Ptr Z3_context -> Ptr Z3_solver -> IO ()
- 
+
 -- | Create a backtracking point in a solver.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae41bebe15b1b1105f9abb8690188d1e2>
