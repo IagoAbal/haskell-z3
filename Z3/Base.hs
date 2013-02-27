@@ -235,6 +235,11 @@ toBool b
     | b == z3_false = False
     | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
 
+-- | Convert 'Bool' to 'Z3_bool'.
+unBool :: Bool -> Z3_bool
+unBool True  = z3_true
+unBool False = z3_false
+
 ---------------------------------------------------------------------
 -- Configuration
 
@@ -813,8 +818,7 @@ mkParams c = Params <$> z3_mk_params (unContext c)
 
 paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
 paramsSetBool c params sym b =
-  z3_params_set_bool (unContext c) (unParams params) (unSymbol sym)
-                     (if b then z3_true else z3_false)
+  z3_params_set_bool (unContext c) (unParams params) (unSymbol sym) (unBool b)
 
 paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
 paramsSetUInt c params sym v =
