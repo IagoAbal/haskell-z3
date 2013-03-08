@@ -188,6 +188,14 @@ module Z3.Base (
     --, solverGetModel
     , solverCheckAndGetModel
     , solverGetReasonUnknown
+
+    -- * String Conversion
+    , ASTPrintMode(..)
+    , setASTPrintMode
+    , astToString
+    , patternToString
+    , sortToString
+    , funcDeclToString
     ) where
 
 import Z3.Base.C
@@ -1282,3 +1290,55 @@ solverCheckAndGetModel (Context c) (Solver s) =
 solverGetReasonUnknown :: Context -> Solver -> IO String
 solverGetReasonUnknown c solver =
   z3_solver_get_reason_unknown (unContext c) (unSolver solver) >>= peekCString
+
+---------------------------------------------------------------------
+-- String Conversion
+
+-- | Pretty-printing mode for converting ASTs to strings.  The mode
+-- can be one of the following:
+--
+-- * Z3_PRINT_SMTLIB_FULL: Print AST nodes in SMTLIB verbose format.
+--
+-- * Z3_PRINT_LOW_LEVEL: Print AST nodes using a low-level format.
+--
+-- * Z3_PRINT_SMTLIB_COMPLIANT: Print AST nodes in SMTLIB 1.x
+-- compliant format.
+--
+-- * Z3_PRINT_SMTLIB2_COMPLIANT: Print AST nodes in SMTLIB 2.x
+-- compliant format.
+data ASTPrintMode
+  = Z3_PRINT_SMTLIB_FULL
+  | Z3_PRINT_LOW_LEVEL
+  | Z3_PRINT_SMTLIB_COMPLIANT
+  | Z3_PRINT_SMTLIB2_COMPLIANT
+
+-- | Set the pretty-printing mode for converting ASTs to strings.
+setASTPrintMode :: Context -> ASTPrintMode -> IO ()
+setASTPrintMode ctx Z3_PRINT_SMTLIB_FULL =
+  z3_set_ast_print_mode (unContext ctx) z3_print_smtlib_full
+setASTPrintMode ctx Z3_PRINT_LOW_LEVEL =
+  z3_set_ast_print_mode (unContext ctx) z3_print_low_level
+setASTPrintMode ctx Z3_PRINT_SMTLIB_COMPLIANT =
+  z3_set_ast_print_mode (unContext ctx) z3_print_smtlib_compliant
+setASTPrintMode ctx Z3_PRINT_SMTLIB2_COMPLIANT =
+  z3_set_ast_print_mode (unContext ctx) z3_print_smtlib2_compliant
+
+-- | Convert an AST to a string.
+astToString :: Context -> AST -> IO String
+astToString ctx ast =
+  z3_ast_to_string (unContext ctx) (unAST ast) >>= peekCString
+
+-- | Convert a pattern to a string.
+patternToString :: Context -> Pattern -> IO String
+patternToString ctx pattern =
+  z3_pattern_to_string (unContext ctx) (unPattern pattern) >>= peekCString
+
+-- | Convert a sort to a string.
+sortToString :: Context -> Sort -> IO String
+sortToString ctx sort =
+  z3_sort_to_string (unContext ctx) (unSort sort) >>= peekCString
+
+-- | Convert a FuncDecl to a string.
+funcDeclToString :: Context -> FuncDecl -> IO String
+funcDeclToString ctx funcDecl =
+  z3_func_decl_to_string (unContext ctx) (unFuncDecl funcDecl) >>= peekCString

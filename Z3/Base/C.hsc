@@ -82,6 +82,17 @@ z3_false = #const Z3_FALSE
 -- | Z3 String type
 type Z3_string = CString
 
+-- | Z3 pretty-printing modes
+type Z3_ast_print_mode = CInt
+z3_print_smtlib_full :: Z3_ast_print_mode
+z3_print_smtlib_full = #const Z3_PRINT_SMTLIB_FULL
+z3_print_low_level :: Z3_ast_print_mode
+z3_print_low_level = #const Z3_PRINT_LOW_LEVEL
+z3_print_smtlib_compliant :: Z3_ast_print_mode
+z3_print_smtlib_compliant = #const Z3_PRINT_SMTLIB_COMPLIANT
+z3_print_smtlib2_compliant :: Z3_ast_print_mode
+z3_print_smtlib2_compliant = #const Z3_PRINT_SMTLIB2_COMPLIANT
+
 ---------------------------------------------------------------------
 -- * Create configuration
 
@@ -1116,3 +1127,47 @@ foreign import ccall unsafe "Z3_solver_get_model"
 foreign import ccall unsafe "Z3_solver_get_reason_unknown"
     z3_solver_get_reason_unknown :: Ptr Z3_context -> Ptr Z3_solver ->
                                     IO Z3_string
+
+---------------------------------------------------------------------
+-- * String Conversion
+
+-- | Set the pretty-printing mode for converting ASTs to strings.  The
+-- mode can be one of the following:
+--
+-- * z3_print_smtlib_full: Print AST nodes in SMTLIB verbose format.
+--
+-- * z3_print_low_level: Print AST nodes using a low-level format.
+--
+-- * z3_print_smtlib_compliant: Print AST nodes in SMTLIB 1.x
+-- compliant format.
+--
+-- * z3_print_smtlib2_compliant: Print AST nodes in SMTLIB 2.x
+-- compliant format.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga20d66dac19b6d6a06537843d0e25f761>
+foreign import ccall unsafe "Z3_set_ast_print_mode"
+    z3_set_ast_print_mode :: Ptr Z3_context -> Z3_ast_print_mode -> IO ()
+
+-- | Convert an AST into a string using the current print mode.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab1aa4b78298fe00b3167bf7bfd88aea3>
+foreign import ccall unsafe "Z3_ast_to_string"
+    z3_ast_to_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
+
+-- | Convert a pattern into a string using the current print mode.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51b048ddbbcd88708e7aa4fe1c2462d6>
+foreign import ccall unsafe "Z3_pattern_to_string"
+    z3_pattern_to_string :: Ptr Z3_context -> Ptr Z3_pattern -> IO Z3_string
+
+-- | Convert a sort into a string using the current print mode.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf90c72f63eab298e1dd750f6a26fb945>
+foreign import ccall unsafe "Z3_sort_to_string"
+    z3_sort_to_string :: Ptr Z3_context -> Ptr Z3_sort -> IO Z3_string
+
+-- | Convert a func_decl into a string using the current print mode.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga15243dcad77f5571e28e8aa1da465675>
+foreign import ccall unsafe "Z3_func_decl_to_string"
+    z3_func_decl_to_string :: Ptr Z3_context -> Ptr Z3_func_decl -> IO Z3_string

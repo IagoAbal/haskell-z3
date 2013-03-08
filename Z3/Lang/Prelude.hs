@@ -46,6 +46,8 @@ module Z3.Lang.Prelude (
     , checkModel
     , showContext
     , showModel
+    , exprToString
+    , setExprPrintMode
     , push, pop
 
     -- * Expressions
@@ -218,6 +220,12 @@ checkModel e = do
         peek :: Maybe Base.AST -> Z3 a
         peek (Just a) = getValue a
         peek Nothing  = error "Z3.Lang.Monad.eval: quantified expression or partial model!"
+
+-- | Convert an Expr to a string.
+exprToString :: Compilable (Expr a) => Expr a -> Z3 String
+exprToString e =
+  compile e >>= astToString
+
 
 ----------------------------------------------------------------------
 -- Expressions

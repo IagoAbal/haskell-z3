@@ -71,6 +71,8 @@ module Z3.Lang.Monad (
     , push
     , showContext
     , showModel
+    , astToString
+    , setExprPrintMode
 
     -- * Satisfiability result
     , Base.Result
@@ -382,6 +384,13 @@ withModel f = do
 
 showModel :: Z3 (Maybe String)
 showModel = withModel (liftZ3Op2 Base.showModel)
+
+astToString :: Base.AST -> Z3 String
+astToString = liftZ3Op2 Base.astToString
+
+-- | Set the mode for converting expressions to strings.
+setExprPrintMode :: Base.ASTPrintMode -> Z3 ()
+setExprPrintMode = liftZ3Op2 Base.setASTPrintMode
 
 showContext :: Z3 String
 showContext = do
