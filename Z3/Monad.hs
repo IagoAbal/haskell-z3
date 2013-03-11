@@ -10,11 +10,14 @@
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
+--
+-- A simple monadic wrapper for 'Z3.Base'.
 
 module Z3.Monad
   ( MonadZ3(..)
   , Z3
   , module Z3.Opts
+  , Logic(..)
   , evalZ3
   , evalZ3With
 
@@ -109,17 +112,20 @@ import Z3.Base
   , Pattern
   , Model
   , Result(..)
+  , Logic(..)
   )
 import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
-import Control.Monad.Reader ( ReaderT, runReaderT, ask )
+import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
+import qualified Data.Traversable as T
 
 ---------------------------------------------------------------------
 -- The Z3 monad-class
 
 class (Monad m, MonadIO m) => MonadZ3 m where
+  getSolver  :: m (Maybe Base.Solver)
   getContext :: m Base.Context
 
 -------------------------------------------------
@@ -142,29 +148,50 @@ liftFun4 :: MonadZ3 z3 => (Base.Context -> a -> b -> c -> d -> IO e)
                 -> a -> b -> c -> d -> z3 e
 liftFun4 f a b c d = getContext >>= \ctx -> liftIO (f ctx a b c d)
 
+liftSolver0 :: MonadZ3 z3 =>
+       (Base.Context -> Base.Solver -> IO b)
+    -> (Base.Context -> IO b)
+    -> z3 b
+liftSolver0 f_s f_no_s =
+  do ctx <- getContext
+     liftIO . maybe (f_no_s ctx) (f_s ctx) =<< getSolver
+
+liftSolver1 :: MonadZ3 z3 =>
+       (Base.Context -> Base.Solver -> a -> IO b)
+    -> (Base.Context -> a -> IO b)
+    -> a -> z3 b
+liftSolver1 f_s f_no_s a =
+  do ctx <- getContext
+     liftIO . maybe (f_no_s ctx a) (\s -> f_s ctx s a) =<< getSolver
+
 -------------------------------------------------
 -- A simple Z3 monad.
 
-newtype Z3 a = Z3 { _unZ3 :: ReaderT Base.Context IO a }
+newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
     deriving (Functor, Applicative, Monad, MonadIO)
 
+data Z3Env
+  = Z3Env {
+      envSolver  :: Maybe Base.Solver
+    , envContext :: Base.Context
+    }
+
 instance MonadZ3 Z3 where
-  getContext = Z3 ask
+  getSolver  = Z3 $ asks envSolver
+  getContext = Z3 $ asks envContext
 
 -- | Eval a Z3 script.
-evalZ3With :: Opts -> Z3 a -> IO a
-evalZ3With opts (Z3 s) =
+evalZ3With :: Maybe Logic -> Opts -> Z3 a -> IO a
+evalZ3With mbLogic opts (Z3 s) =
   Base.withConfig $ \cfg -> do
     setOpts cfg opts
-    Base.withContext cfg $ runReaderT s
+    Base.withContext cfg $ \ctx -> do
+      mbSolver <- T.mapM (Base.mkSolverForLogic ctx) mbLogic
+      runReaderT s (Z3Env mbSolver ctx)
 
 -- | Eval a Z3 script with default configuration options.
 evalZ3 :: Z3 a -> IO a
-evalZ3 = evalZ3With stdOpts
-
--- TODO run* versions ... -> IO (a,u)
--- TODO Z3 () alias ? Z3Script, Script ?
---      I would rename Z3 to Z3M and type Z3 = Z3M ()
+evalZ3 = evalZ3With Nothing stdOpts
 
 ---------------------------------------------------------------------
 -- Symbols
@@ -432,16 +459,16 @@ eval = liftFun2 Base.eval
 -- Constraints
 
 push :: MonadZ3 z3 => z3 ()
-push = liftScalar Base.push
+push = liftSolver0 Base.solverPush Base.push
 
 pop :: MonadZ3 z3 => Int -> z3 ()
-pop = liftFun1 Base.pop
+pop = liftSolver1 Base.solverPop Base.pop
 
 -- | Assert a constraing into the logical context.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 assertCnstr :: MonadZ3 z3 => AST -> z3 ()
-assertCnstr = liftFun1 Base.assertCnstr
+assertCnstr = liftSolver1 Base.solverAssertCnstr Base.assertCnstr
 
 -- | Get model.
 --
@@ -465,5 +492,5 @@ showContext = liftScalar Base.showContext
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 check :: MonadZ3 z3 => z3 Result
-check = liftScalar Base.check
+check = liftSolver0 Base.solverCheck Base.check
 
