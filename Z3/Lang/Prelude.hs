@@ -33,7 +33,7 @@ module Z3.Lang.Prelude (
     , evalZ3
     , Args(..)
     , stdArgs
-    , Z3Logic(..)
+    , Logic(..)
     , evalZ3With
 
     -- ** Commands
