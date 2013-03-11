@@ -20,7 +20,7 @@ module Z3.Lang.Monad (
     , evalZ3
     , Args(..)
     , stdArgs
-    , Z3Logic(..)
+    , Logic(..)
     , evalZ3With
     , fresh
     , deBruijnIx
@@ -80,9 +80,11 @@ module Z3.Lang.Monad (
 import Z3.Lang.Exprs
 
 import qualified Z3.Base as Base
+import Z3.Base ( Logic(..) )
 
 import Control.Applicative ( Applicative, (<$>) )
 import Control.Monad.State
+import qualified Data.Traversable as T
 import Data.Traversable ( traverse )
 
 ---------------------------------------------------------------------
@@ -117,13 +119,10 @@ evalZ3With args (Z3 s) =
 --    Base.setParamValue cfg "WARNING" "false"
     iniConfig cfg args
     Base.withContext cfg $ \ctx ->
-      do msolver <- case logicName args of
-                      Just l ->
-                        Just <$> Base.mkSolverForLogic ctx (z3logic2String l)
-                      _ -> return Nothing
+      do mbSolver <- T.mapM (Base.mkSolverForLogic ctx) $ logicName args
          evalStateT s Z3State { uniqVal = 0
                               , context = ctx
-                              , solver = msolver
+                              , solver = mbSolver
                               , qLayout = 0
                               }
 
@@ -137,141 +136,13 @@ fresh = do
     return (uniqVal st, 'v':show i)
 
 -------------------------------------------------
--- Solvers available in Z3
---
--- NOTE: These are described at http://smtlib.cs.uiowa.edu/logics.html
-
-data Z3Logic
-  = Logic_AUFLIA
-    -- ^ Closed formulas over the theory of linear integer arithmetic
-    -- and arrays extended with free sort and function symbols but
-    -- restricted to arrays with integer indices and values.
-
-  | Logic_AUFLIRA
-    -- ^ Closed linear formulas with free sort and function symbols over
-    -- one- and two-dimentional arrays of integer index and real
-    -- value.
-
-  | Logic_AUFNIRA
-    -- ^ Closed formulas with free function and predicate symbols over a
-    -- theory of arrays of arrays of integer index and real value.
-
-  | Logic_LRA
-    -- ^ Closed linear formulas in linear real arithmetic.
-
-  | Logic_QF_ABV
-    -- ^ Closed quantifier-free formulas over the theory of bitvectors
-    -- and bitvector arrays.
-
-  | Logic_QF_AUFBV
-    -- ^ Closed quantifier-free formulas over the theory of bitvectors
-    -- and bitvector arrays extended with free sort and function
-    -- symbols.
-
-  | Logic_QF_AUFLIA
-    -- ^ Closed quantifier-free linear formulas over the theory of
-    -- integer arrays extended with free sort and function symbols.
-
-  | Logic_QF_AX
-    -- ^ Closed quantifier-free formulas over the theory of arrays with
-    -- extensionality.
-
-  | Logic_QF_BV
-    -- ^ Closed quantifier-free formulas over the theory of fixed-size
-    -- bitvectors.
-
-  | Logic_QF_IDL
-    -- ^ Difference Logic over the integers. In essence, Boolean
-    -- combinations of inequations of the form x - y < b where x and y
-    -- are integer variables and b is an integer constant.
-
-  | Logic_QF_LIA
-    -- ^ Unquantified linear integer arithmetic. In essence, Boolean
-    -- combinations of inequations between linear polynomials over
-    -- integer variables.
-
-  | Logic_QF_LRA
-    -- ^ Unquantified linear real arithmetic. In essence, Boolean
-    -- combinations of inequations between linear polynomials over
-    -- real variables.
-
-  | Logic_QF_NIA
-    -- ^ Quantifier-free integer arithmetic.
-
-  | Logic_QF_NRA
-    -- ^ Quantifier-free real arithmetic.
-
-  | Logic_QF_RDL
-    -- ^ Difference Logic over the reals. In essence, Boolean
-    -- combinations of inequations of the form x - y < b where x and y
-    -- are real variables and b is a rational constant.
-
-  | Logic_QF_UF
-    -- ^ Unquantified formulas built over a signature of uninterpreted
-    -- (i.e., free) sort and function symbols.
-
-  | Logic_QF_UFBV
-    -- ^ Unquantified formulas over bitvectors with uninterpreted sort
-    -- function and symbols.
-
-  | Logic_QF_UFIDL
-    -- ^ Difference Logic over the integers (in essence) but with
-    -- uninterpreted sort and function symbols.
-
-  | Logic_QF_UFLIA
-    -- ^ Unquantified linear integer arithmetic with uninterpreted sort
-    -- and function symbols.
-
-  | Logic_QF_UFLRA
-    -- ^ Unquantified linear real arithmetic with uninterpreted sort and
-    -- function symbols.
-
-  | Logic_QF_UFNRA
-    -- ^ Unquantified non-linear real arithmetic with uninterpreted sort
-    -- and function symbols.
-
-  | Logic_UFLRA
-    -- ^ Linear real arithmetic with uninterpreted sort and function
-    -- symbols.
-
-  | Logic_UFNIA
-    -- ^ Non-linear integer arithmetic with uninterpreted sort and
-    -- function symbols.
-
-z3logic2String :: Z3Logic -> String
-z3logic2String Logic_AUFLIA = "AUFLIA"
-z3logic2String Logic_AUFLIRA = "AUFLIRA"
-z3logic2String Logic_AUFNIRA = "AUFNIRA"
-z3logic2String Logic_LRA = "LRA"
-z3logic2String Logic_QF_ABV = "QF_ABV"
-z3logic2String Logic_QF_AUFBV = "QF_AUFBV"
-z3logic2String Logic_QF_AUFLIA = "QF_AUFLIA"
-z3logic2String Logic_QF_AX = "QF_AX"
-z3logic2String Logic_QF_BV = "QF_BV"
-z3logic2String Logic_QF_IDL = "QF_IDL"
-z3logic2String Logic_QF_LIA = "QF_LIA"
-z3logic2String Logic_QF_LRA = "QF_LRA"
-z3logic2String Logic_QF_NIA = "QF_NIA"
-z3logic2String Logic_QF_NRA = "QF_NRA"
-z3logic2String Logic_QF_RDL = "QF_RDL"
-z3logic2String Logic_QF_UF = "QF_UF"
-z3logic2String Logic_QF_UFBV = "QF_UFBV"
-z3logic2String Logic_QF_UFIDL = "QF_UFIDL"
-z3logic2String Logic_QF_UFLIA = "QF_UFLIA"
-z3logic2String Logic_QF_UFLRA = "QF_UFLRA"
-z3logic2String Logic_QF_UFNRA = "QF_UFNRA"
-z3logic2String Logic_UFLRA = "UFLRA"
-z3logic2String Logic_UFNIA = "UFNIA"
-
-
--------------------------------------------------
 -- Arguments
 
 data Args
   = Args {
       softTimeout :: Maybe Int
         -- ^ soft timeout (in milliseconds)
-      , logicName :: Maybe Z3Logic
+    , logicName :: Maybe Logic
         -- ^ an optional name for the logic to use; logic names are
         -- described at <http://smtlib.cs.uiowa.edu/logics.html>
     }
@@ -279,8 +150,8 @@ data Args
 stdArgs :: Args
 stdArgs
   = Args {
-      softTimeout = Nothing,
-      logicName = Nothing
+      softTimeout = Nothing
+    , logicName   = Nothing
     }
 
 iniConfig :: Base.Config -> Args -> IO ()
