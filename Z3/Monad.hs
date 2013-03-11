@@ -474,7 +474,7 @@ assertCnstr = liftSolver1 Base.solverAssertCnstr Base.assertCnstr
 --
 -- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
-getModel = liftScalar Base.getModel
+getModel = liftSolver0 Base.solverCheckAndGetModel Base.getModel
 
 -- | Delete a model object.
 --
