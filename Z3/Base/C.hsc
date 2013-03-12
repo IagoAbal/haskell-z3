@@ -182,7 +182,14 @@ foreign import ccall unsafe "Z3_mk_real_sort"
 foreign import ccall unsafe "Z3_mk_bv_sort"
     z3_mk_bv_sort :: Ptr Z3_context -> CUInt -> IO (Ptr Z3_sort)
 
--- TODO Sorts: from Z3_mk_finite_domain_sort on
+-- | Create an array type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafe617994cce1b516f46128e448c84445>
+--
+foreign import ccall unsafe "Z3_mk_array_sort"
+    z3_mk_array_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Ptr Z3_sort)
+
+-- TODO Sorts: from Z3_mk_array_sort on
 
 
 ---------------------------------------------------------------------
