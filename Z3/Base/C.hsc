@@ -759,7 +759,41 @@ foreign import ccall unsafe "Z3_mk_bvmul_no_overflow"
 foreign import ccall unsafe "Z3_mk_bvmul_no_underflow"
     z3_mk_bvmul_no_underflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- TODO Arrays, Sets
+--------------------------------------------------------------------------------
+-- * Arrays
+-- | Array read. The argument a is the array and i is the index of the array
+-- that gets read.  
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
+foreign import ccall unsafe "Z3_mk_select"
+    z3_mk_select :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Array update.   
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae305a4f54b4a64f7e5973ae6ccb13593>
+foreign import ccall unsafe "Z3_mk_store"
+    z3_mk_store :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Create the constant array.  
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga84ea6f0c32b99c70033feaa8f00e8f2d>
+foreign import ccall unsafe "Z3_mk_const_array"
+    z3_mk_const_array :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | map f on the the argument arrays.  
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9150242d9430a8c3d55d2ca3b9a4362d>
+foreign import ccall unsafe "Z3_mk_map"
+    z3_mk_map :: Ptr Z3_context -> Ptr Z3_func_decl -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+
+-- | Access the array default value. Produces the default range value, for
+-- arrays that can be represented as finite maps with a default range value. 
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
+foreign import ccall unsafe "Z3_mk_array_default"
+    z3_mk_array_default :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- TODO Sets
 
 ---------------------------------------------------------------------
 -- * Numerals
