@@ -53,6 +53,7 @@ module Z3.Base (
     , mkIntSort
     , mkRealSort
     , mkBvSort
+    , mkArraySort
 
     -- * Constants and Applications
     , mkFuncDecl
@@ -406,7 +407,14 @@ mkRealSort c = Sort <$> z3_mk_real_sort (unContext c)
 mkBvSort :: Context -> Int -> IO Sort
 mkBvSort c n = Sort <$> z3_mk_bv_sort (unContext c) (fromIntegral n)
 
--- TODO Sorts: from Z3_mk_finite_domain_sort on
+-- | Create an array type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafe617994cce1b516f46128e448c84445>
+--
+mkArraySort :: Context -> Sort -> Sort -> IO Sort
+mkArraySort c dom rng = Sort <$> z3_mk_array_sort (unContext c) (unSort dom) (unSort rng)
+
+-- TODO Sorts: from Z3_mk_array_sort on
 
 ---------------------------------------------------------------------
 -- Constants and Applications
