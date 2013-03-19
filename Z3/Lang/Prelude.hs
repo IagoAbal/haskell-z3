@@ -1,17 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE CPP                  #-}
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE IncoherentInstances  #-}
-{-# LANGUAGE OverlappingInstances #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE IncoherentInstances        #-}
+{-# LANGUAGE OverlappingInstances       #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 -- |
 -- Module    : Z3.Lang.Prelude
@@ -43,11 +44,15 @@ module Z3.Lang.Prelude (
     , assert
     , let_
     , check
-    , checkModel
     , showContext
-    , showModel
     , exprToString
     , push, pop
+
+    -- ** Models
+    , Model
+    , checkModel
+    , showModel
+    , eval, evalT
 
     -- * Expressions
     , Expr
@@ -79,14 +84,17 @@ module Z3.Lang.Prelude (
 
     ) where
 
-import Z3.Base ( AST )
+-- import Z3.Base ( AST )
 import qualified Z3.Base as Base
-import Z3.Monad hiding ( Z3, mkEq, Pattern, evalZ3, evalZ3With )
+import Z3.Monad hiding ( Z3, mkEq, Pattern, Model, evalZ3, evalZ3With, eval, evalT, showModel )
+import qualified Z3.Monad as MonadZ3
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 import Z3.Lang.TY
 
-import Control.Applicative ( (<$>) )
+import Control.Applicative ( Applicative, (<$>) )
+import Control.Monad.Reader ( ReaderT, ask, runReaderT )
+import Control.Monad.Trans ( lift )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 #if __GLASGOW_HASKELL__ < 704
@@ -210,24 +218,37 @@ let_ e = do
   assert (aux ==* e)
   return aux
 
--- | Check satisfiability and evaluate the given expression if a model exists.
---
-checkModel :: forall a. IsTy a => Expr a -> Z3 (Maybe a)
-checkModel e = do
-  a <- compileWithTCC e
-  withModel (fixResult a)
-  where fixResult :: Base.AST -> Base.Model -> Z3 a
-        fixResult a m = peek =<< eval m a
-
-        peek :: Maybe Base.AST -> Z3 a
-        peek (Just a) = getValue a
-        peek Nothing  = error "Z3.Lang.Monad.eval: quantified expression or partial model!"
-
 -- | Convert an Expr to a string.
 exprToString :: Compilable (Expr a) => Expr a -> Z3 String
 exprToString e =
   compile e >>= astToString
 
+----------------------------------------------------------------------
+-- Models
+
+newtype Model a = Model { unModel :: ReaderT Base.Model Z3 a }
+    deriving (Applicative,Functor,Monad)
+
+-- | Check satisfiability and evaluate a model if some exists.
+checkModel :: Model a -> Z3 (Maybe a)
+checkModel m = MonadZ3.withModel $ runReaderT (unModel m)
+
+showModel :: Model String
+showModel = Model $ ask >>= lift . MonadZ3.showModel
+
+eval :: forall a. IsTy a => Expr a -> Model a
+eval e = Model $ do
+  a <- lift $ compileWithTCC e
+  lift . fixResult a =<< ask
+  where fixResult :: Base.AST -> Base.Model -> Z3 a
+        fixResult a m = peek =<< MonadZ3.eval m a
+
+        peek :: Maybe Base.AST -> Z3 a
+        peek (Just a) = getValue a
+        peek Nothing  = error "Z3.Lang.Prelude.eval: quantified expression or partial model!"
+
+evalT :: (IsTy a,Traversable t) => t (Expr a) -> Model (t a)
+evalT = T.traverse eval
 
 ----------------------------------------------------------------------
 -- Expressions
