@@ -98,8 +98,17 @@ module Z3.Monad
   , check
   , getModel
   , delModel
+  , withModel
   , push
   , pop
+
+  -- * String Conversion
+  , ASTPrintMode(..)
+  , setASTPrintMode
+  , astToString
+  , patternToString
+  , sortToString
+  , funcDeclToString
   )
   where
 
@@ -114,10 +123,12 @@ import Z3.Base
   , Model
   , Result(..)
   , Logic(..)
+  , ASTPrintMode(..)
   )
 import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
+import Control.Monad ( void )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Data.Traversable ( Traversable )
@@ -488,6 +499,14 @@ getModel = liftSolver0 Base.solverCheckAndGetModel Base.getModel
 delModel :: MonadZ3 z3 => Model -> z3 ()
 delModel = liftFun1 Base.delModel
 
+withModel :: (Applicative z3, MonadZ3 z3) =>
+                (Base.Model -> z3 a) -> z3 (Maybe a)
+withModel f = do
+ (_,m) <- getModel
+ r <- T.traverse f m
+ void $ T.traverse delModel m
+ return r
+
 showModel :: MonadZ3 z3 => Model -> z3 String
 showModel = liftFun1 Base.showModel
 
@@ -499,4 +518,27 @@ showContext = liftScalar Base.showContext
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 check :: MonadZ3 z3 => z3 Result
 check = liftSolver0 Base.solverCheck Base.check
+
+---------------------------------------------------------------------
+-- String Conversion
+
+-- | Set the mode for converting expressions to strings.
+setASTPrintMode :: MonadZ3 z3 => ASTPrintMode -> z3 ()
+setASTPrintMode = liftFun1 Base.setASTPrintMode
+
+-- | Convert an AST to a string.
+astToString :: MonadZ3 z3 => AST -> z3 String
+astToString = liftFun1 Base.astToString
+
+-- | Convert a pattern to a string.
+patternToString :: MonadZ3 z3 => Pattern -> z3 String
+patternToString = liftFun1 Base.patternToString
+
+-- | Convert a sort to a string.
+sortToString :: MonadZ3 z3 => Sort -> z3 String
+sortToString = liftFun1 Base.sortToString
+
+-- | Convert a FuncDecl to a string.
+funcDeclToString :: MonadZ3 z3 => FuncDecl -> z3 String
+funcDeclToString = liftFun1 Base.funcDeclToString
 
