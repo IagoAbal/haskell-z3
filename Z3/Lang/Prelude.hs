@@ -254,7 +254,8 @@ instance IsNum a => Num (Expr a) where
   a * b = CRingArith Mul [a,b]
   (CRingArith Sub as) - b = CRingArith Sub (as ++ [b])
   a - b = CRingArith Sub [a,b]
-  negate = Neg
+  negate (CRingArith Sub [a,b]) = CRingArith Sub [b,a]
+  negate t = Neg t
   abs e = ite (e >=* 0) e (-e)
   signum e = ite (e >* 0) 1 (ite (e ==* 0) 0 (-1))
   fromInteger = literal . fromInteger
