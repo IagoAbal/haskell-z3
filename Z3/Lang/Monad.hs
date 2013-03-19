@@ -175,7 +175,6 @@ mkQuant Exists = MonadZ3.mkExists
 
 mkEq :: CmpOpE -> [Base.AST] -> Z3 Base.AST
 mkEq Distinct = MonadZ3.mkDistinct
-mkEq Neq      = MonadZ3.mkNot <=< mkEq Eq
 mkEq Eq       = doMkEq
   where doMkEq [e1,e2]
           = MonadZ3.mkEq e1 e2

@@ -223,7 +223,7 @@ data RealOp = Div
     deriving (Eq,Show)
 
 -- | Equality testing.
-data CmpOpE = Eq | Neq | Distinct
+data CmpOpE = Eq | Distinct
     deriving (Eq, Show, Typeable)
 
 -- | Ordering comparisons.
