@@ -22,12 +22,12 @@ module Z3.Lang.Exprs (
     , Compilable(..)
     , IsTy(..)
     , IsFun(..)
-    
+
     -- ** Numeric types
     , IsNum
     , IsInt
     , IsReal
-    
+
     -- * Abstract syntax
     , Uniq
     , Layout
@@ -62,7 +62,7 @@ import Control.Monad.RWS
 import Data.Typeable ( Typeable )
 
 ----------------------------------------------------------------------
--- Types 
+-- Types
 
 -- | Maps a type to the underlying Z3 type.
 --
@@ -87,11 +87,11 @@ class (Eq a, Show a, Typeable a, Compilable (Expr a)) => IsTy a where
   -- | Typecheck an expression.
   --
   tc :: Expr a -> TCM ()
-  
+
   -- | Convert from underlying Z3 type to type.
   --
   fromZ3Type :: TypeZ3 a -> a
-  
+
   -- | Convert from a type to its underlying Z3 type.
   --
   toZ3Type   :: a -> TypeZ3 a
