@@ -375,7 +375,7 @@ e1 ==* e2 = CmpE Eq [e1,e2]
 -- | Not equals.
 --
 (/=*) :: IsTy a => Expr a -> Expr a -> Expr Bool
-e1 /=* e2 = CmpE Neq [e1,e2]
+e1 /=* e2 = CmpE Distinct [e1,e2]
 
 -- | Less or equals than.
 --
