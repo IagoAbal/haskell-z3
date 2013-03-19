@@ -89,6 +89,7 @@ module Z3.Monad
 
   -- * Models
   , eval
+  , evalT
   , showModel
   , showContext
 
@@ -119,6 +120,7 @@ import qualified Z3.Base as Base
 import Control.Applicative ( Applicative )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
+import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 
 ---------------------------------------------------------------------
@@ -454,6 +456,10 @@ getReal = liftFun1 Base.getReal
 -- | Evaluate an AST node in the given model.
 eval :: MonadZ3 z3 => Model -> AST -> z3 (Maybe AST)
 eval = liftFun2 Base.eval
+
+-- | Evaluate a collection of AST nodes in the given model.
+evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
+evalT = liftFun2 Base.evalT
 
 ---------------------------------------------------------------------
 -- Constraints
