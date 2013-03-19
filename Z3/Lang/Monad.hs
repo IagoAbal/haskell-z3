@@ -13,6 +13,7 @@
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
 
+-- TODO Discuss integration of pretty-printing functions from Z3.Monad
 module Z3.Lang.Monad (
     -- * Z3 Monad
       Z3
@@ -21,58 +22,24 @@ module Z3.Lang.Monad (
     , Args(..)
     , stdArgs
     , Logic(..)
+    , module Z3.Opts
     , evalZ3With
     , fresh
     , deBruijnIx
     , newQLayout
 
     -- ** Lifted Z3.Base functions
-    , liftZ3
-    , assertCnstr
-    , check
-    , eval
-    , getBool
-    , getInt
-    , getReal
-    , getModel
-    , delModel
-    , withModel
     , getValue
     , mkSort
-    , mkStringSymbol
-    , mkBoolSort
-    , mkIntSort
-    , mkRealSort
     , mkLiteral
-    , mkNot
     , mkBoolBin
     , mkBoolMulti
-    , mkNumeral
-    , mkInt
-    , mkReal
-    , mkPattern
-    , mkBound
-    , mkForall
-    , mkExists
     , mkQuant
     , mkEq
     , mkCmp
-    , mkFuncDecl
-    , mkApp
-    , mkConst
-    , mkTrue
-    , mkFalse
-    , mkUnaryMinus
     , mkCRingArith
     , mkIntArith
     , mkRealArith
-    , mkIte
-    , pop
-    , push
-    , showContext
-    , showModel
-    , astToString
-    , setExprPrintMode
 
     -- * Satisfiability result
     , Base.Result
@@ -82,12 +49,13 @@ module Z3.Lang.Monad (
 import Z3.Lang.Exprs
 
 import qualified Z3.Base as Base
-import Z3.Base ( Logic(..) )
+import qualified Z3.Monad as MonadZ3
+import Z3.Monad ( MonadZ3(..), Logic(..) )
+import Z3.Opts
 
-import Control.Applicative ( Applicative, (<$>) )
+import Control.Applicative ( Applicative )
 import Control.Monad.State
 import qualified Data.Traversable as T
-import Data.Traversable ( traverse )
 
 ---------------------------------------------------------------------
 -- The Z3 Monad
@@ -95,7 +63,11 @@ import Data.Traversable ( traverse )
 -- | Z3 monad.
 --
 newtype Z3 a = Z3 (StateT Z3State IO a)
-    deriving (Functor, Applicative, Monad, MonadState Z3State)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadState Z3State)
+
+instance MonadZ3 Z3 where
+  getSolver  = Z3 $ gets solver
+  getContext = Z3 $ gets context
 
 -- | Internal state of Z3 monad.
 --
@@ -121,7 +93,7 @@ evalZ3With args (Z3 s) =
 --    Base.setParamValue cfg "WARNING" "false"
     iniConfig cfg args
     Base.withContext cfg $ \ctx ->
-      do mbSolver <- T.mapM (Base.mkSolverForLogic ctx) $ logicName args
+      do mbSolver <- T.mapM (Base.mkSolverForLogic ctx) $ logic args
          evalStateT s Z3State { uniqVal = 0
                               , context = ctx
                               , solver = mbSolver
@@ -142,23 +114,25 @@ fresh = do
 
 data Args
   = Args {
-      softTimeout :: Maybe Int
+      logic        :: Maybe Logic
+        -- ^ the logic to use; see <http://smtlib.cs.uiowa.edu/logics.html>
+    ,  softTimeout :: Maybe Int
         -- ^ soft timeout (in milliseconds)
-    , logicName :: Maybe Logic
-        -- ^ an optional name for the logic to use; logic names are
-        -- described at <http://smtlib.cs.uiowa.edu/logics.html>
+    , options      :: Opts
     }
 
 stdArgs :: Args
 stdArgs
   = Args {
-      softTimeout = Nothing
-    , logicName   = Nothing
+      logic       = Nothing
+    , softTimeout = Nothing
+    , options     = stdOpts
     }
 
 iniConfig :: Base.Config -> Args -> IO ()
 iniConfig cfg args = do
   Base.setParamValue cfg "SOFT_TIMEOUT" soft_timeout_val
+  setOpts cfg $ options args
   where soft_timeout_val = show $ maybe 0 id $ softTimeout args
 
 -------------------------------------------------
@@ -183,196 +157,51 @@ newQLayout f = do
 ---------------------------------------------------------------------
 -- Lifted Base functions
 
-liftZ3 :: IO a -> Z3 a
-liftZ3 = Z3 . lift
-
-liftZ3Op :: (Base.Context -> IO b) -> Z3 b
-liftZ3Op f = liftZ3 . f =<< gets context
-
-liftZ3Op2 :: (Base.Context -> a -> IO b) -> a -> Z3 b
-liftZ3Op2 f a = gets context >>= \ctx -> liftZ3 (f ctx a)
-
-liftZ3Op3 :: (Base.Context -> a -> b -> IO c) -> a -> b -> Z3 c
-liftZ3Op3 f a b = gets context >>= \ctx -> liftZ3 (f ctx a b)
-
-liftZ3Op4 :: (Base.Context -> a -> b -> c -> IO d) -> a -> b -> c -> Z3 d
-liftZ3Op4 f a b c = gets context >>= \ctx -> liftZ3 (f ctx a b c)
-
-liftZ3Op5 :: (Base.Context -> a -> b -> c -> d -> IO e) -> a -> b -> c -> d -> Z3 e
-liftZ3Op5 f a b c d = gets context >>= \ctx -> liftZ3 (f ctx a b c d)
-
-liftZ3SolverOp :: (Base.Context -> Base.Solver -> IO b) ->
-                  (Base.Context -> IO b) -> Z3 b
-liftZ3SolverOp f_s f_no_s =
-  do ctx <- gets context
-     maybe_solver <- gets solver
-     case maybe_solver of
-       Just solver -> liftZ3 (f_s ctx solver)
-       Nothing -> liftZ3 (f_no_s ctx)
-
-liftZ3SolverOp2 :: (Base.Context -> Base.Solver -> a -> IO b) ->
-                   (Base.Context -> a -> IO b) -> a -> Z3 b
-liftZ3SolverOp2 f_s f_no_s a =
-  liftZ3SolverOp (\c s -> f_s c s a) (\c -> f_no_s c a)
-
-assertCnstr :: Base.AST -> Z3 ()
-assertCnstr = liftZ3SolverOp2 Base.solverAssertCnstr Base.assertCnstr
-
--- | Check satisfiability.
-check :: Z3 Base.Result
-check = liftZ3SolverOp Base.solverCheck Base.check
-
-eval :: Base.Model -> Base.AST -> Z3 (Maybe Base.AST)
-eval = liftZ3Op3 Base.eval
-
-getBool :: Base.AST -> Z3 (Maybe Bool)
-getBool = liftZ3Op2 Base.getBool
-
-push :: Z3 ()
-push = liftZ3SolverOp Base.solverPush Base.push
-
-pop :: Int -> Z3 ()
-pop = liftZ3SolverOp2 Base.solverPop Base.pop
-
-getInt :: Base.AST -> Z3 Integer
-getInt = liftZ3Op2 Base.getInt
-
-getReal :: Base.AST -> Z3 Rational
-getReal = liftZ3Op2 Base.getReal
-
-getModel :: Z3 (Base.Result, Maybe Base.Model)
-getModel = liftZ3SolverOp Base.solverCheckAndGetModel Base.getModel
-
-delModel :: Base.Model -> Z3 ()
-delModel = liftZ3Op2 Base.delModel
-
-withModel :: (Base.Model -> Z3 a) -> Z3 (Maybe a)
-withModel f = do
- (_,m) <- getModel
- r <- traverse f m
- _ <- traverse delModel m
- return r
-
-showModel :: Z3 (Maybe String)
-showModel = withModel (liftZ3Op2 Base.showModel)
-
-astToString :: Base.AST -> Z3 String
-astToString = liftZ3Op2 Base.astToString
-
--- | Set the mode for converting expressions to strings.
-setExprPrintMode :: Base.ASTPrintMode -> Z3 ()
-setExprPrintMode = liftZ3Op2 Base.setASTPrintMode
-
-showContext :: Z3 String
-showContext = do
-  c <- gets context
-  liftZ3 $ Base.showContext c
-
-mkStringSymbol :: String -> Z3 Base.Symbol
-mkStringSymbol = liftZ3Op2 Base.mkStringSymbol
-
-mkBoolSort :: Z3 Base.Sort
-mkBoolSort = liftZ3Op Base.mkBoolSort
-
-mkIntSort :: Z3 Base.Sort
-mkIntSort = liftZ3Op Base.mkIntSort
-
-mkRealSort :: Z3 Base.Sort
-mkRealSort = liftZ3Op Base.mkRealSort
-
-mkNot :: Base.AST -> Z3 Base.AST
-mkNot = liftZ3Op2 Base.mkNot
-
 mkBoolBin :: BoolBinOp -> Base.AST -> Base.AST -> Z3 Base.AST
-mkBoolBin Xor     = liftZ3Op3 Base.mkXor
-mkBoolBin Implies = liftZ3Op3 Base.mkImplies
-mkBoolBin Iff     = liftZ3Op3 Base.mkIff
+mkBoolBin Xor     = MonadZ3.mkXor
+mkBoolBin Implies = MonadZ3.mkImplies
+mkBoolBin Iff     = MonadZ3.mkIff
 
 mkBoolMulti :: BoolMultiOp -> [Base.AST] -> Z3 Base.AST
-mkBoolMulti And      = liftZ3Op2 Base.mkAnd
-mkBoolMulti Or       = liftZ3Op2 Base.mkOr
-
-mkNumeral :: String -> Base.Sort -> Z3 Base.AST
-mkNumeral = liftZ3Op3 Base.mkNumeral
-
-mkInt  :: Integral a => a -> Z3 Base.AST
-mkInt = liftZ3Op2 Base.mkInt
-
-mkReal :: Real r => r -> Z3 Base.AST
-mkReal = liftZ3Op2 Base.mkReal
-
-mkPattern :: [Base.AST] -> Z3 Base.Pattern
-mkPattern = liftZ3Op2 Base.mkPattern
-
-mkBound :: Int -> Base.Sort -> Z3 Base.AST
-mkBound = liftZ3Op3 Base.mkBound
-
-mkForall :: [Base.Pattern]
-            -> [Base.Symbol] -> [Base.Sort]
-            -> Base.AST -> Z3 Base.AST
-mkForall = liftZ3Op5 Base.mkForall
-
-mkExists :: [Base.Pattern]
-            -> [Base.Symbol] -> [Base.Sort]
-            -> Base.AST -> Z3 Base.AST
-mkExists = liftZ3Op5 Base.mkExists
+mkBoolMulti And      = MonadZ3.mkAnd
+mkBoolMulti Or       = MonadZ3.mkOr
 
 mkQuant :: Quantifier
            -> [Base.Pattern]
            -> [Base.Symbol] -> [Base.Sort]
            -> Base.AST -> Z3 Base.AST
-mkQuant ForAll = mkForall
-mkQuant Exists = mkExists
+mkQuant ForAll = MonadZ3.mkForall
+mkQuant Exists = MonadZ3.mkExists
 
 mkEq :: CmpOpE -> [Base.AST] -> Z3 Base.AST
-mkEq Distinct = liftZ3Op2 Base.mkDistinct
-mkEq Neq      = mkNot <=< mkEq Eq
+mkEq Distinct = MonadZ3.mkDistinct
+mkEq Neq      = MonadZ3.mkNot <=< mkEq Eq
 mkEq Eq       = doMkEq
   where doMkEq [e1,e2]
-          = (liftZ3Op3 Base.mkEq) e1 e2
+          = MonadZ3.mkEq e1 e2
         doMkEq es
           | length es < 2 = error "Z3.Lang.Monad.mkEq:\
               \ Invalid number of parameters."
           | otherwise     = join $ liftM (mkBoolMulti And) doEqs
-          where doEqs = mapM (uncurry $ liftZ3Op3 Base.mkEq) pairs
+          where doEqs = mapM (uncurry $ MonadZ3.mkEq) pairs
                 pairs = init $ zip es $ tail $ cycle es
 
 mkCmp :: CmpOpI -> Base.AST -> Base.AST -> Z3 Base.AST
-mkCmp Le = liftZ3Op3 Base.mkLe
-mkCmp Lt = liftZ3Op3 Base.mkLt
-mkCmp Ge = liftZ3Op3 Base.mkGe
-mkCmp Gt = liftZ3Op3 Base.mkGt
-
-mkFuncDecl :: Base.Symbol -> [Base.Sort] -> Base.Sort -> Z3 Base.FuncDecl
-mkFuncDecl = liftZ3Op4 Base.mkFuncDecl
-
-mkApp :: Base.FuncDecl -> [Base.AST] -> Z3 Base.AST
-mkApp = liftZ3Op3 Base.mkApp
-
-mkConst :: Base.Symbol -> Base.Sort -> Z3 Base.AST
-mkConst = liftZ3Op3 Base.mkConst
-
-mkTrue :: Z3 Base.AST
-mkTrue = liftZ3Op Base.mkTrue
-
-mkFalse :: Z3 Base.AST
-mkFalse = liftZ3Op Base.mkFalse
-
-mkUnaryMinus :: Base.AST -> Z3 Base.AST
-mkUnaryMinus = liftZ3Op2 Base.mkUnaryMinus
+mkCmp Le = MonadZ3.mkLe
+mkCmp Lt = MonadZ3.mkLt
+mkCmp Ge = MonadZ3.mkGe
+mkCmp Gt = MonadZ3.mkGt
 
 mkCRingArith :: CRingOp -> [Base.AST] -> Z3 Base.AST
-mkCRingArith Add = liftZ3Op2 Base.mkAdd
-mkCRingArith Mul = liftZ3Op2 Base.mkMul
-mkCRingArith Sub = liftZ3Op2 Base.mkSub
+mkCRingArith Add = MonadZ3.mkAdd
+mkCRingArith Mul = MonadZ3.mkMul
+mkCRingArith Sub = MonadZ3.mkSub
 
 mkIntArith :: IntOp -> Base.AST -> Base.AST -> Z3 Base.AST
-mkIntArith Quot = liftZ3Op3 Base.mkDiv
-mkIntArith Mod  = liftZ3Op3 Base.mkMod
-mkIntArith Rem  = liftZ3Op3 Base.mkRem
+mkIntArith Quot = MonadZ3.mkDiv
+mkIntArith Mod  = MonadZ3.mkMod
+mkIntArith Rem  = MonadZ3.mkRem
 
 mkRealArith :: RealOp -> Base.AST -> Base.AST -> Z3 Base.AST
-mkRealArith Div = liftZ3Op3 Base.mkDiv
+mkRealArith Div = MonadZ3.mkDiv
 
-mkIte :: Base.AST -> Base.AST -> Base.AST -> Z3 Base.AST
-mkIte = liftZ3Op4 Base.mkIte

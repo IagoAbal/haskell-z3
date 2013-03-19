@@ -16,6 +16,7 @@ module Z3.Lang.Nat
   where
 
 import Z3.Base ( AST )
+import Z3.Monad hiding ( Z3, mkEq, Pattern, evalZ3, evalZ3With )
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 import Z3.Lang.Prelude
@@ -58,7 +59,7 @@ instance IsTy Nat where
   tc = tcNat
   fromZ3Type = Nat
   toZ3Type = unNat
-  
+
   mkSort    _ = mkIntSort
   mkLiteral   = mkInt . unNat
   getValue  v = Nat <$> getInt v

@@ -47,7 +47,6 @@ module Z3.Lang.Prelude (
     , showContext
     , showModel
     , exprToString
-    , setExprPrintMode
     , push, pop
 
     -- * Expressions
@@ -82,11 +81,14 @@ module Z3.Lang.Prelude (
 
 import Z3.Base ( AST )
 import qualified Z3.Base as Base
+import Z3.Monad hiding ( Z3, mkEq, Pattern, evalZ3, evalZ3With )
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
 import Z3.Lang.TY
 
 import Control.Applicative ( (<$>) )
+import Data.Traversable ( Traversable )
+import qualified Data.Traversable as T
 #if __GLASGOW_HASKELL__ < 704
 import Data.Typeable ( Typeable1(..), typeOf )
 import Unsafe.Coerce ( unsafeCoerce )
