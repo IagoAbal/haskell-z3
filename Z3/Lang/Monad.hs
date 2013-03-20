@@ -88,10 +88,7 @@ evalZ3 = evalZ3With stdArgs
 evalZ3With :: Args -> Z3 a -> IO a
 evalZ3With args (Z3 s) =
   Base.withConfig $ \cfg -> do
-    Base.set_MODEL cfg True
-    Base.set_MODEL_PARTIAL cfg False
---    Base.setParamValue cfg "WARNING" "false"
-    iniConfig cfg args
+    setArgs cfg args
     Base.withContext cfg $ \ctx ->
       do mbSolver <- T.mapM (Base.mkSolverForLogic ctx) $ logic args
          evalStateT s Z3State { uniqVal = 0
@@ -126,11 +123,12 @@ stdArgs
   = Args {
       logic       = Nothing
     , softTimeout = Nothing
-    , options     = stdOpts
+    , options     = stdOpts +? opt "MODEL" True
+                            +? opt "MODEL_COMPLETION" True
     }
 
-iniConfig :: Base.Config -> Args -> IO ()
-iniConfig cfg args = do
+setArgs :: Base.Config -> Args -> IO ()
+setArgs cfg args = do
   Base.setParamValue cfg "SOFT_TIMEOUT" soft_timeout_val
   setOpts cfg $ options args
   where soft_timeout_val = show $ maybe 0 id $ softTimeout args
