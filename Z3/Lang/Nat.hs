@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 -- |
@@ -113,4 +114,7 @@ compileNat (App e)
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"
+
+instance Castable Nat Integer where
+  compileCast _ = return
 
