@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies               #-}
 
@@ -34,6 +35,7 @@ module Z3.Lang.Exprs (
     , Pattern (..)
     , Quantifier(..)
     , QExpr(..)
+    , Castable(..)
     , FunApp (..)
     , BoolBinOp (..)
     , BoolMultiOp (..)
@@ -162,9 +164,15 @@ data Expr :: * -> * where
   Ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
   --  | Application
   App :: IsTy a  => FunApp a -> Expr a
+  --  | Casting between compatible types
+  Cast :: (IsTy a, IsTy b, Castable a b) => Expr a -> Expr b
 
 class QExpr t where
   compileQuant :: Quantifier -> [Base.Symbol] -> [Base.Sort] -> t -> Z3 Base.AST
+
+class Castable a b where
+  compileCast :: TY (a,b) -> Base.AST -> Z3 Base.AST
+
 
 -- | Quantifier pattern.
 data Pattern where
