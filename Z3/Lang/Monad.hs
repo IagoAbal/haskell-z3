@@ -67,6 +67,8 @@ module Z3.Lang.Monad (
     , mkIntArith
     , mkRealArith
     , mkIte
+    , mkInt2Real
+    , mkReal2Int
     , pop
     , push
     , showContext
@@ -376,3 +378,9 @@ mkRealArith Div = liftZ3Op3 Base.mkDiv
 
 mkIte :: Base.AST -> Base.AST -> Base.AST -> Z3 Base.AST
 mkIte = liftZ3Op4 Base.mkIte
+
+mkInt2Real :: Base.AST -> Z3 Base.AST
+mkInt2Real = liftZ3Op2 Base.mkInt2Real
+
+mkReal2Int :: Base.AST -> Z3 Base.AST
+mkReal2Int = liftZ3Op2 Base.mkReal2Int

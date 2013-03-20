@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveDataTypeable   #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE IncoherentInstances  #-}
 {-# LANGUAGE OverlappingInstances #-}
@@ -69,6 +70,7 @@ module Z3.Lang.Prelude (
     , iff, (<=>)
     , forall
     , exists
+    , cast
     , instanceWhen
     , (//), (%*), (%%)
     , divides
@@ -347,6 +349,19 @@ exists f = Quant Exists f
 instanceWhen :: Expr Bool -> [Pattern] -> QBody
 instanceWhen = QBody
 
+-- | Casting between compatible types
+--
+
+cast :: (IsTy a, IsTy b, Castable a b) => Expr a -> Expr b
+cast = Cast
+
+instance Castable Integer Rational where
+  compileCast _ = mkInt2Real
+
+instance Castable Rational Integer where
+  compileCast _ = mkReal2Int
+
+
 -- | Integer division.
 --
 (//) :: IsInt a => Expr a -> Expr a -> Expr a
@@ -452,6 +467,7 @@ tcBool (Ite eb e1 e2) = do
   withHypo eb $ tcBool e1
   withHypo (Not eb) $ tcBool e2
 tcBool (App _app) = ok
+tcBool (Cast e) = tc e
 tcBool _
     = error "Z3.Lang.Prelude.tcBool: Panic! Impossible constructor in pattern matching!"
 
@@ -490,6 +506,8 @@ compileBool (Ite b e1 e2)
          mkIte b' e1' e2'
 compileBool (App e)
     = compile e
+compileBool (Cast (e :: Expr a))
+    = compile e >>= compileCast (TY :: TY (a, Bool))
 compileBool _
     = error "Z3.Lang.Prelude.compileBool: Panic! Impossible constructor in pattern matching!"
 
@@ -567,6 +585,7 @@ tcInteger (Ite eb e1 e2) = do
   withHypo eb $ tcInteger e1
   withHypo (Not eb) $ tcInteger e2
 tcInteger (App _) = ok
+tcInteger (Cast e) = tc e
 tcInteger _
     = error "Z3.Lang.Prelude.tcInteger: Panic! Impossible constructor in pattern matching!"
 
@@ -594,6 +613,8 @@ compileInteger (Ite eb e1 e2)
        mkIte eb' e1' e2'
 compileInteger (App e)
     = compile e
+compileInteger (Cast (e :: Expr a))
+    = compile e >>= compileCast (TY :: TY (a, Integer))
 compileInteger _
     = error "Z3.Lang.Prelude.compileInteger: Panic! Impossible constructor in pattern matching!"
 
@@ -633,6 +654,7 @@ tcRational (Ite eb e1 e2) = do
   withHypo eb $ tcRational e1
   withHypo (Not eb) $ tcRational e2
 tcRational (App _) = ok
+tcRational (Cast e) = tc e
 tcRational _
     = error "Z3.Lang.Prelude.tcRational: Panic! Impossible constructor in pattern matching!"
 
@@ -660,6 +682,8 @@ compileRational (Ite eb e1 e2)
        mkIte eb' e1' e2'
 compileRational (App e)
     = compile e
+compileRational (Cast (e :: Expr a))
+    = compile e >>= compileCast (TY :: TY (a, Rational))
 compileRational _
     = error "Z3.Lang.Prelude.compileRational: Panic! Impossible constructor in pattern matching!"
 
