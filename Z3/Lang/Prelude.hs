@@ -426,16 +426,12 @@ ite = Ite
 ----------------------------------------------------------------------
 -- Booleans
 
-type instance TypeZ3 Bool = Bool
-
 instance Compilable (Expr Bool) where
   compile = compileBool
 
 instance IsTy Bool where
   typeInv = const true
   tc = tcBool
-  fromZ3Type = id
-  toZ3Type = id
 
   mkSort     _  = mkBoolSort
   getValue   v  = maybe False id <$> getBool v
@@ -550,16 +546,12 @@ instance (IsTy a, QExpr t) => QExpr (Expr a -> t) where
 ----------------------------------------------------------------------
 -- Integers
 
-type instance TypeZ3 Integer = Integer
-
 instance Compilable (Expr Integer) where
   compile = compileInteger
 
 instance IsTy Integer where
   typeInv = const true
   tc = tcInteger
-  fromZ3Type = id
-  toZ3Type = id
 
   mkSort   _ = mkIntSort
   getValue   = getInt
@@ -619,16 +611,12 @@ compileInteger _
 ----------------------------------------------------------------------
 -- Rationals
 
-type instance TypeZ3 Rational = Rational
-
 instance Compilable (Expr Rational) where
   compile = compileRational
 
 instance IsTy Rational where
   typeInv = const true
   tc = tcRational
-  fromZ3Type = id
-  toZ3Type = id
 
   mkSort _ = mkRealSort
   getValue   = getReal
@@ -687,8 +675,6 @@ compileRational _
 
 ----------------------------------------------------------------------
 -- Functions
-
-type instance TypeZ3 (a -> b) = TypeZ3 a -> TypeZ3 b
 
 instance (IsTy a, IsTy b) => IsFun (a -> b) where
   domain _ = (: []) <$> mkSort (TY :: TY a)
