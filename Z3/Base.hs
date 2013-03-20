@@ -964,7 +964,7 @@ mkBvmulNoUnderflow c e1 e2 =
 -- Arrays
 
 -- | Array read. The argument a is the array and i is the index of the array
--- that gets read.  
+-- that gets read.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
 mkSelect :: Context -> AST -> AST -> IO AST
@@ -976,13 +976,13 @@ mkSelect c a1 a2 = AST <$> z3_mk_select (unContext c) (unAST a1) (unAST a2)
 mkStore :: Context -> AST -> AST -> AST -> IO AST
 mkStore c a1 a2 a3 = AST <$> z3_mk_store (unContext c) (unAST a1) (unAST a2) (unAST a3)
 
--- | Create the constant array.  
+-- | Create the constant array.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga84ea6f0c32b99c70033feaa8f00e8f2d>
 mkConstArray :: Context -> Sort -> AST -> IO AST
 mkConstArray c s a = AST <$> z3_mk_const_array (unContext c) (unSort s) (unAST a)
 
--- | map f on the the argument arrays.  
+-- | map f on the the argument arrays.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9150242d9430a8c3d55d2ca3b9a4362d>
 mkMap :: Context -> FuncDecl -> Int -> [AST] -> IO AST
@@ -990,7 +990,7 @@ mkMap c f n args = withArray (map unAST args) $ \args' ->
     AST <$> z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) args'
 
 -- | Access the array default value. Produces the default range value, for
--- arrays that can be represented as finite maps with a default range value. 
+-- arrays that can be represented as finite maps with a default range value.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
 mkArrayDefault :: Context -> AST -> IO AST
