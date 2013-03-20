@@ -18,8 +18,7 @@
 
 module Z3.Lang.Exprs (
     -- * Types
-      TypeZ3
-    , Compilable(..)
+      Compilable(..)
     , IsTy(..)
     , IsFun(..)
 
@@ -65,12 +64,6 @@ import Data.Typeable ( Typeable )
 ----------------------------------------------------------------------
 -- Types
 
--- | Maps a type to the underlying Z3 type.
-type family TypeZ3 a
-
-type instance TypeZ3 (Expr a)   = TypeZ3 a
-type instance TypeZ3 (FunApp a) = TypeZ3 a
-
 -- | Compilable /things/.
 class Compilable t where
   compile :: t -> Z3 Base.AST
@@ -83,12 +76,6 @@ class (Eq a, Show a, Typeable a, Compilable (Expr a)) => IsTy a where
 
   -- | Typecheck an expression.
   tc :: Expr a -> TCM ()
-
-  -- | Convert from underlying Z3 type to type.
-  fromZ3Type :: TypeZ3 a -> a
-
-  -- | Convert from a type to its underlying Z3 type.
-  toZ3Type   :: a -> TypeZ3 a
 
   -- | Create a sort of the underlying Z3 type.
   mkSort :: TY a -> Z3 Base.Sort
@@ -118,10 +105,10 @@ class IsFun a where
 class (IsTy a, Num a) => IsNum a where
 
 -- | Typeclass for Haskell Z3 numbers of /int/ sort in Z3.
-class (IsNum a, Integral a, TypeZ3 a ~ Integer) => IsInt a where
+class (IsNum a, Integral a) => IsInt a where
 
 -- | Typeclass for Haskell Z3 numbers of /real/ sort in Z3.
-class (IsNum a, Fractional a, Real a, TypeZ3 a ~ Rational) => IsReal a where
+class (IsNum a, Fractional a, Real a) => IsReal a where
 
 ------------------------------------------------------------
 -- Abstract syntax

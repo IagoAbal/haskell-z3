@@ -15,7 +15,6 @@ module Z3.Lang.Nat
   ( Nat )
   where
 
-import Z3.Base ( AST )
 import Z3.Monad hiding ( Z3, mkEq, Pattern, evalZ3, evalZ3With )
 import Z3.Lang.Exprs
 import Z3.Lang.Monad
@@ -49,16 +48,12 @@ instance Integral Nat where
     where (q,r) = quotRem n m
   toInteger = unNat
 
-type instance TypeZ3 Nat = Integer
-
 instance Compilable (Expr Nat) where
   compile = compileNat
 
 instance IsTy Nat where
   typeInv e = e >=* 0
   tc = tcNat
-  fromZ3Type = Nat
-  toZ3Type = unNat
 
   mkSort    _ = mkIntSort
   mkLiteral   = mkInt . unNat
@@ -93,7 +88,7 @@ tcNat _ = error "Z3.Lang.Nat.tcNat: Panic!\
 
 compileNat :: Expr Nat -> Z3 AST
 compileNat (Lit a)
-  = mkLiteral (toZ3Type a)
+  = mkLiteral (unNat a)
 compileNat (Const _ u)
   = return u
 compileNat (Tag lyt)
