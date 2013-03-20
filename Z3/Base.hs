@@ -36,9 +36,6 @@ module Z3.Base (
     , delConfig
     , withConfig
     , setParamValue
-    , set_MODEL
-    , set_MODEL_PARTIAL
-    , set_WELL_SORTED_CHECK
 
     -- * Context
     , mkContext
@@ -333,27 +330,6 @@ setParamValue cfg s1 s2 =
   withCString s1  $ \cs1 ->
     withCString s2  $ \cs2 ->
       z3_set_param_value (unConfig cfg) cs1 cs2
-
--- | Set the /MODEL/ configuration parameter.
---
--- default: 'True', enable/disable model construction.
-set_MODEL :: Config -> Bool -> IO ()
-set_MODEL cfg True  = setParamValue cfg "MODEL" "true"
-set_MODEL cfg False = setParamValue cfg "MODEL" "false"
-
--- | Set the /MODEL_PARTIAL/ configuration parameter.
---
--- default: 'False', enable/disable partial function interpretations.
-set_MODEL_PARTIAL :: Config -> Bool -> IO ()
-set_MODEL_PARTIAL cfg True  = setParamValue cfg "MODEL_PARTIAL" "true"
-set_MODEL_PARTIAL cfg False = setParamValue cfg "MODEL_PARTIAL" "false"
-
--- | Set the /WELL_SORTED_CHECK/ configuration parameter.
---
--- default: 'True', enable/disable type checker.
-set_WELL_SORTED_CHECK :: Config -> Bool -> IO ()
-set_WELL_SORTED_CHECK cfg True  = setParamValue cfg "WELL_SORTED_CHECK" "true"
-set_WELL_SORTED_CHECK cfg False = setParamValue cfg "WELL_SORTED_CHECK" "false"
 
 ---------------------------------------------------------------------
 -- Context
