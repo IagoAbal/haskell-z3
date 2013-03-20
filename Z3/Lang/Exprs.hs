@@ -14,7 +14,6 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
---
 
 module Z3.Lang.Exprs (
     -- * Types
@@ -65,52 +64,41 @@ import Data.Typeable ( Typeable )
 -- Types
 
 -- | Maps a type to the underlying Z3 type.
---
 type family TypeZ3 a
 
 type instance TypeZ3 (Expr a)   = TypeZ3 a
 type instance TypeZ3 (FunApp a) = TypeZ3 a
 
 -- | Compilable /things/.
---
 class Compilable t where
   compile :: t -> Z3 Base.AST
 
 -- | Types for expressions.
---
 class (Eq a, Show a, Typeable a, Compilable (Expr a)) => IsTy a where
   -- | Type invariant.
   -- Introduced when creating a variable.
-  --
   typeInv :: Expr a -> Expr Bool
 
   -- | Typecheck an expression.
-  --
   tc :: Expr a -> TCM ()
 
   -- | Convert from underlying Z3 type to type.
-  --
   fromZ3Type :: TypeZ3 a -> a
 
   -- | Convert from a type to its underlying Z3 type.
-  --
   toZ3Type   :: a -> TypeZ3 a
 
   -- | Create a sort of the underlying Z3 type.
-  --
   mkSort :: TY a -> Z3 Base.Sort
 
   -- | Create a value of the .
-  --
   mkLiteral :: a -> Z3 Base.AST
 
   -- | Value extractor
-  --
   getValue :: Base.AST -> Z3 a
 
 
 -- | Function types.
---
 class IsFun a where
   domain :: TY a -> Z3 [Base.Sort]
   range  :: TY a -> Z3 Base.Sort
@@ -123,33 +111,26 @@ class IsFun a where
 -- It would be also interesting (but perhaps more tricky) to support
 -- floating point arithmetic by creating an instance of 'IsReal' for
 -- 'Double'.
---
 
 -- | Numeric types.
---
 class (IsTy a, Num a) => IsNum a where
 
 -- | Typeclass for Haskell Z3 numbers of /int/ sort in Z3.
---
 class (IsNum a, Integral a, TypeZ3 a ~ Integer) => IsInt a where
 
 -- | Typeclass for Haskell Z3 numbers of /real/ sort in Z3.
---
 class (IsNum a, Fractional a, Real a, TypeZ3 a ~ Rational) => IsReal a where
 
 ------------------------------------------------------------
 -- Abstract syntax
 
 -- | Unique identifiers.
---
 type Uniq = Int
 
 -- | Quantifier layout level.
---
 type Layout = Int
 
 -- | Abstract syntax.
---
 data Expr :: * -> * where
   --  | Literals
   Lit :: IsTy a => a -> Expr a
@@ -186,7 +167,6 @@ class QExpr t where
   compileQuant :: Quantifier -> [Base.Symbol] -> [Base.Sort] -> t -> Z3 Base.AST
 
 -- | Quantifier pattern.
---
 data Pattern where
   Pat :: IsTy a => Expr a -> Pattern
 
@@ -195,7 +175,6 @@ data Quantifier = ForAll | Exists
   deriving (Eq, Show)
 
 -- | Z3 function
---
 data FunApp :: * -> * where
   --  | Function declaration
   FuncDecl :: IsFun a => Base.FuncDecl -> FunApp a
