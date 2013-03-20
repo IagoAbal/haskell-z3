@@ -7,7 +7,6 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
---
 
 module Z3.Lang (
     module Z3.Lang.Prelude

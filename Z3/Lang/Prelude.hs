@@ -22,7 +22,6 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
---
 
 -- TODO: Pretty-printing of expressions
 
@@ -127,21 +126,18 @@ createVar u str = do
     return e
 
 -- | Declare skolem variables.
---
 var :: IsTy a => Z3 (Expr a)
 var = do
     (u, str) <- fresh
     createVar u str
 
 -- | Declare skolem variables with a user specified name.
---
 namedVar :: IsTy a => String -> Z3 (Expr a)
 namedVar name = do
     (u, str) <- fresh
     createVar u $ name ++ "/" ++ str
 
 -- | Declare uninterpreted function of arity 1.
---
 fun1 :: (IsTy a, IsTy b) => Z3 (Expr a -> Expr b)
 fun1 = do
     (fd :: FunApp (a -> b)) <- funDecl
@@ -150,7 +146,6 @@ fun1 = do
     return f
 
 -- | Declare uninterpreted function of arity 2.
---
 fun2 :: (IsTy a, IsTy b, IsTy c) => Z3 (Expr a -> Expr b -> Expr c)
 fun2 = do
     (fd :: FunApp (a -> b -> c)) <- funDecl
@@ -160,7 +155,6 @@ fun2 = do
 
 
 -- | Declare uninterpreted function of arity 3.
---
 fun3 :: (IsTy a, IsTy b, IsTy c, IsTy d)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d)
 fun3 = do
@@ -170,7 +164,6 @@ fun3 = do
     return f
 
 -- | Declare uninterpreted function of arity 4.
---
 fun4 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e)
 fun4 = do
@@ -180,7 +173,6 @@ fun4 = do
     return f
 
 -- | Declare uninterpreted function of arity 5.
---
 fun5 :: (IsTy a, IsTy b, IsTy c, IsTy d, IsTy e, IsTy f)
      => Z3 (Expr a -> Expr b -> Expr c -> Expr d -> Expr e -> Expr f)
 fun5 = do
@@ -190,7 +182,6 @@ fun5 = do
     return f
 
 -- | Declare uninterpreted function
---
 funDecl :: forall a. IsFun a => Z3 (FunApp a)
 funDecl = do
   (_u, str) <- fresh
@@ -201,7 +192,6 @@ funDecl = do
   return (FuncDecl fd)
 
 -- | Make assertion in current context.
---
 assert :: Expr Bool -> Z3 ()
 assert (Lit True) = return ()
 assert e          = compileWithTCC e >>= assertCnstr
@@ -209,7 +199,6 @@ assert e          = compileWithTCC e >>= assertCnstr
 -- | Introduce an auxiliary declaration to name a given expression.
 --
 -- If you really want sharing use this instead of Haskell's /let/.
---
 let_ :: IsTy a => Expr a -> Z3 (Expr a)
 let_ e@(Lit _)   = return e
 let_ e@(Const _ _) = return e
@@ -291,146 +280,131 @@ infixr 3  &&*, ||*, `xor`
 infixr 2  `implies`, `iff`, ==>, <=>
 
 -- | /literal/ constructor.
---
 literal :: IsTy a => a -> Expr a
 literal = Lit
 
 -- | Boolean literals.
---
 true, false :: Expr Bool
 true  = Lit True
 false = Lit False
 
 -- | Boolean negation
---
 not_ :: Expr Bool -> Expr Bool
 not_ = Not
 
 -- | Boolean binary /xor/.
---
 xor :: Expr Bool -> Expr Bool -> Expr Bool
 xor = BoolBin Xor
+
 -- | Boolean implication
---
 implies :: Expr Bool -> Expr Bool -> Expr Bool
 p `implies` (BoolBin Implies q r)
   = (p &&* q) `implies` r
 p `implies` q = BoolBin Implies p q
+
 -- | An alias for 'implies'.
---
 (==>) :: Expr Bool -> Expr Bool -> Expr Bool
 (==>) = implies
+
 -- | Boolean /if and only if/.
---
 iff :: Expr Bool -> Expr Bool -> Expr Bool
 iff = BoolBin Iff
+
 -- | An alias for 'iff'.
---
 (<=>) :: Expr Bool -> Expr Bool -> Expr Bool
 (<=>) = iff
 
 -- | Boolean variadic /and/.
---
 and_ :: [Expr Bool] -> Expr Bool
 and_ [] = true
 and_ bs = BoolMulti And bs
+
 -- | Boolean variadic /or/.
---
 or_ :: [Expr Bool] -> Expr Bool
 or_ [] = false
 or_ bs = BoolMulti Or bs
+
 -- | Boolean variadic /distinct/.
 distinct :: IsTy a => [Expr a] -> Expr Bool
 distinct [] = true
 distinct bs = CmpE Distinct bs
 
 -- | Boolean binary /and/.
---
 (&&*) :: Expr Bool -> Expr Bool -> Expr Bool
 (BoolMulti And ps) &&* (BoolMulti And qs) = and_ (ps ++ qs)
 (BoolMulti And ps) &&* q = and_ (q:ps)
 p &&* (BoolMulti And qs) = and_ (p:qs)
 p &&* q = and_ [p,q]
+
 -- | Boolean binary /or/.
---
 (||*) :: Expr Bool -> Expr Bool -> Expr Bool
 (BoolMulti Or ps) ||* (BoolMulti Or qs) = or_ (ps ++ qs)
 (BoolMulti Or ps) ||* q = or_ (q:ps)
 p ||* (BoolMulti Or qs) = or_ (p:qs)
 p ||* q = or_ [p,q]
 
--- | Quantified formulas.
---
-
+-- | Universally quantified formula.
 forall  :: QExpr t => t -> Expr Bool
 forall f = Quant ForAll f
 
+-- | Existentially quantified formula.
 exists  :: QExpr t => t -> Expr Bool
 exists f = Quant Exists f
 
+-- | Pattern-based instantiation.
 instanceWhen :: Expr Bool -> [Pattern] -> QBody
 instanceWhen = QBody
 
 -- | Integer division.
---
 (//) :: IsInt a => Expr a -> Expr a -> Expr a
 (//) = IntArith Quot
+
 -- | Integer modulo.
---
 (%*) :: IsInt a => Expr a -> Expr a -> Expr a
 (%*) = IntArith Mod
+
 -- | Integer remainder.
---
 (%%) :: IsInt a => Expr a -> Expr a -> Expr a
 (%%) = IntArith Rem
 
 -- | @k `divides` n == n %* k ==* 0@
---
 divides :: IsInt a => Expr a -> Expr a -> Expr Bool
 k `divides` n = n %* k ==* 0
 {-# INLINE divides #-}
 
 -- | Equals.
---
 (==*) :: IsTy a => Expr a -> Expr a -> Expr Bool
 e1 ==* e2 = CmpE Eq [e1,e2]
+
 -- | Not equals.
---
 (/=*) :: IsTy a => Expr a -> Expr a -> Expr Bool
 e1 /=* e2 = CmpE Distinct [e1,e2]
 
 -- | Less or equals than.
---
 (<=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<=*) = CmpI Le
 
 -- | Less than.
---
 (<*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (<*) = CmpI Lt
 
 -- | Greater or equals than.
---
 (>=*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>=*) = CmpI Ge
 
 -- | Greater than.
---
 (>*) :: IsNum a => Expr a -> Expr a -> Expr Bool
 (>*) = CmpI Gt
 
 -- | Minimum.
---
 min_ :: IsNum a => Expr a -> Expr a -> Expr a
 min_ x y = ite (x <=* y) x y
 
 -- | Maximum.
---
 max_ :: IsNum a => Expr a -> Expr a -> Expr a
 max_ x y = ite (x >=* y) x y
 
 -- | /if-then-else/.
---
 ite :: IsTy a => Expr Bool -> Expr a -> Expr a -> Expr a
 ite = Ite
 

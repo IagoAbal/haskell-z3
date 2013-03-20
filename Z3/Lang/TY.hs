@@ -16,8 +16,7 @@ import Data.Data ( Data, Typeable )
 
 
 -- | An alternative to 'undefined' to fake type parameters.
--- 
--- Example: @TY :: TY Integer@ instead of @undefined :: Integer@
 --
+-- Example: @TY :: TY Integer@ instead of @undefined :: Integer@
 data TY a = TY
     deriving (Data,Typeable)
