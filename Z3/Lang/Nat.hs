@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 -- |
@@ -84,6 +85,7 @@ tcNat (Ite eb e1 e2) = do
   withHypo eb $ tcNat e1
   withHypo (Not eb) $ tcNat e2
 tcNat (App _) = ok
+tcNat (Cast e) = tc e
 tcNat _ = error "Z3.Lang.Nat.tcNat: Panic!\
             \ Impossible constructor in pattern matching!"
 
@@ -111,6 +113,8 @@ compileNat (Ite eb e1 e2)
        mkIte eb' e1' e2'
 compileNat (App e)
     = compile e
+compileNat (Cast (e :: Expr a))
+    = compile e >>= compileCast (TY :: TY (a, Nat))
 compileNat _
     = error "Z3.Lang.Nat.compileNat: Panic!\
         \ Impossible constructor in pattern matching!"
