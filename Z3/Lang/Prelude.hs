@@ -51,6 +51,7 @@ module Z3.Lang.Prelude (
     -- ** Models
     , Model
     , checkModel
+    , checkModelWithResult
     , showModel
     , eval, evalT
 
@@ -223,6 +224,11 @@ newtype Model a = Model { unModel :: ReaderT Base.Model Z3 a }
 -- | Check satisfiability and evaluate a model if some exists.
 checkModel :: Model a -> Z3 (Maybe a)
 checkModel m = MonadZ3.withModel $ runReaderT (unModel m)
+
+-- | Check satisfiability and evaluate a model if some exists, also
+-- returning a 'Result' to the reason for any failure.
+checkModelWithResult :: Model a -> Z3 (Result, Maybe a)
+checkModelWithResult m = MonadZ3.withModelAndResult $ runReaderT (unModel m)
 
 showModel :: Model String
 showModel = Model $ ask >>= lift . MonadZ3.showModel
