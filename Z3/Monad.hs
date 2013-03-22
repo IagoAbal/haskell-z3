@@ -99,7 +99,6 @@ module Z3.Monad
   , getModel
   , delModel
   , withModel
-  , withModelAndResult
   , push
   , pop
 
@@ -501,20 +500,12 @@ delModel :: MonadZ3 z3 => Model -> z3 ()
 delModel = liftFun1 Base.delModel
 
 withModel :: (Applicative z3, MonadZ3 z3) =>
-                (Base.Model -> z3 a) -> z3 (Maybe a)
+                (Base.Model -> z3 a) -> z3 (Result, Maybe a)
 withModel f = do
- (_,m) <- getModel
- r <- T.traverse f m
- void $ T.traverse delModel m
- return r
-
-withModelAndResult :: (Applicative z3, MonadZ3 z3) =>
-                      (Base.Model -> z3 a) -> z3 (Result, Maybe a)
-withModelAndResult f = do
- (res,m) <- getModel
- r <- T.traverse f m
- void $ T.traverse delModel m
- return (res, r)
+ (r,mb_m) <- getModel
+ mb_e <- T.traverse f mb_m
+ void $ T.traverse delModel mb_m
+ return (r, mb_e)
 
 showModel :: MonadZ3 z3 => Model -> z3 String
 showModel = liftFun1 Base.showModel
