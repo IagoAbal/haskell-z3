@@ -99,6 +99,7 @@ module Z3.Monad
   , getModel
   , delModel
   , withModel
+  , withModelAndResult
   , push
   , pop
 
@@ -506,6 +507,14 @@ withModel f = do
  r <- T.traverse f m
  void $ T.traverse delModel m
  return r
+
+withModelAndResult :: (Applicative z3, MonadZ3 z3) =>
+                      (Base.Model -> z3 a) -> z3 (Result, Maybe a)
+withModelAndResult f = do
+ (res,m) <- getModel
+ r <- T.traverse f m
+ void $ T.traverse delModel m
+ return (res, r)
 
 showModel :: MonadZ3 z3 => Model -> z3 String
 showModel = liftFun1 Base.showModel
