@@ -63,6 +63,7 @@ module Z3.Lang.Prelude (
     , IsNum
     , IsInt
     , IsReal
+    , Castable
     , literal
     , true
     , false
@@ -75,7 +76,6 @@ module Z3.Lang.Prelude (
     , iff, (<=>)
     , forall
     , exists
-    , cast
     , instanceWhen
     , (//), (%*), (%%)
     , divides
@@ -84,6 +84,7 @@ module Z3.Lang.Prelude (
     , (>=*), (>*)
     , min_, max_
     , ite
+    , cast
 
     ) where
 
@@ -219,6 +220,7 @@ exprToString e =
 ----------------------------------------------------------------------
 -- Models
 
+-- | A computation derived from a model.
 newtype Model a = Model { unModel :: ReaderT Base.Model Z3 a }
     deriving (Applicative,Functor,Monad)
 
@@ -227,6 +229,7 @@ checkModel :: Model a -> Z3 (Maybe a)
 checkModel = checkModelWith (const id)
 {-# INLINE checkModel #-}
 
+-- | Check satisfiability and evaluate a model if some exists.
 checkModelWith :: (Result -> Maybe a -> b) -> Model a -> Z3 b
 checkModelWith f m = uncurry f <$> checkModelWithResult m
 {-# INLINE checkModelWith #-}
@@ -236,9 +239,11 @@ checkModelWith f m = uncurry f <$> checkModelWithResult m
 checkModelWithResult :: Model a -> Z3 (Result, Maybe a)
 checkModelWithResult m = MonadZ3.withModel $ runReaderT (unModel m)
 
+-- | Show Z3's internal model.
 showModel :: Model String
 showModel = Model $ ask >>= lift . MonadZ3.showModel
 
+-- | Evaluate an expression within a model.
 eval :: forall a. IsTy a => Expr a -> Model a
 eval e = Model $ do
   a <- lift $ compileWithTCC e
@@ -250,6 +255,7 @@ eval e = Model $ do
         peek (Just a) = getValue a
         peek Nothing  = error "Z3.Lang.Prelude.eval: quantified expression or partial model!"
 
+-- | Evaluate a collection of expressions within a model.
 evalT :: (IsTy a,Traversable t) => t (Expr a) -> Model (t a)
 evalT = T.traverse eval
 

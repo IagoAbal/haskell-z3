@@ -11,8 +11,9 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 --
--- Medium-level bindings.
+-- Low-level bindings to Z3 API.
 
+-- TODO Rename showModel and showContext to match Z3 C API names.
 module Z3.Base (
 
     -- * Types
@@ -1249,9 +1250,15 @@ evalT c m = fmap T.sequence . T.mapM (eval c m)
 ---------------------------------------------------------------------
 -- Constraints
 
+-- | Create a backtracking point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad651ad68c7a060cbb5616349233cb10f>
 push :: Context -> IO ()
 push c = checkError c $ z3_push $ unContext c
 
+-- | Backtrack /n/ backtracking points.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab2b3a542006c86c8d86dc37872f88b61>
 pop :: Context -> Int -> IO ()
 pop ctx cnt = checkError ctx $ z3_pop (unContext ctx) $ fromIntegral cnt
 
@@ -1285,9 +1292,15 @@ getModel c =
 delModel :: Context -> Model -> IO ()
 delModel c m = checkError c $ z3_del_model (unContext c) (unModel m)
 
+-- | Convert the given model into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
 showModel :: Context -> Model -> IO String
 showModel c m = checkError c $ z3_model_to_string (unContext c) (unModel m) >>= peekCString
 
+-- | Convert the given logical context into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga165e38ddfc928f586cb738cdf6c5f216>
 showContext :: Context -> IO String
 showContext c = checkError c $ z3_context_to_string (unContext c) >>= peekCString
 
@@ -1355,7 +1368,10 @@ paramsToString c (Params params) =
 
 -- | Solvers available in Z3.
 --
--- NB: These are described at http://smtlib.cs.uiowa.edu/logics.html
+-- These are described at <http://smtlib.cs.uiowa.edu/logics.html>
+--
+-- /WARNING/: Support for solvers is fragile, you may experience segmentation
+-- faults!
 data Logic
   = AUFLIA
     -- ^ Closed formulas over the theory of linear integer arithmetic
