@@ -109,6 +109,11 @@ fresh = do
 -------------------------------------------------
 -- Arguments
 
+{-# WARNING logic
+          "New Z3 API support is still incomplete and fragile: \
+          \you may experience segmentation faults!"
+  #-}
+
 data Args
   = Args {
       logic        :: Maybe Logic
