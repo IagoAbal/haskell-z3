@@ -21,6 +21,7 @@ module Z3.Lang.Exprs (
       Compilable(..)
     , IsTy(..)
     , IsFun(..)
+    , Castable(..)
 
     -- ** Numeric types
     , IsNum
@@ -34,7 +35,6 @@ module Z3.Lang.Exprs (
     , Pattern (..)
     , Quantifier(..)
     , QExpr(..)
-    , Castable(..)
     , FunApp (..)
     , BoolBinOp (..)
     , BoolMultiOp (..)
@@ -119,7 +119,7 @@ type Uniq = Int
 -- | Quantifier layout level.
 type Layout = Int
 
--- | Abstract syntax.
+-- | Expressions.
 data Expr :: * -> * where
   --  | Literals
   Lit :: IsTy a => a -> Expr a
@@ -154,10 +154,11 @@ data Expr :: * -> * where
   --  | Casting between compatible types
   Cast :: (IsTy a, IsTy b, Castable a b) => Expr a -> Expr b
 
+-- | Quantifiable expressions.
 class QExpr t where
   compileQuant :: Quantifier -> [Base.Symbol] -> [Base.Sort] -> t -> Z3 Base.AST
 
-class Castable a b where
+-- | Convertible types.
 class (IsTy a, IsTy b) => Castable a b where
   compileCast :: TY (a,b) -> Base.AST -> Z3 Base.AST
 

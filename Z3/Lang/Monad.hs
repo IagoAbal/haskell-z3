@@ -121,6 +121,7 @@ data Args
     ,  softTimeout :: Maybe Int
         -- ^ soft timeout (in milliseconds)
     , options      :: Opts
+        -- ^ Z3 options
     }
 
 stdArgs :: Args

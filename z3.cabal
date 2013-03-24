@@ -2,22 +2,26 @@ Name:                z3
 Version:             0.3.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
-    Bindings for the Z3 Theorem Prover.
+    Bindings for the Z3 Theorem Prover (<http://z3.codeplex.com>).
     .
-    This package is still a work in progress. Low and medium-level bindings
-    to the Z3 API are provided ("Z3.Base.C" and "Z3.Base") in the spirit
-    of yices-painless. These APIs are still incomplete but usable.
-    The high-level API ("Z3.Lang") is still very experimental and likely to change.
+    Low-level bindings to the Z3 API are provided by "Z3.Base", this API is
+    still incomplete but pretty much stable.
     .
-    Installation (Unix-like): Just be sure to use the standard locations for
-    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else use
-    the appropriate Cabal flags.
+    A simple but convenient wrapper for "Z3.Base" is provided by "Z3.Monad".
     .
-    Haddock documentation: <http://www.iagoabal.eu/z3-haskell/doc>
+    The "Z3.Lang" API provides a high-level interface to Z3, but it is still
+    very experimental and likely to change.
     .
-    More information about Z3:
+    Important notes:
     .
-    * <http://z3.codeplex.com>
+    * Installation (Unix-like): Just be sure to use the standard locations for
+    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else
+    use the --extra-lib-dirs and --extra-include-dirs Cabal flags.
+    .
+    * Hackage fails to compile this package because of the z3 dependency.
+    .
+    * Haddock documentation can be found at
+    <http://www.iagoabal.eu/z3-haskell/doc/0.3.0>
 Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE

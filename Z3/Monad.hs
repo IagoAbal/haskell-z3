@@ -475,9 +475,11 @@ evalT = liftFun2 Base.evalT
 ---------------------------------------------------------------------
 -- Constraints
 
+-- | Create a backtracking point.
 push :: MonadZ3 z3 => z3 ()
 push = liftSolver0 Base.solverPush Base.push
 
+-- | Backtrack /n/ backtracking points.
 pop :: MonadZ3 z3 => Int -> z3 ()
 pop = liftSolver1 Base.solverPop Base.pop
 
@@ -507,15 +509,15 @@ withModel f = do
  void $ T.traverse delModel mb_m
  return (r, mb_e)
 
+-- | Convert the given model into a string.
 showModel :: MonadZ3 z3 => Model -> z3 String
 showModel = liftFun1 Base.showModel
 
+-- | Convert Z3's logical context into a string.
 showContext :: MonadZ3 z3 => z3 String
 showContext = liftScalar Base.showContext
 
 -- | Check whether the given logical context is consistent or not.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 check :: MonadZ3 z3 => z3 Result
 check = liftSolver0 Base.solverCheck Base.check
 
