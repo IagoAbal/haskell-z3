@@ -73,6 +73,9 @@ z3_l_undef = #const Z3_L_UNDEF
 -- | Boolean type. It is just an alias for int.
 type Z3_bool = CInt
 
+-- | Z3 custom error handler
+type Z3_error_handler = Ptr Z3_context -> Z3_error_code -> IO ()
+
 -- | Z3_bool values
 z3_true, z3_false :: Z3_lbool
 z3_true  = #const Z3_TRUE
@@ -91,6 +94,24 @@ z3_print_smtlib_compliant :: Z3_ast_print_mode
 z3_print_smtlib_compliant = #const Z3_PRINT_SMTLIB_COMPLIANT
 z3_print_smtlib2_compliant :: Z3_ast_print_mode
 z3_print_smtlib2_compliant = #const Z3_PRINT_SMTLIB2_COMPLIANT
+
+-- | Z3 error codes
+type Z3_error_code = CInt
+#{enum Z3_error_code,
+  , z3_ok                = Z3_OK
+  , z3_sort_error        = Z3_SORT_ERROR
+  , z3_iob               = Z3_IOB
+  , z3_invalid_arg       = Z3_INVALID_ARG
+  , z3_parser_error      = Z3_PARSER_ERROR
+  , z3_no_parser         = Z3_NO_PARSER
+  , z3_invalid_pattern   = Z3_INVALID_PATTERN
+  , z3_memout_fail       = Z3_MEMOUT_FAIL
+  , z3_file_access_error = Z3_FILE_ACCESS_ERROR
+  , z3_internal_fatal    = Z3_INTERNAL_FATAL
+  , z3_invalid_usage     = Z3_INVALID_USAGE
+  , z3_dec_ref_error     = Z3_DEC_REF_ERROR
+  , z3_exception         = Z3_EXCEPTION
+  }
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -1103,3 +1124,36 @@ foreign import ccall unsafe "Z3_sort_to_string"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga15243dcad77f5571e28e8aa1da465675>
 foreign import ccall unsafe "Z3_func_decl_to_string"
     z3_func_decl_to_string :: Ptr Z3_context -> Ptr Z3_func_decl -> IO Z3_string
+
+---------------------------------------------------------------------
+-- * Error Handling
+
+-- | Return the error code for the last API call.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8ac771e68b28d2c86f40aa84889b3807>
+foreign import ccall unsafe "Z3_get_error_code"
+    z3_get_error_code :: Ptr Z3_context -> IO Z3_error_code
+
+-- | Register a Z3 error handler.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadaa12e9990f37b0c1e2bf1dd502dbf39>
+foreign import ccall unsafe "Z3_set_error_handler"
+    z3_set_error_handler :: Ptr Z3_context -> FunPtr Z3_error_handler -> IO ()
+
+-- | Set an error.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga41cf70319c4802ab7301dd168d6f5e45>
+foreign import ccall unsafe "Z3_set_error"
+    z3_set_error :: Ptr Z3_context -> Z3_error_code -> IO ()
+
+-- | Return a string describing the given error code.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf06357c49299efb8a0bdaeb3bc96c6d6>
+foreign import ccall unsafe "Z3_get_error_msg"
+    z3_get_error_msg :: Z3_error_code -> IO Z3_string
+
+-- | Return a string describing the given error code.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae0aba52b5738b2ea78e0d6ad67ef1f92>
+foreign import ccall unsafe "Z3_get_error_msg_ex"
+    z3_get_error_msg_ex :: Ptr Z3_context -> Z3_error_code -> IO Z3_string
