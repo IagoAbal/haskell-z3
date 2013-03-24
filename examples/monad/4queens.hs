@@ -34,7 +34,7 @@ script = do
   assertCnstr =<< mkNot =<< diagonal 2 q2 q4
   assertCnstr =<< mkNot =<< diagonal 1 q3 q4
   -- check and get solution
-  withModel $ \m -> do
+  fmap snd $ withModel $ \m -> do
     mb_cs <- evalT m [q1,q2,q3,q4]
     mapM getInt $ fromJust mb_cs
   where mkAbs :: AST -> Z3 AST
