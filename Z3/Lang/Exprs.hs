@@ -158,6 +158,7 @@ class QExpr t where
   compileQuant :: Quantifier -> [Base.Symbol] -> [Base.Sort] -> t -> Z3 Base.AST
 
 class Castable a b where
+class (IsTy a, IsTy b) => Castable a b where
   compileCast :: TY (a,b) -> Base.AST -> Z3 Base.AST
 
 
