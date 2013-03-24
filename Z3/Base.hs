@@ -1336,6 +1336,23 @@ paramsToString c (Params params) =
 ---------------------------------------------------------------------
 -- Solvers
 
+{-# WARNING Logic
+          , mkSolver
+          , mkSimpleSolver
+          , mkSolverForLogic
+          , solverSetParams
+          , solverPush
+          , solverPop
+          , solverReset
+          , solverAssertCnstr
+          , solverAssertAndTrack
+          , solverCheck
+          , solverCheckAndGetModel
+          , solverGetReasonUnknown
+          "New Z3 API support is still incomplete and fragile: \
+          \you may experience segmentation faults!"
+  #-}
+
 -- | Solvers available in Z3.
 --
 -- NB: These are described at http://smtlib.cs.uiowa.edu/logics.html
