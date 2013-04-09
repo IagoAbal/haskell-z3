@@ -1,0 +1,80 @@
+Name:                z3
+Version:             0.3.0
+Synopsis:            Bindings for the Z3 Theorem Prover
+Description:
+    Bindings for the Z3 Theorem Prover (<http://z3.codeplex.com>).
+    .
+    Low-level bindings to the Z3 API are provided by "Z3.Base", this API is
+    still incomplete but pretty much stable.
+    .
+    A simple but convenient wrapper for "Z3.Base" is provided by "Z3.Monad".
+    .
+    The "Z3.Lang" API provides a high-level interface to Z3, but it is still
+    very experimental and likely to change.
+    .
+    Important notes:
+    .
+    * Installation (Unix-like): Just be sure to use the standard locations for
+    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else
+    use the --extra-lib-dirs and --extra-include-dirs Cabal flags.
+    .
+    * Hackage fails to compile this package because of the z3 dependency.
+    .
+    * Haddock documentation can be found at
+    <http://www.iagoabal.eu/z3-haskell/doc/0.3.0>
+Homepage:            http://bitbucket.org/iago/z3-haskell
+License:             BSD3
+License-file:        LICENSE
+Author:              Iago Abal <iago.abal@gmail.com>,
+                     David Castro <david.castro.dcp@gmail.com>
+Maintainer:          Iago Abal <iago.abal@gmail.com>,
+                     David Castro <david.castro.dcp@gmail.com>
+Copyright:           2012-2013, Iago Abal, David Castro
+Category:            Math, Theorem Provers, Formal Methods
+Build-type:          Simple
+Cabal-version:       >= 1.6
+
+source-repository head
+  type:     mercurial
+  location: https://bitbucket.org/iago/z3-haskell
+
+Library
+    Exposed-modules:
+
+        Z3.Base
+
+        Z3.Opts
+
+        Z3.Monad
+
+        Z3.Lang
+        Z3.Lang.Prelude
+        Z3.Lang.Nat
+        Z3.Lang.Lg2
+        Z3.Lang.Pow2
+
+    Other-modules:
+
+        Z3.Base.C
+
+        Z3.Lang.Exprs
+        Z3.Lang.Monad
+        Z3.Lang.TY
+
+    ghc-options: -Wall
+
+--  modify in MonadState causes <<loop>> in mtl-2.1, so we forbide this mtl
+--  version in this library.
+    Build-depends:       base > 3 && < 5, containers, mtl < 2.1 || > 2.1
+
+    Build-tools:         hsc2hs
+    Extensions:          FlexibleInstances
+                         ForeignFunctionInterface
+
+    includes:            z3.h
+
+    -- In OS X libz3 is linked statically against libgomp
+    if os(darwin)
+        extra-libraries:     z3
+    else
+        extra-libraries:     gomp z3 gomp
