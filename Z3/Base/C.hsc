@@ -164,7 +164,12 @@ foreign import ccall unsafe "Z3_mk_string_symbol"
 -- * Sorts
 
 -- TODO Sorts: Z3_is_eq_sort
--- TODO Sorts: Z3_mk_uninterpreted_sort
+
+-- | Create a free (uninterpreted) type using the given name (symbol).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
+foreign import ccall unsafe "Z3_mk_uninterpreted_sort"
+    z3_mk_uninterpreted_sort :: Ptr Z3_context -> Ptr Z3_symbol -> IO (Ptr Z3_sort)
 
 -- | Create the Boolean type.
 --

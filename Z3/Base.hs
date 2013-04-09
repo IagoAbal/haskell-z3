@@ -47,6 +47,7 @@ module Z3.Base (
     , mkStringSymbol
 
     -- * Sorts
+    , mkUninterpretedSort
     , mkBoolSort
     , mkIntSort
     , mkRealSort
@@ -418,7 +419,13 @@ mkStringSymbol ctx s =
 -- Sorts
 
 -- TODO Sorts: Z3_is_eq_sort
--- TODO Sorts: Z3_mk_uninterpreted_sort
+
+-- | Create a free (uninterpreted) type using the given name (symbol).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
+mkUninterpretedSort :: Context -> Symbol -> IO Sort
+mkUninterpretedSort c sy = checkError c $
+  Sort <$> z3_mk_uninterpreted_sort (unContext c) (unSymbol sy)
 
 -- | Create the /Boolean/ type.
 --

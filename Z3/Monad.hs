@@ -37,6 +37,7 @@ module Z3.Monad
   , mkStringSymbol
 
   -- * Sorts
+  , mkUninterpretedSort
   , mkBoolSort
   , mkIntSort
   , mkRealSort
@@ -217,6 +218,12 @@ mkStringSymbol = liftFun1 Base.mkStringSymbol
 
 ---------------------------------------------------------------------
 -- Sorts
+
+-- | Create a free (uninterpreted) type using the given name (symbol).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
+mkUninterpretedSort :: MonadZ3 z3 => Symbol -> z3 Sort
+mkUninterpretedSort = liftFun1 Base.mkUninterpretedSort
 
 -- | Create the /boolean/ type.
 --
