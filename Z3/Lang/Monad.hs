@@ -61,7 +61,6 @@ import qualified Data.Traversable as T
 -- The Z3 Monad
 
 -- | Z3 monad.
---
 newtype Z3 a = Z3 (StateT Z3State IO a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadState Z3State)
 
@@ -70,7 +69,6 @@ instance MonadZ3 Z3 where
   getContext = Z3 $ gets context
 
 -- | Internal state of Z3 monad.
---
 data Z3State
     = Z3State { uniqVal :: !Uniq
               , context :: Base.Context
@@ -79,12 +77,10 @@ data Z3State
               }
 
 -- | Eval a Z3 script.
---
 evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With stdArgs
 
 -- | Eval a Z3 script.
---
 evalZ3With :: Args -> Z3 a -> IO a
 evalZ3With args (Z3 s) =
   Base.withConfig $ \cfg -> do
@@ -98,7 +94,6 @@ evalZ3With args (Z3 s) =
                               }
 
 -- | Fresh symbol name.
---
 fresh :: Z3 (Uniq, String)
 fresh = do
     st <- get
