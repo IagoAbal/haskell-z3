@@ -40,6 +40,7 @@ module Z3.Monad
   , mkBoolSort
   , mkIntSort
   , mkRealSort
+  , mkArraySort
 
   -- * Constants and Applications
   , mkFuncDecl
@@ -70,6 +71,13 @@ module Z3.Monad
   , mkInt2Real
   , mkReal2Int
   , mkIsInt
+
+  -- * Arrays
+  , mkSelect
+  , mkStore
+  , mkConstArray
+  , mkMap
+  , mkArrayDefault
 
   -- * Numerals
   , mkNumeral
@@ -235,6 +243,14 @@ mkIntSort = liftScalar Base.mkIntSort
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 mkRealSort :: MonadZ3 z3 => z3 Sort
 mkRealSort = liftScalar Base.mkRealSort
+
+-- | Create an array type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafe617994cce1b516f46128e448c84445>
+--
+mkArraySort :: MonadZ3 z3 => Sort -> Sort -> z3 Sort
+mkArraySort = liftFun2 Base.mkArraySort
+
 
 ---------------------------------------------------------------------
 -- Constants and Applications
@@ -405,6 +421,41 @@ mkReal2Int = liftFun1 Base.mkReal2Int
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaac2ad0fb04e4900fdb4add438d137ad3>
 mkIsInt :: MonadZ3 z3 => AST -> z3 AST
 mkIsInt = liftFun1 Base.mkIsInt
+
+---------------------------------------------------------------------
+-- Arrays
+
+-- | Array read. The argument a is the array and i is the index of the array
+-- that gets read.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
+mkSelect :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSelect = liftFun2 Base.mkSelect
+
+-- | Array update.   
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae305a4f54b4a64f7e5973ae6ccb13593>
+mkStore :: MonadZ3 z3 => AST -> AST -> AST -> z3 AST
+mkStore = liftFun3 Base.mkStore
+
+-- | Create the constant array.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga84ea6f0c32b99c70033feaa8f00e8f2d>
+mkConstArray :: MonadZ3 z3 => Sort -> AST -> z3 AST
+mkConstArray = liftFun2 Base.mkConstArray
+
+-- | map f on the the argument arrays.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9150242d9430a8c3d55d2ca3b9a4362d>
+mkMap :: MonadZ3 z3 => FuncDecl -> Int -> [AST] -> z3 AST
+mkMap = liftFun3 Base.mkMap
+
+-- | Access the array default value. Produces the default range value, for
+-- arrays that can be represented as finite maps with a default range value.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
+mkArrayDefault :: MonadZ3 z3 => AST -> z3 AST
+mkArrayDefault = liftFun1 Base.mkArrayDefault
 
 ---------------------------------------------------------------------
 -- Numerals
