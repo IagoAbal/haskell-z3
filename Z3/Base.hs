@@ -162,6 +162,7 @@ module Z3.Base (
     -- * Models
     , eval
     , evalT
+    , evalFunc
     , showModel
     , showContext
 
@@ -267,6 +268,14 @@ newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
 
 -- | A model for the constraints asserted into the logical context.
 newtype Model = Model { unModel :: Ptr Z3_model }
+    deriving Eq
+
+-- | A interpretation of a function.
+newtype FuncInterp = FuncInterp { unFuncInterp :: Ptr Z3_func_interp }
+    deriving Eq
+
+--  | An entry in an interpreted function
+newtype FuncEntry = FuncEntry { unFuncEntry :: Ptr Z3_func_entry }
     deriving Eq
 
 -- | A Z3 parameter set. Starting at Z3 4.0, parameter sets are used
@@ -1253,6 +1262,117 @@ eval ctx m a =
 -- | Evaluate a collection of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
 evalT c m = fmap T.sequence . T.mapM (eval c m)
+
+
+evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe [([AST], AST)])
+evalFunc ctx m fDecl
+    = do interpMb <- getFuncInterp ctx m fDecl
+         case interpMb of
+           Nothing -> return Nothing
+           Just interp -> Just <$> getMapFromInterp ctx interp
+
+getMapFromInterp :: Context -> FuncInterp -> IO [([AST], AST)]
+getMapFromInterp ctx interp =
+    do n <- funcInterpGetNumEntries ctx interp
+       entries <- mapM (funcInterpGetEntry ctx interp) [0 .. n-1]
+       mapM (getEntry ctx) entries
+
+getEntry :: Context -> FuncEntry -> IO ([AST], AST)
+getEntry ctx entry =
+    do val <- funcEntryGetValue ctx entry
+       args <- getEntryArgs ctx entry
+       return (args, val)
+
+getEntryArgs :: Context -> FuncEntry -> IO [AST]
+getEntryArgs ctx entry =
+    do n <- funcEntryGetNumArgs ctx entry
+       mapM (funcEntryGetArg ctx entry) [0 .. n - 1]
+
+-- | Return the interpretation of the function f in the model m. 
+-- Return NULL, if the model does not assign an interpretation for f. 
+-- That should be interpreted as: the f does not matter.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
+getFuncInterp :: Context -> Model -> FuncDecl -> IO (Maybe FuncInterp)
+getFuncInterp ctx m fDecl =
+    do ptr <- checkError ctx (z3_model_get_func_interp (unContext ctx) (unModel m) (unFuncDecl fDecl))
+       if ptr == nullPtr
+         then return Nothing
+         else return $ Just $ FuncInterp $ ptr
+
+-- | Return the number of entries in the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
+funcInterpGetNumEntries :: Context -> FuncInterp -> IO Int
+funcInterpGetNumEntries ctx funcInterp = fromIntegral <$> res
+    where 
+      res = checkError ctx (z3_func_interp_get_num_entries
+                              (unContext ctx)
+                              (unFuncInterp funcInterp))
+
+-- | Return a "point" of the given function intepretation. 
+-- It represents the value of f in a particular point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
+funcInterpGetEntry :: Context -> FuncInterp -> Int -> IO FuncEntry
+funcInterpGetEntry ctx funcInterp i = FuncEntry <$> res
+    where
+      res = checkError ctx (z3_func_interp_get_entry 
+                               (unContext ctx)
+                               (unFuncInterp funcInterp)
+                               (fromIntegral i))
+
+-- | Return the 'else' value of the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46de7559826ba71b8488d727cba1fb64>
+funcInterpGetElse :: Context -> FuncInterp -> IO AST
+funcInterpGetElse ctx funcInterp = AST <$> res
+    where
+      res = checkError ctx (z3_func_interp_get_else
+                              (unContext ctx)
+                              (unFuncInterp funcInterp))
+
+-- | Return the arity (number of arguments) of the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaca22cbdb6f7787aaae5d814f2ab383d8>
+funcInterpGetArity :: Context -> FuncInterp -> IO Int
+funcInterpGetArity ctx funcInterp = fromIntegral <$> res
+    where
+      res = checkError ctx (z3_func_interp_get_arity
+                              (unContext ctx)
+                              (unFuncInterp funcInterp))
+
+-- | Return the value of this point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
+funcEntryGetValue :: Context -> FuncEntry -> IO AST
+funcEntryGetValue ctx funcEntry = AST <$> res
+    where
+      res = checkError ctx (z3_func_entry_get_value
+                              (unContext ctx)
+                              (unFuncEntry funcEntry))
+
+-- | Return the number of arguments in a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51aed8c5bc4b1f53f0c371312de3ce1a>
+funcEntryGetNumArgs :: Context -> FuncEntry -> IO Int
+funcEntryGetNumArgs ctx funcEntry = fromIntegral <$> res
+    where
+      res = checkError ctx (z3_func_entry_get_num_args
+                              (unContext ctx)
+                              (unFuncEntry funcEntry))
+
+-- | Return an argument of a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6fe03fe3c824fceb52766a4d8c2cbeab>
+funcEntryGetArg :: Context -> FuncEntry -> Int -> IO AST
+funcEntryGetArg ctx funcEntry i = AST <$> res
+    where
+      res = checkError ctx (z3_func_entry_get_arg
+                              (unContext ctx)
+                              (unFuncEntry funcEntry)
+                              (fromIntegral i))
+
 
 ---------------------------------------------------------------------
 -- Constraints

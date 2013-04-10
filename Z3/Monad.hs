@@ -99,6 +99,7 @@ module Z3.Monad
   -- * Models
   , eval
   , evalT
+  , evalFunc
   , showModel
   , showContext
 
@@ -529,6 +530,10 @@ eval = liftFun2 Base.eval
 -- | Evaluate a collection of AST nodes in the given model.
 evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
 evalT = liftFun2 Base.evalT
+
+-- | Get function as a list of argument/value pairs.
+evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe [([AST], AST)])
+evalFunc = liftFun2 Base.evalFunc
 
 ---------------------------------------------------------------------
 -- Constraints

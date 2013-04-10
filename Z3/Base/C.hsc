@@ -54,6 +54,12 @@ data Z3_pattern
 -- | A model for the constraints asserted into the logical context.
 data Z3_model
 
+-- | The interpretation of a function returned from the model.
+data Z3_func_interp
+
+-- | An entry in a function interpretation.
+data Z3_func_entry
+
 -- | A solver for Z3, that is, an engine for collecting and solving
 -- constraints using a specific algorithm or set of algorithms.
 data Z3_solver
@@ -871,6 +877,75 @@ foreign import ccall unsafe "Z3_eval"
             -> Ptr Z3_ast
             -> Ptr (Ptr Z3_ast)
             -> IO Z3_bool
+
+-- | Return the interpretation of the function f in the model m. 
+-- Return NULL, if the model does not assign an interpretation for f. 
+-- That should be interpreted as: the f does not matter.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
+foreign import ccall unsafe "Z3_model_get_func_interp"
+    z3_model_get_func_interp :: Ptr Z3_context
+                             -> Ptr Z3_model
+                             -> Ptr Z3_func_decl
+                             -> IO (Ptr Z3_func_interp)
+
+-- | Return the number of entries in the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
+foreign import ccall unsafe "Z3_func_interp_get_num_entries"
+    z3_func_interp_get_num_entries :: Ptr Z3_context
+                                   -> Ptr Z3_func_interp
+                                   -> IO CUInt
+
+-- | Return a "point" of the given function intepretation. 
+-- It represents the value of f in a particular point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
+foreign import ccall unsafe "Z3_func_interp_get_entry"
+    z3_func_interp_get_entry :: Ptr Z3_context
+                             -> Ptr Z3_func_interp
+                             -> CUInt
+                             -> IO (Ptr Z3_func_entry)
+
+-- | Return the 'else' value of the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46de7559826ba71b8488d727cba1fb64>
+foreign import ccall unsafe "Z3_func_interp_get_else"
+    z3_func_interp_get_else :: Ptr Z3_context
+                            -> Ptr Z3_func_interp
+                            -> IO (Ptr Z3_ast)
+-- | Return the arity (number of arguments) of the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaca22cbdb6f7787aaae5d814f2ab383d8>
+foreign import ccall unsafe "Z3_func_interp_get_arity"
+    z3_func_interp_get_arity :: Ptr Z3_context
+                             -> Ptr Z3_func_interp
+                             -> IO CUInt
+
+-- | Return the value of this point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
+foreign import ccall unsafe "Z3_func_entry_get_value"
+    z3_func_entry_get_value :: Ptr Z3_context
+                            -> Ptr Z3_func_entry
+                            -> IO (Ptr Z3_ast)
+
+-- | Return the number of arguments in a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51aed8c5bc4b1f53f0c371312de3ce1a>
+foreign import ccall unsafe "Z3_func_entry_get_num_args"
+    z3_func_entry_get_num_args :: Ptr Z3_context
+                               -> Ptr Z3_func_entry
+                               -> IO CUInt
+
+-- | Return an argument of a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6fe03fe3c824fceb52766a4d8c2cbeab>
+foreign import ccall unsafe "Z3_func_entry_get_arg"
+    z3_func_entry_get_arg :: Ptr Z3_context
+                          -> Ptr Z3_func_entry
+                          -> CUInt
+                          -> IO (Ptr Z3_ast)
 
 ---------------------------------------------------------------------
 -- * Constraints
