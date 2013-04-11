@@ -16,7 +16,7 @@ toRetType (FuncModel fs elsePart) =
        elsePart' <- getInt elsePart
        return (fs', elsePart')
 
-arrayScript :: Z3 (RetType, RetType)  -- Map (Int, Int) Int)
+arrayScript :: Z3 (RetType, RetType)
 arrayScript =
     do intSort <- mkIntSort
        arrSort <- mkArraySort intSort intSort
