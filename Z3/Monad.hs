@@ -100,6 +100,7 @@ module Z3.Monad
   , eval
   , evalT
   , evalFunc
+  , evalArray
   , showModel
   , showContext
 
@@ -534,6 +535,12 @@ evalT = liftFun2 Base.evalT
 -- | Get function as a list of argument/value pairs.
 evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe [([AST], AST)])
 evalFunc = liftFun2 Base.evalFunc
+
+-- | Get array as a list of argument/value pairs, if it is
+-- represented as a function (ie, using as-array).
+evalArray :: MonadZ3 z3 => Model -> AST -> z3 (Maybe [([AST], AST)])
+evalArray = liftFun2 Base.evalArray
+
 
 ---------------------------------------------------------------------
 -- Constraints
