@@ -29,6 +29,7 @@ module Z3.Monad
   , App
   , Pattern
   , Model
+  , FuncModel(..)
 
   -- ** Satisfiability result
   , Result(..)
@@ -132,6 +133,7 @@ import Z3.Base
   , App
   , Pattern
   , Model
+  , FuncModel(..)
   , Result(..)
   , Logic(..)
   , ASTPrintMode(..)
@@ -533,12 +535,12 @@ evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
 evalT = liftFun2 Base.evalT
 
 -- | Get function as a list of argument/value pairs.
-evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe [([AST], AST)])
+evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncModel)
 evalFunc = liftFun2 Base.evalFunc
 
 -- | Get array as a list of argument/value pairs, if it is
 -- represented as a function (ie, using as-array).
-evalArray :: MonadZ3 z3 => Model -> AST -> z3 (Maybe [([AST], AST)])
+evalArray :: MonadZ3 z3 => Model -> AST -> z3 (Maybe FuncModel)
 evalArray = liftFun2 Base.evalArray
 
 

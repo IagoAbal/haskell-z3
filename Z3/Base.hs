@@ -160,6 +160,7 @@ module Z3.Base (
     , getReal
 
     -- * Models
+    , FuncModel (..)
     , eval
     , evalT
     , evalFunc
@@ -1264,16 +1265,26 @@ eval ctx m a =
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
 evalT c m = fmap T.sequence . T.mapM (eval c m)
 
+-- | The interpretation of a function is a mapping part (arguments to values)
+-- and an 'else' part.
+data FuncModel = FuncModel
+    { interpMap :: [([AST], AST)]
+    , interpElse :: AST
+    }
+
 -- | Evaluate a function declaration to a list of argument/value pairs.
-evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe [([AST], AST)])
+evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe FuncModel)
 evalFunc ctx m fDecl =
     do interpMb <- getFuncInterp ctx m fDecl
        case interpMb of
          Nothing -> return Nothing
-         Just interp -> Just <$> getMapFromInterp ctx interp
+         Just interp ->
+             do funcMap  <- getMapFromInterp ctx interp
+                elsePart <- funcInterpGetElse ctx interp
+                return (Just $ FuncModel funcMap elsePart)
 
 -- | Evaluate an array as a function, if possible.
-evalArray :: Context -> Model -> AST -> IO (Maybe [([AST], AST)])
+evalArray :: Context -> Model -> AST -> IO (Maybe FuncModel)
 evalArray ctx model array =
     do -- The array must first be evaluated normally, to get it into 
        -- 'as-array' form, which is required to acquire the FuncDecl.

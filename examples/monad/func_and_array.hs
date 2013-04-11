@@ -2,13 +2,19 @@ module Main where
 
 import Z3.Monad
 
-type RetType = [([Integer], Integer)]
+type RetType = ([([Integer], Integer)], Integer)
 
 toIntsPair :: ([AST], AST) -> Z3 ([Integer], Integer)
 toIntsPair (is, i) =
     do is' <- mapM getInt is
        i' <- getInt i
        return (is', i')
+
+toRetType :: FuncModel -> Z3 RetType
+toRetType (FuncModel fs elsePart) =
+    do fs' <- mapM toIntsPair fs
+       elsePart' <- getInt elsePart
+       return (fs', elsePart')
 
 arrayScript :: Z3 (RetType, RetType)  -- Map (Int, Int) Int)
 arrayScript =
@@ -35,8 +41,8 @@ arrayScript =
        let 
            convertArr :: Model -> AST -> Z3 RetType
            convertArr model arr = 
-               do Just fs <- evalArray model arr
-                  mapM toIntsPair fs
+               do Just f <- evalArray model arr
+                  toRetType f
 
        (_res, modelMb) <- getModel
        case modelMb of
@@ -64,8 +70,8 @@ funcScript =
        (_res, modelMb) <- getModel
        case modelMb of
          Just model -> 
-             do Just fs <- evalFunc model fDecl
-                mapM toIntsPair fs
+             do Just f <- evalFunc model fDecl
+                toRetType f
          Nothing -> error "Couldn't construct model"
 
 main :: IO ()
