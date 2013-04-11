@@ -58,6 +58,7 @@ module Z3.Base (
     , mkRealSort
     , mkBvSort
     , mkArraySort
+    , mkTupleSort
 
     -- * Constants and Applications
     , mkFuncDecl
@@ -510,6 +511,30 @@ mkBvSort c n = checkError c $ Sort <$> z3_mk_bv_sort (unContext c) (fromIntegral
 --
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort c dom rng = checkError c $ Sort <$> z3_mk_array_sort (unContext c) (unSort dom) (unSort rng)
+
+-- | Create a tuple type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7156b9c0a76a28fae46c81f8e3cdf0f1>
+mkTupleSort :: Context                         -- ^ Context
+            -> Symbol                          -- ^ Name of the sort
+            -> [(Symbol, Sort)]                -- ^ Name and sort of each field
+            -> IO (Sort, FuncDecl, [FuncDecl]) -- ^ Resulting sort, and function
+                                               -- declarations for the
+                                               -- constructor and projections.
+mkTupleSort c sym symSorts = checkError c $
+  let (syms, sorts) = unzip symSorts
+  in withArrayLen (map unSymbol syms) $ \ n symsPtr ->
+     withArray (map unSort sorts) $ \ sortsPtr ->
+     alloca $ \ outConstrPtr ->
+     allocaArray n $ \ outProjsPtr -> do
+       sort <- checkError c $ z3_mk_tuple_sort
+                   (unContext c) (unSymbol sym)
+                   (fromIntegral n) symsPtr sortsPtr
+                   outConstrPtr outProjsPtr
+       outConstr <- peek outConstrPtr
+       outProjs  <- peekArray n outProjsPtr
+       return (Sort sort, FuncDecl outConstr, map FuncDecl outProjs)
+
 
 -- TODO Sorts: from Z3_mk_array_sort on
 
