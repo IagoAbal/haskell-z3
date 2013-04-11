@@ -163,6 +163,7 @@ module Z3.Base (
     , eval
     , evalT
     , evalFunc
+    , evalArray
     , showModel
     , showContext
 
@@ -1263,13 +1264,47 @@ eval ctx m a =
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
 evalT c m = fmap T.sequence . T.mapM (eval c m)
 
-
+-- | Evaluate a function declaration to a list of argument/value pairs.
 evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe [([AST], AST)])
-evalFunc ctx m fDecl
-    = do interpMb <- getFuncInterp ctx m fDecl
-         case interpMb of
-           Nothing -> return Nothing
-           Just interp -> Just <$> getMapFromInterp ctx interp
+evalFunc ctx m fDecl =
+    do interpMb <- getFuncInterp ctx m fDecl
+       case interpMb of
+         Nothing -> return Nothing
+         Just interp -> Just <$> getMapFromInterp ctx interp
+
+-- | Evaluate an array as a function, if possible.
+evalArray :: Context -> Model -> AST -> IO (Maybe [([AST], AST)])
+evalArray ctx model array =
+    do -- The array must first be evaluated normally, to get it into 
+       -- 'as-array' form, which is required to acquire the FuncDecl.
+       evaldArrayMb <- eval ctx model array
+       case evaldArrayMb of
+         Nothing -> return Nothing
+         Just evaldArray ->
+             do canConvert <- isAsArray ctx evaldArray
+                if canConvert
+                  then 
+                    do arrayDecl <- getAsArrayFuncDecl ctx evaldArray
+                       evalFunc ctx model arrayDecl
+                  else return Nothing
+       
+
+-- | Return the function declaration f associated with a (_ as_array f) node.
+-- 
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
+getAsArrayFuncDecl :: Context -> AST -> IO FuncDecl
+getAsArrayFuncDecl ctx a =
+    FuncDecl <$> z3_get_as_array_func_decl (unContext ctx) (unAST a)
+
+-- | The (_ as-array f) AST node is a construct for assigning interpretations for 
+-- arrays in Z3. It is the array such that forall indices i we have that 
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if 
+-- the a is an as-array AST node.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
+isAsArray :: Context -> AST -> IO Bool
+isAsArray ctx a = toBool <$> z3_is_as_array (unContext ctx) (unAST a)
+    
 
 getMapFromInterp :: Context -> FuncInterp -> IO [([AST], AST)]
 getMapFromInterp ctx interp =
