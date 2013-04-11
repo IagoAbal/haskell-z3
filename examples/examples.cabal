@@ -62,3 +62,12 @@ executable mz3-funcModel
                        z3 ==0.3.1,
                        containers,
                        mtl >2.1
+
+executable mz3-tuple
+  hs-source-dirs:      monad
+  main-is:             Tuple.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1

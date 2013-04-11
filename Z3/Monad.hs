@@ -55,6 +55,7 @@ module Z3.Monad
   , mkRealSort
   , mkBvSort
   , mkArraySort
+  , mkTupleSort
 
   -- * Constants and Applications
   , mkFuncDecl
@@ -367,6 +368,16 @@ mkBvSort = liftFun1 Base.mkBvSort
 mkArraySort :: MonadZ3 z3 => Sort -> Sort -> z3 Sort
 mkArraySort = liftFun2 Base.mkArraySort
 
+-- | Create a tuple type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7156b9c0a76a28fae46c81f8e3cdf0f1>
+mkTupleSort :: MonadZ3 z3
+            => Symbol                          -- ^ Name of the sort
+            -> [(Symbol, Sort)]                -- ^ Name and sort of each field
+            -> z3 (Sort, FuncDecl, [FuncDecl]) -- ^ Resulting sort, and function
+                                               -- declarations for the
+                                               -- constructor and projections.
+mkTupleSort = liftFun2 Base.mkTupleSort
 
 ---------------------------------------------------------------------
 -- Constants and Applications

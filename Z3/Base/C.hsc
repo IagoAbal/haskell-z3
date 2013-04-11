@@ -214,6 +214,19 @@ foreign import ccall unsafe "Z3_mk_bv_sort"
 foreign import ccall unsafe "Z3_mk_array_sort"
     z3_mk_array_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Ptr Z3_sort)
 
+-- | Create a tuple type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7156b9c0a76a28fae46c81f8e3cdf0f1>
+foreign import ccall unsafe "Z3_mk_tuple_sort"
+    z3_mk_tuple_sort :: Ptr Z3_context
+                     -> Ptr Z3_symbol
+                     -> CUInt
+                     -> Ptr (Ptr Z3_symbol)
+                     -> Ptr (Ptr Z3_sort)
+                     -> Ptr (Ptr Z3_func_decl)
+                     -> Ptr (Ptr Z3_func_decl)
+                     -> IO (Ptr Z3_sort)
+
 -- TODO Sorts: from Z3_mk_array_sort on
 
 
