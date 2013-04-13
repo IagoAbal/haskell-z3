@@ -4,6 +4,10 @@
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- This is just to avoid warnings because we import fragile new Z3 API stuff
+  -- from Z3.Base
+
 -- |
 -- Module    : Z3.Lang.Monad
 -- Copyright : (c) Iago Abal, 2012
