@@ -126,6 +126,7 @@ module Z3.Monad
   , patternToString
   , sortToString
   , funcDeclToString
+  , benchmarkToSMTLibString
   )
   where
 
@@ -178,6 +179,12 @@ liftFun3 f a b c = getContext >>= \ctx -> liftIO (f ctx a b c)
 liftFun4 :: MonadZ3 z3 => (Base.Context -> a -> b -> c -> d -> IO e)
                 -> a -> b -> c -> d -> z3 e
 liftFun4 f a b c d = getContext >>= \ctx -> liftIO (f ctx a b c d)
+
+liftFun6 :: MonadZ3 z3 =>
+              (Base.Context -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> IO b)
+                -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> z3 b
+liftFun6 f x1 x2 x3 x4 x5 x6 =
+  getContext >>= \ctx -> liftIO (f ctx x1 x2 x3 x4 x5 x6)
 
 liftSolver0 :: MonadZ3 z3 =>
        (Base.Context -> Base.Solver -> IO b)
@@ -625,3 +632,15 @@ sortToString = liftFun1 Base.sortToString
 funcDeclToString :: MonadZ3 z3 => FuncDecl -> z3 String
 funcDeclToString = liftFun1 Base.funcDeclToString
 
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- The output format can be configured via 'setASTPrintMode'.
+benchmarkToSMTLibString :: MonadZ3 z3 =>
+                               String   -- ^ name
+                            -> String   -- ^ logic
+                            -> String   -- ^ status
+                            -> String   -- ^ attributes
+                            -> [AST]    -- ^ assumptions1
+                            -> AST      -- ^ formula
+                            -> z3 String
+benchmarkToSMTLibString = liftFun6 Base.benchmarkToSMTLibString

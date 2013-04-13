@@ -1229,6 +1229,20 @@ foreign import ccall unsafe "Z3_sort_to_string"
 foreign import ccall unsafe "Z3_func_decl_to_string"
     z3_func_decl_to_string :: Ptr Z3_context -> Ptr Z3_func_decl -> IO Z3_string
 
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf93844a5964ad8dee609fac3470d86e4>
+foreign import ccall unsafe "Z3_benchmark_to_smtlib_string"
+    z3_benchmark_to_smtlib_string :: Ptr Z3_context
+                                      -> Z3_string        -- ^ name
+                                      -> Z3_string        -- ^ logic
+                                      -> Z3_string        -- ^ status
+                                      -> Z3_string        -- ^ attributes
+                                      -> CUInt            -- ^ assumptions#
+                                      -> Ptr (Ptr Z3_ast) -- ^ assumptions
+                                      -> Ptr Z3_ast       -- ^ formula
+                                      -> IO Z3_string
+
 ---------------------------------------------------------------------
 -- * Error Handling
 
