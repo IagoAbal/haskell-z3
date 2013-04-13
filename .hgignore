@@ -1,5 +1,5 @@
-^dist$
-^cabal-dev$
+dist$
+cabal-dev$
 
 .*\.swp$
 .*\.hs~$
