@@ -159,6 +159,12 @@ foreign import ccall unsafe "Z3_del_context"
 ---------------------------------------------------------------------
 -- * Symbols
 
+-- | Create a Z3 symbol using an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3df806baf6124df3e63a58cf23e12411>
+foreign import ccall unsafe "Z3_mk_int_symbol"
+    z3_mk_int_symbol :: Ptr Z3_context -> CInt -> IO (Ptr Z3_symbol)
+
 -- | Create a Z3 symbol using a C string.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafebb0d3c212927cf7834c3a20a84ecae>
