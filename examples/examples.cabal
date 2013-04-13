@@ -1,0 +1,64 @@
+
+name:                z3-examples
+version:             0.1.0
+-- synopsis:
+-- description:
+homepage:            https://bitbucket.org/iago/z3-haskell
+license:             BSD3
+license-file:        LICENSE
+author:              Iago Abal <iago.abal@gmail.com>
+maintainer:          Iago Abal <iago.abal@gmail.com>
+-- copyright:
+category:            Example
+build-type:          Simple
+cabal-version:       >=1.8
+
+-------------------------------------------------
+-- Using Z3.Lang
+
+executable 4queens
+  hs-source-dirs:      lang
+  main-is:             4queens.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1
+
+executable Nqueens
+  hs-source-dirs:      lang
+  main-is:             Nqueens.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1
+
+executable NqueensAll
+  hs-source-dirs:      lang
+  main-is:             NqueensAll.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1
+-------------------------------------------------
+-- Using Z3.Monad
+
+executable mz3-4queens
+  hs-source-dirs:      monad
+  main-is:             4queens.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1
+
+executable mz3-funcModel
+  hs-source-dirs:      monad
+  main-is:             FuncModel.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 ==0.3.1,
+                       containers,
+                       mtl >2.1
