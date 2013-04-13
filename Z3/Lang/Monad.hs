@@ -98,12 +98,12 @@ evalZ3With args (Z3 s) =
                               }
 
 -- | Fresh symbol name.
-fresh :: Z3 (Uniq, String)
+fresh :: Z3 Uniq
 fresh = do
     st <- get
     let i = uniqVal st
     put st { uniqVal = i + 1 }
-    return (uniqVal st, 'v':show i)
+    return i
 
 -------------------------------------------------
 -- Arguments
