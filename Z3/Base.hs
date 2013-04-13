@@ -26,6 +26,8 @@ module Z3.Base (
     , App
     , Pattern
     , Model
+    , FuncInterp
+    , FuncEntry
     , Params
     , Solver
 
