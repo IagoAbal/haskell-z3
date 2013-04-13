@@ -1,6 +1,10 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- This is just to avoid warnings because we import fragile new Z3 API stuff
+  -- from Z3.Base
+
 -- TODO: Error handling
 
 -- |
