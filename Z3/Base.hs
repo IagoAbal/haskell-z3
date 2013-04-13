@@ -44,6 +44,7 @@ module Z3.Base (
     , withContext
 
     -- * Symbols
+    , mkIntSymbol
     , mkStringSymbol
 
     -- * Sorts
@@ -426,6 +427,19 @@ withContext cfg = bracket (mkContext cfg) delContext
 
 ---------------------------------------------------------------------
 -- Symbols
+
+-- | Create a Z3 symbol using an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3df806baf6124df3e63a58cf23e12411>
+mkIntSymbol :: Integral int => Context -> int -> IO Symbol
+mkIntSymbol ctx i
+  | 0 <= i && i <= 2^(30::Int)-1
+  = Symbol <$> z3_mk_int_symbol (unContext ctx) (fromIntegral i)
+  | otherwise
+  = error "Z3.Base.mkIntSymbol: invalid range"
+
+{-# SPECIALIZE mkIntSymbol :: Context -> Int -> IO Symbol #-}
+{-# SPECIALIZE mkIntSymbol :: Context -> Integer -> IO Symbol #-}
 
 -- | Create a Z3 symbol using a string.
 --

@@ -35,6 +35,7 @@ module Z3.Monad
   , Result(..)
 
   -- * Symbols
+  , mkIntSymbol
   , mkStringSymbol
 
   -- * Sorts
@@ -221,6 +222,10 @@ evalZ3 = evalZ3With Nothing stdOpts
 
 ---------------------------------------------------------------------
 -- Symbols
+
+-- | Create a Z3 symbol using an integer.
+mkIntSymbol :: (MonadZ3 z3, Integral i) => i -> z3 Symbol
+mkIntSymbol = liftFun1 Base.mkIntSymbol
 
 -- | Create a Z3 symbol using a string.
 --
