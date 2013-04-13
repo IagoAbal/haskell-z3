@@ -219,6 +219,7 @@ module Z3.Base (
     , patternToString
     , sortToString
     , funcDeclToString
+    , benchmarkToSMTLibString
 
     -- * Error Handling
     , Z3Error(..)
@@ -1793,3 +1794,28 @@ sortToString ctx sort =
 funcDeclToString :: Context -> FuncDecl -> IO String
 funcDeclToString ctx funcDecl =
   checkError ctx $ z3_func_decl_to_string (unContext ctx) (unFuncDecl funcDecl) >>= peekCString
+
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- The output format can be configured via 'setASTPrintMode'.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf93844a5964ad8dee609fac3470d86e4>
+benchmarkToSMTLibString :: Context
+                            -> String   -- ^ name
+                            -> String   -- ^ logic
+                            -> String   -- ^ status
+                            -> String   -- ^ attributes
+                            -> [AST]    -- ^ assumptions
+                            -> AST      -- ^ formula
+                            -> IO String
+benchmarkToSMTLibString c name logic st attr assump f =
+  withCString name $ \cname ->
+  withCString logic $ \clogic ->
+  withCString st $ \cst ->
+  withCString attr $ \cattr ->
+  withArray (map unAST assump) $ \cassump ->
+    z3_benchmark_to_smtlib_string (unContext c) cname clogic cst cattr
+                                  numAssump cassump (unAST f)
+      >>= peekCString
+  where numAssump = genericLength assump
+
