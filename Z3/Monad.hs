@@ -40,6 +40,10 @@ module Z3.Monad
   -- ** Satisfiability result
   , Result(..)
 
+  -- * Context
+  , contextToString
+  , showContext
+
   -- * Symbols
   , mkIntSymbol
   , mkStringSymbol
@@ -109,8 +113,6 @@ module Z3.Monad
   , evalT
   , evalFunc
   , evalArray
-  , showModel
-  , showContext
   , getFuncInterp
   , isAsArray
   , getAsArrayFuncDecl
@@ -121,6 +123,8 @@ module Z3.Monad
   , funcEntryGetValue
   , funcEntryGetNumArgs
   , funcEntryGetArg
+  , modelToString
+  , showModel
 
   -- * Constraints
   , assertCnstr
@@ -244,6 +248,17 @@ evalZ3With mbLogic opts (Z3 s) =
 -- | Eval a Z3 script with default configuration options.
 evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With Nothing stdOpts
+
+---------------------------------------------------------------------
+-- Contexts
+
+-- | Convert Z3's logical context into a string.
+contextToString :: MonadZ3 z3 => z3 String
+contextToString = liftScalar Base.contextToString
+
+-- | Alias for 'contextToString'.
+showContext :: MonadZ3 z3 => z3 String
+showContext = contextToString
 
 ---------------------------------------------------------------------
 -- Symbols
@@ -640,6 +655,14 @@ funcEntryGetNumArgs = liftFun1 Base.funcEntryGetNumArgs
 funcEntryGetArg :: MonadZ3 z3 => FuncEntry -> Int -> z3 AST
 funcEntryGetArg = liftFun2 Base.funcEntryGetArg
 
+-- | Convert the given model into a string.
+modelToString :: MonadZ3 z3 => Model -> z3 String
+modelToString = liftFun1 Base.modelToString
+
+-- | Alias for 'modelToString'.
+showModel :: MonadZ3 z3 => Model -> z3 String
+showModel = modelToString
+
 ---------------------------------------------------------------------
 -- Constraints
 
@@ -676,14 +699,6 @@ withModel f = do
  mb_e <- T.traverse f mb_m
  void $ T.traverse delModel mb_m
  return (r, mb_e)
-
--- | Convert the given model into a string.
-showModel :: MonadZ3 z3 => Model -> z3 String
-showModel = liftFun1 Base.showModel
-
--- | Convert Z3's logical context into a string.
-showContext :: MonadZ3 z3 => z3 String
-showContext = liftScalar Base.showContext
 
 -- | Check whether the given logical context is consistent or not.
 check :: MonadZ3 z3 => z3 Result
