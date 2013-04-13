@@ -167,6 +167,16 @@ module Z3.Base (
     , evalArray
     , showModel
     , showContext
+    , getFuncInterp
+    , isAsArray
+    , getAsArrayFuncDecl
+    , funcInterpGetNumEntries
+    , funcInterpGetEntry
+    , funcInterpGetElse
+    , funcInterpGetArity
+    , funcEntryGetValue
+    , funcEntryGetNumArgs
+    , funcEntryGetArg
 
     -- * Constraints
     , assertCnstr
@@ -1286,7 +1296,7 @@ evalFunc ctx m fDecl =
 -- | Evaluate an array as a function, if possible.
 evalArray :: Context -> Model -> AST -> IO (Maybe FuncModel)
 evalArray ctx model array =
-    do -- The array must first be evaluated normally, to get it into 
+    do -- The array must first be evaluated normally, to get it into
        -- 'as-array' form, which is required to acquire the FuncDecl.
        evaldArrayMb <- eval ctx model array
        case evaldArrayMb of
@@ -1294,28 +1304,28 @@ evalArray ctx model array =
          Just evaldArray ->
              do canConvert <- isAsArray ctx evaldArray
                 if canConvert
-                  then 
+                  then
                     do arrayDecl <- getAsArrayFuncDecl ctx evaldArray
                        evalFunc ctx model arrayDecl
                   else return Nothing
-       
+
 
 -- | Return the function declaration f associated with a (_ as_array f) node.
--- 
+--
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
 getAsArrayFuncDecl :: Context -> AST -> IO FuncDecl
 getAsArrayFuncDecl ctx a =
     FuncDecl <$> z3_get_as_array_func_decl (unContext ctx) (unAST a)
 
--- | The (_ as-array f) AST node is a construct for assigning interpretations for 
--- arrays in Z3. It is the array such that forall indices i we have that 
--- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if 
+-- | The (_ as-array f) AST node is a construct for assigning interpretations for
+-- arrays in Z3. It is the array such that forall indices i we have that
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if
 -- the a is an as-array AST node.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: Context -> AST -> IO Bool
 isAsArray ctx a = toBool <$> z3_is_as_array (unContext ctx) (unAST a)
-    
+
 
 getMapFromInterp :: Context -> FuncInterp -> IO [([AST], AST)]
 getMapFromInterp ctx interp =
@@ -1334,8 +1344,8 @@ getEntryArgs ctx entry =
     do n <- funcEntryGetNumArgs ctx entry
        mapM (funcEntryGetArg ctx entry) [0 .. n - 1]
 
--- | Return the interpretation of the function f in the model m. 
--- Return NULL, if the model does not assign an interpretation for f. 
+-- | Return the interpretation of the function f in the model m.
+-- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
@@ -1351,19 +1361,19 @@ getFuncInterp ctx m fDecl =
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
 funcInterpGetNumEntries :: Context -> FuncInterp -> IO Int
 funcInterpGetNumEntries ctx funcInterp = fromIntegral <$> res
-    where 
+    where
       res = checkError ctx (z3_func_interp_get_num_entries
                               (unContext ctx)
                               (unFuncInterp funcInterp))
 
--- | Return a "point" of the given function intepretation. 
+-- | Return a "point" of the given function intepretation.
 -- It represents the value of f in a particular point.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
 funcInterpGetEntry :: Context -> FuncInterp -> Int -> IO FuncEntry
 funcInterpGetEntry ctx funcInterp i = FuncEntry <$> res
     where
-      res = checkError ctx (z3_func_interp_get_entry 
+      res = checkError ctx (z3_func_interp_get_entry
                                (unContext ctx)
                                (unFuncInterp funcInterp)
                                (fromIntegral i))
