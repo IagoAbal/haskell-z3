@@ -74,7 +74,7 @@ Library
     includes:            z3.h
 
     -- In OS X libz3 is linked statically against libgomp
-    if os(darwin)
+    if os(darwin) || os(windows)
         extra-libraries:     z3
     else
         extra-libraries:     gomp z3 gomp
