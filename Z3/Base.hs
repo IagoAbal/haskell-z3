@@ -16,220 +16,220 @@
 -- TODO Rename showModel and showContext to match Z3 C API names.
 module Z3.Base (
 
-    -- * Types
-      Config
-    , Context
-    , Symbol
-    , AST
-    , Sort
-    , FuncDecl
-    , App
-    , Pattern
-    , Model
-    , FuncInterp
-    , FuncEntry
-    , Params
-    , Solver
+  -- * Types
+    Config
+  , Context
+  , Symbol
+  , AST
+  , Sort
+  , FuncDecl
+  , App
+  , Pattern
+  , Model
+  , FuncInterp
+  , FuncEntry
+  , Params
+  , Solver
 
-    -- ** Satisfiability result
-    , Result(..)
+  -- ** Satisfiability result
+  , Result(..)
 
-    -- * Configuration
-    , mkConfig
-    , delConfig
-    , withConfig
-    , setParamValue
+  -- * Configuration
+  , mkConfig
+  , delConfig
+  , withConfig
+  , setParamValue
 
-    -- * Context
-    , mkContext
-    , delContext
-    , withContext
-    , contextToString
-    , showContext
+  -- * Context
+  , mkContext
+  , delContext
+  , withContext
+  , contextToString
+  , showContext
 
-    -- * Symbols
-    , mkIntSymbol
-    , mkStringSymbol
+  -- * Symbols
+  , mkIntSymbol
+  , mkStringSymbol
 
-    -- * Sorts
-    , mkUninterpretedSort
-    , mkBoolSort
-    , mkIntSort
-    , mkRealSort
-    , mkBvSort
-    , mkArraySort
-    , mkTupleSort
+  -- * Sorts
+  , mkUninterpretedSort
+  , mkBoolSort
+  , mkIntSort
+  , mkRealSort
+  , mkBvSort
+  , mkArraySort
+  , mkTupleSort
 
-    -- * Constants and Applications
-    , mkFuncDecl
-    , mkApp
-    , mkConst
-    , mkTrue
-    , mkFalse
-    , mkEq
-    , mkNot
-    , mkIte
-    , mkIff
-    , mkImplies
-    , mkXor
-    , mkAnd
-    , mkOr
-    , mkDistinct
-    , mkAdd
-    , mkMul
-    , mkSub
-    , mkUnaryMinus
-    , mkDiv
-    , mkMod
-    , mkRem
-    , mkLt
-    , mkLe
-    , mkGt
-    , mkGe
-    , mkInt2Real
-    , mkReal2Int
-    , mkIsInt
+  -- * Constants and Applications
+  , mkFuncDecl
+  , mkApp
+  , mkConst
+  , mkTrue
+  , mkFalse
+  , mkEq
+  , mkNot
+  , mkIte
+  , mkIff
+  , mkImplies
+  , mkXor
+  , mkAnd
+  , mkOr
+  , mkDistinct
+  , mkAdd
+  , mkMul
+  , mkSub
+  , mkUnaryMinus
+  , mkDiv
+  , mkMod
+  , mkRem
+  , mkLt
+  , mkLe
+  , mkGt
+  , mkGe
+  , mkInt2Real
+  , mkReal2Int
+  , mkIsInt
 
-    -- * Bit-vectors
-    , mkBvnot
-    , mkBvredand
-    , mkBvredor
-    , mkBvand
-    , mkBvor
-    , mkBvxor
-    , mkBvnand
-    , mkBvnor
-    , mkBvxnor
-    , mkBvneg
-    , mkBvadd
-    , mkBvsub
-    , mkBvmul
-    , mkBvudiv
-    , mkBvsdiv
-    , mkBvurem
-    , mkBvsrem
-    , mkBvsmod
-    , mkBvult
-    , mkBvslt
-    , mkBvule
-    , mkBvsle
-    , mkBvuge
-    , mkBvsge
-    , mkBvugt
-    , mkBvsgt
-    , mkConcat
-    , mkExtract
-    , mkSignExt
-    , mkZeroExt
-    , mkRepeat
-    , mkBvshl
-    , mkBvlshr
-    , mkBvashr
-    , mkRotateLeft
-    , mkRotateRight
-    , mkExtRotateLeft
-    , mkExtRotateRight
-    , mkInt2bv
-    , mkBv2int
-    , mkBvnegNoOverflow
-    , mkBvaddNoOverflow
-    , mkBvaddNoUnderflow
-    , mkBvsubNoOverflow
-    , mkBvsubNoUnderflow
-    , mkBvmulNoOverflow
-    , mkBvmulNoUnderflow
-    , mkBvsdivNoOverflow
+  -- * Bit-vectors
+  , mkBvnot
+  , mkBvredand
+  , mkBvredor
+  , mkBvand
+  , mkBvor
+  , mkBvxor
+  , mkBvnand
+  , mkBvnor
+  , mkBvxnor
+  , mkBvneg
+  , mkBvadd
+  , mkBvsub
+  , mkBvmul
+  , mkBvudiv
+  , mkBvsdiv
+  , mkBvurem
+  , mkBvsrem
+  , mkBvsmod
+  , mkBvult
+  , mkBvslt
+  , mkBvule
+  , mkBvsle
+  , mkBvuge
+  , mkBvsge
+  , mkBvugt
+  , mkBvsgt
+  , mkConcat
+  , mkExtract
+  , mkSignExt
+  , mkZeroExt
+  , mkRepeat
+  , mkBvshl
+  , mkBvlshr
+  , mkBvashr
+  , mkRotateLeft
+  , mkRotateRight
+  , mkExtRotateLeft
+  , mkExtRotateRight
+  , mkInt2bv
+  , mkBv2int
+  , mkBvnegNoOverflow
+  , mkBvaddNoOverflow
+  , mkBvaddNoUnderflow
+  , mkBvsubNoOverflow
+  , mkBvsubNoUnderflow
+  , mkBvmulNoOverflow
+  , mkBvmulNoUnderflow
+  , mkBvsdivNoOverflow
 
-    -- * Arrays
-    , mkSelect
-    , mkStore
-    , mkConstArray
-    , mkMap
-    , mkArrayDefault
+  -- * Arrays
+  , mkSelect
+  , mkStore
+  , mkConstArray
+  , mkMap
+  , mkArrayDefault
 
-    -- * Numerals
-    , mkNumeral
-    , mkInt
-    , mkReal
+  -- * Numerals
+  , mkNumeral
+  , mkInt
+  , mkReal
 
-    -- * Quantifiers
-    , mkPattern
-    , mkBound
-    , mkForall
-    , mkExists
+  -- * Quantifiers
+  , mkPattern
+  , mkBound
+  , mkForall
+  , mkExists
 
-    -- * Accessors
-    , getBvSortSize
-    , getSort
-    , getBool
-    , getInt
-    , getReal
+  -- * Accessors
+  , getBvSortSize
+  , getSort
+  , getBool
+  , getInt
+  , getReal
 
-    -- * Models
-    , FuncModel (..)
-    , eval
-    , evalT
-    , evalFunc
-    , evalArray
-    , getFuncInterp
-    , isAsArray
-    , getAsArrayFuncDecl
-    , funcInterpGetNumEntries
-    , funcInterpGetEntry
-    , funcInterpGetElse
-    , funcInterpGetArity
-    , funcEntryGetValue
-    , funcEntryGetNumArgs
-    , funcEntryGetArg
-    , modelToString
-    , showModel
+  -- * Models
+  , FuncModel (..)
+  , eval
+  , evalT
+  , evalFunc
+  , evalArray
+  , getFuncInterp
+  , isAsArray
+  , getAsArrayFuncDecl
+  , funcInterpGetNumEntries
+  , funcInterpGetEntry
+  , funcInterpGetElse
+  , funcInterpGetArity
+  , funcEntryGetValue
+  , funcEntryGetNumArgs
+  , funcEntryGetArg
+  , modelToString
+  , showModel
 
-    -- * Constraints
-    , assertCnstr
-    , check
-    , getModel
-    , delModel
-    , push
-    , pop
+  -- * Constraints
+  , assertCnstr
+  , check
+  , getModel
+  , delModel
+  , push
+  , pop
 
 
-    -- * Parameters
-    , mkParams
-    , paramsSetBool
-    , paramsSetUInt
-    , paramsSetDouble
-    , paramsSetSymbol
-    , paramsToString
+  -- * Parameters
+  , mkParams
+  , paramsSetBool
+  , paramsSetUInt
+  , paramsSetDouble
+  , paramsSetSymbol
+  , paramsToString
 
-    -- * Solvers
-    , Logic(..)
-    , mkSolver
-    , mkSimpleSolver
-    , mkSolverForLogic
-    , solverSetParams
-    , solverPush
-    , solverPop
-    , solverReset
-    , solverAssertCnstr
-    , solverAssertAndTrack
-    , solverCheck
-    --, solverGetModel
-    , solverCheckAndGetModel
-    , solverGetReasonUnknown
+  -- * Solvers
+  , Logic(..)
+  , mkSolver
+  , mkSimpleSolver
+  , mkSolverForLogic
+  , solverSetParams
+  , solverPush
+  , solverPop
+  , solverReset
+  , solverAssertCnstr
+  , solverAssertAndTrack
+  , solverCheck
+  --, solverGetModel
+  , solverCheckAndGetModel
+  , solverGetReasonUnknown
 
-    -- * String Conversion
-    , ASTPrintMode(..)
-    , setASTPrintMode
-    , astToString
-    , patternToString
-    , sortToString
-    , funcDeclToString
-    , benchmarkToSMTLibString
+  -- * String Conversion
+  , ASTPrintMode(..)
+  , setASTPrintMode
+  , astToString
+  , patternToString
+  , sortToString
+  , funcDeclToString
+  , benchmarkToSMTLibString
 
-    -- * Error Handling
-    , Z3Error(..)
-    , Z3ErrorCode(..)
-    ) where
+  -- * Error Handling
+  , Z3Error(..)
+  , Z3ErrorCode(..)
+  ) where
 
 import Z3.Base.C
 
