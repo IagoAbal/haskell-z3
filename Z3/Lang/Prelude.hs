@@ -121,11 +121,10 @@ compileWithTCC e = do
 ---------------------------------------------------------------------
 -- Commands
 
-createVar :: forall a. IsTy a => Int -> String -> Z3 (Expr a)
-createVar u str = do
-    smb  <- mkStringSymbol str
+createVar :: forall a. IsTy a => Uniq -> Symbol -> Z3 (Expr a)
+createVar u sym = do
     srt  <- mkSort  (TY :: TY a)
-    cnst <- mkConst smb srt
+    cnst <- mkConst sym srt
     let e = Const u cnst
     assert $ typeInv e
     return e
@@ -133,14 +132,14 @@ createVar u str = do
 -- | Declare skolem variables.
 var :: IsTy a => Z3 (Expr a)
 var = do
-    (u, str) <- fresh
-    createVar u str
+    u <- fresh
+    createVar u =<< mkIntSymbol u
 
 -- | Declare skolem variables with a user specified name.
 namedVar :: IsTy a => String -> Z3 (Expr a)
 namedVar name = do
-    (u, str) <- fresh
-    createVar u $ name ++ "/" ++ str
+    u <- fresh
+    createVar u =<< mkStringSymbol (name ++ '/' : show u)
 
 -- | Declare uninterpreted function of arity 1.
 fun1 :: (IsTy a, IsTy b) => Z3 (Expr a -> Expr b)
@@ -189,8 +188,8 @@ fun5 = do
 -- | Declare uninterpreted function
 funDecl :: forall a. IsFun a => Z3 (FunApp a)
 funDecl = do
-  (_u, str) <- fresh
-  smb <- mkStringSymbol str
+  u <- fresh
+  smb <- mkIntSymbol u
   dom <- domain (TY :: TY a)
   rng <- range  (TY :: TY a)
   fd  <- mkFuncDecl smb dom rng
@@ -525,9 +524,9 @@ compileBool _
 
 withSortedSymbol :: IsTy a => TY a -> (Base.Symbol -> Base.Sort -> Z3 b) -> Z3 b
 withSortedSymbol t f = do
-  (_,n) <- fresh
-  sx    <- mkStringSymbol n
-  srt   <- mkSort t
+  u   <- fresh
+  sx  <- mkIntSymbol u
+  srt <- mkSort t
   f sx srt
 
 instance IsTy a => QExpr (Expr a -> Expr Bool) where

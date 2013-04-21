@@ -26,6 +26,8 @@ module Z3.Base (
     , App
     , Pattern
     , Model
+    , FuncInterp
+    , FuncEntry
     , Params
     , Solver
 
@@ -42,8 +44,11 @@ module Z3.Base (
     , mkContext
     , delContext
     , withContext
+    , contextToString
+    , showContext
 
     -- * Symbols
+    , mkIntSymbol
     , mkStringSymbol
 
     -- * Sorts
@@ -165,8 +170,18 @@ module Z3.Base (
     , evalT
     , evalFunc
     , evalArray
+    , getFuncInterp
+    , isAsArray
+    , getAsArrayFuncDecl
+    , funcInterpGetNumEntries
+    , funcInterpGetEntry
+    , funcInterpGetElse
+    , funcInterpGetArity
+    , funcEntryGetValue
+    , funcEntryGetNumArgs
+    , funcEntryGetArg
+    , modelToString
     , showModel
-    , showContext
 
     -- * Constraints
     , assertCnstr
@@ -208,6 +223,7 @@ module Z3.Base (
     , patternToString
     , sortToString
     , funcDeclToString
+    , benchmarkToSMTLibString
 
     -- * Error Handling
     , Z3Error(..)
@@ -414,8 +430,32 @@ delContext = z3_del_context . unContext
 withContext :: Config -> (Context -> IO a) -> IO a
 withContext cfg = bracket (mkContext cfg) delContext
 
+-- | Convert the given logical context into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga165e38ddfc928f586cb738cdf6c5f216>
+contextToString :: Context -> IO String
+contextToString c =
+  checkError c $ z3_context_to_string (unContext c) >>= peekCString
+
+-- | Alias for 'contextToString'.
+showContext :: Context -> IO String
+showContext = contextToString
+
 ---------------------------------------------------------------------
 -- Symbols
+
+-- | Create a Z3 symbol using an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3df806baf6124df3e63a58cf23e12411>
+mkIntSymbol :: Integral int => Context -> int -> IO Symbol
+mkIntSymbol ctx i
+  | 0 <= i && i <= 2^(30::Int)-1
+  = Symbol <$> z3_mk_int_symbol (unContext ctx) (fromIntegral i)
+  | otherwise
+  = error "Z3.Base.mkIntSymbol: invalid range"
+
+{-# SPECIALIZE mkIntSymbol :: Context -> Int -> IO Symbol #-}
+{-# SPECIALIZE mkIntSymbol :: Context -> Integer -> IO Symbol #-}
 
 -- | Create a Z3 symbol using a string.
 --
@@ -1218,7 +1258,8 @@ castLBool lb
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
 getBool :: Context -> AST -> IO (Maybe Bool)
-getBool c a = checkError c $ castLBool <$> z3_get_bool_value (unContext c) (unAST a)
+getBool c a = checkError c $
+  castLBool <$> z3_get_bool_value (unContext c) (unAST a)
 
 -- | Return numeral value, as a string of a numeric constant term.
 --
@@ -1286,7 +1327,7 @@ evalFunc ctx m fDecl =
 -- | Evaluate an array as a function, if possible.
 evalArray :: Context -> Model -> AST -> IO (Maybe FuncModel)
 evalArray ctx model array =
-    do -- The array must first be evaluated normally, to get it into 
+    do -- The array must first be evaluated normally, to get it into
        -- 'as-array' form, which is required to acquire the FuncDecl.
        evaldArrayMb <- eval ctx model array
        case evaldArrayMb of
@@ -1294,33 +1335,33 @@ evalArray ctx model array =
          Just evaldArray ->
              do canConvert <- isAsArray ctx evaldArray
                 if canConvert
-                  then 
+                  then
                     do arrayDecl <- getAsArrayFuncDecl ctx evaldArray
                        evalFunc ctx model arrayDecl
                   else return Nothing
-       
+
 
 -- | Return the function declaration f associated with a (_ as_array f) node.
--- 
+--
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
 getAsArrayFuncDecl :: Context -> AST -> IO FuncDecl
-getAsArrayFuncDecl ctx a =
-    FuncDecl <$> z3_get_as_array_func_decl (unContext ctx) (unAST a)
+getAsArrayFuncDecl ctx a = checkError ctx $
+  FuncDecl <$> z3_get_as_array_func_decl (unContext ctx) (unAST a)
 
--- | The (_ as-array f) AST node is a construct for assigning interpretations for 
--- arrays in Z3. It is the array such that forall indices i we have that 
--- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if 
--- the a is an as-array AST node.
+-- | The (_ as-array f) AST node is a construct for assigning interpretations
+-- for arrays in Z3. It is the array such that forall indices i we have that
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE
+-- if the a is an as-array AST node.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: Context -> AST -> IO Bool
 isAsArray ctx a = toBool <$> z3_is_as_array (unContext ctx) (unAST a)
-    
+
 
 getMapFromInterp :: Context -> FuncInterp -> IO [([AST], AST)]
 getMapFromInterp ctx interp =
     do n <- funcInterpGetNumEntries ctx interp
-       entries <- mapM (funcInterpGetEntry ctx interp) [0 .. n-1]
+       entries <- mapM (funcInterpGetEntry ctx interp) [0..n-1]
        mapM (getEntry ctx) entries
 
 getEntry :: Context -> FuncEntry -> IO ([AST], AST)
@@ -1332,93 +1373,80 @@ getEntry ctx entry =
 getEntryArgs :: Context -> FuncEntry -> IO [AST]
 getEntryArgs ctx entry =
     do n <- funcEntryGetNumArgs ctx entry
-       mapM (funcEntryGetArg ctx entry) [0 .. n - 1]
+       mapM (funcEntryGetArg ctx entry) [0..n-1]
 
--- | Return the interpretation of the function f in the model m. 
--- Return NULL, if the model does not assign an interpretation for f. 
+-- | Return the interpretation of the function f in the model m.
+-- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
 getFuncInterp :: Context -> Model -> FuncDecl -> IO (Maybe FuncInterp)
-getFuncInterp ctx m fDecl =
-    do ptr <- checkError ctx (z3_model_get_func_interp (unContext ctx) (unModel m) (unFuncDecl fDecl))
-       if ptr == nullPtr
-         then return Nothing
-         else return $ Just $ FuncInterp $ ptr
+getFuncInterp c m fd = do
+  ptr <- checkError c $
+           z3_model_get_func_interp (unContext c) (unModel m) (unFuncDecl fd)
+  return $ FuncInterp <$> ptrToMaybe ptr
 
 -- | Return the number of entries in the given function interpretation.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
 funcInterpGetNumEntries :: Context -> FuncInterp -> IO Int
-funcInterpGetNumEntries ctx funcInterp = fromIntegral <$> res
-    where 
-      res = checkError ctx (z3_func_interp_get_num_entries
-                              (unContext ctx)
-                              (unFuncInterp funcInterp))
+funcInterpGetNumEntries ctx fi = checkError ctx $ fromIntegral <$>
+  z3_func_interp_get_num_entries (unContext ctx) (unFuncInterp fi)
 
--- | Return a "point" of the given function intepretation. 
+-- | Return a _point_ of the given function intepretation.
 -- It represents the value of f in a particular point.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
 funcInterpGetEntry :: Context -> FuncInterp -> Int -> IO FuncEntry
-funcInterpGetEntry ctx funcInterp i = FuncEntry <$> res
-    where
-      res = checkError ctx (z3_func_interp_get_entry 
-                               (unContext ctx)
-                               (unFuncInterp funcInterp)
-                               (fromIntegral i))
+funcInterpGetEntry ctx fi i = checkError ctx $ FuncEntry <$>
+  z3_func_interp_get_entry (unContext ctx) (unFuncInterp fi) (fromIntegral i)
 
 -- | Return the 'else' value of the given function interpretation.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46de7559826ba71b8488d727cba1fb64>
 funcInterpGetElse :: Context -> FuncInterp -> IO AST
-funcInterpGetElse ctx funcInterp = AST <$> res
-    where
-      res = checkError ctx (z3_func_interp_get_else
-                              (unContext ctx)
-                              (unFuncInterp funcInterp))
+funcInterpGetElse ctx fi = checkError ctx $
+  AST <$> z3_func_interp_get_else (unContext ctx) (unFuncInterp fi)
 
--- | Return the arity (number of arguments) of the given function interpretation.
+-- | Return the arity (number of arguments) of the given function
+-- interpretation.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaca22cbdb6f7787aaae5d814f2ab383d8>
 funcInterpGetArity :: Context -> FuncInterp -> IO Int
-funcInterpGetArity ctx funcInterp = fromIntegral <$> res
-    where
-      res = checkError ctx (z3_func_interp_get_arity
-                              (unContext ctx)
-                              (unFuncInterp funcInterp))
+funcInterpGetArity ctx fi = checkError ctx $
+  fromIntegral <$> z3_func_interp_get_arity (unContext ctx) (unFuncInterp fi)
 
 -- | Return the value of this point.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
 funcEntryGetValue :: Context -> FuncEntry -> IO AST
-funcEntryGetValue ctx funcEntry = AST <$> res
-    where
-      res = checkError ctx (z3_func_entry_get_value
-                              (unContext ctx)
-                              (unFuncEntry funcEntry))
+funcEntryGetValue ctx entry = checkError ctx $
+  AST <$> z3_func_entry_get_value (unContext ctx) (unFuncEntry entry)
 
 -- | Return the number of arguments in a Z3_func_entry object.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51aed8c5bc4b1f53f0c371312de3ce1a>
 funcEntryGetNumArgs :: Context -> FuncEntry -> IO Int
-funcEntryGetNumArgs ctx funcEntry = fromIntegral <$> res
-    where
-      res = checkError ctx (z3_func_entry_get_num_args
-                              (unContext ctx)
-                              (unFuncEntry funcEntry))
+funcEntryGetNumArgs ctx entry = checkError ctx $ fromIntegral <$>
+  z3_func_entry_get_num_args (unContext ctx) (unFuncEntry entry)
 
 -- | Return an argument of a Z3_func_entry object.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6fe03fe3c824fceb52766a4d8c2cbeab>
 funcEntryGetArg :: Context -> FuncEntry -> Int -> IO AST
-funcEntryGetArg ctx funcEntry i = AST <$> res
-    where
-      res = checkError ctx (z3_func_entry_get_arg
-                              (unContext ctx)
-                              (unFuncEntry funcEntry)
-                              (fromIntegral i))
+funcEntryGetArg ctx entry i = checkError ctx $ AST <$>
+  z3_func_entry_get_arg (unContext ctx) (unFuncEntry entry) (fromIntegral i)
 
+-- | Convert the given model into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
+modelToString :: Context -> Model -> IO String
+modelToString c m = checkError c $
+  z3_model_to_string (unContext c) (unModel m) >>= peekCString
+
+-- | Alias for 'modelToString'.
+showModel :: Context -> Model -> IO String
+showModel = modelToString
 
 ---------------------------------------------------------------------
 -- Constraints
@@ -1442,7 +1470,8 @@ pop ctx cnt = checkError ctx $ z3_pop (unContext ctx) $ fromIntegral cnt
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 assertCnstr :: Context -> AST -> IO ()
-assertCnstr ctx ast = checkError ctx $ z3_assert_cnstr (unContext ctx) (unAST ast)
+assertCnstr ctx ast = checkError ctx $
+  z3_assert_cnstr (unContext ctx) (unAST ast)
 
 -- | Get model (logical context is consistent)
 --
@@ -1456,26 +1485,13 @@ getModel c =
         peekModel p | p == nullPtr = return Nothing
                     | otherwise    = mkModel <$> peek p
         mkModel :: Ptr Z3_model -> Maybe Model
-        mkModel p | p == nullPtr = Nothing
-                  | otherwise    = Just $ Model p
+        mkModel = fmap Model . ptrToMaybe
 
 -- | Delete a model object.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0cc98d3ce68047f873e119bccaabdbee>
 delModel :: Context -> Model -> IO ()
 delModel c m = checkError c $ z3_del_model (unContext c) (unModel m)
-
--- | Convert the given model into a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
-showModel :: Context -> Model -> IO String
-showModel c m = checkError c $ z3_model_to_string (unContext c) (unModel m) >>= peekCString
-
--- | Convert the given logical context into a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga165e38ddfc928f586cb738cdf6c5f216>
-showContext :: Context -> IO String
-showContext c = checkError c $ z3_context_to_string (unContext c) >>= peekCString
 
 -- | Check whether the given logical context is consistent or not.
 --
@@ -1496,18 +1512,18 @@ mkParams :: Context -> IO Params
 mkParams c = checkError c $ Params <$> z3_mk_params (unContext c)
 
 paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
-paramsSetBool c params sym b =
-  checkError c $ z3_params_set_bool (unContext c) (unParams params) (unSymbol sym) (unBool b)
+paramsSetBool c params sym b = checkError c $
+  z3_params_set_bool (unContext c) (unParams params) (unSymbol sym) (unBool b)
 
 paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
-paramsSetUInt c params sym v =
-  checkError c $ z3_params_set_uint (unContext c) (unParams params) (unSymbol sym)
-                                    (fromIntegral v)
+paramsSetUInt c params sym v = checkError c $
+  z3_params_set_uint (unContext c) (unParams params)
+        (unSymbol sym) (fromIntegral v)
 
 paramsSetDouble :: Context -> Params -> Symbol -> Double -> IO ()
-paramsSetDouble c params sym v =
-  checkError c $ z3_params_set_double (unContext c) (unParams params) (unSymbol sym)
-                                      (realToFrac v)
+paramsSetDouble c params sym v = checkError c $
+  z3_params_set_double (unContext c) (unParams params)
+        (unSymbol sym) (realToFrac v)
 
 paramsSetSymbol :: Context -> Params -> Symbol -> Symbol -> IO ()
 paramsSetSymbol c params sym v =
@@ -1769,3 +1785,36 @@ sortToString ctx sort =
 funcDeclToString :: Context -> FuncDecl -> IO String
 funcDeclToString ctx funcDecl =
   checkError ctx $ z3_func_decl_to_string (unContext ctx) (unFuncDecl funcDecl) >>= peekCString
+
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- The output format can be configured via 'setASTPrintMode'.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf93844a5964ad8dee609fac3470d86e4>
+benchmarkToSMTLibString :: Context
+                            -> String   -- ^ name
+                            -> String   -- ^ logic
+                            -> String   -- ^ status
+                            -> String   -- ^ attributes
+                            -> [AST]    -- ^ assumptions
+                            -> AST      -- ^ formula
+                            -> IO String
+benchmarkToSMTLibString c name logic st attr assump f =
+  withCString name $ \cname ->
+  withCString logic $ \clogic ->
+  withCString st $ \cst ->
+  withCString attr $ \cattr ->
+  withArray (map unAST assump) $ \cassump ->
+    z3_benchmark_to_smtlib_string (unContext c) cname clogic cst cattr
+                                  numAssump cassump (unAST f)
+      >>= peekCString
+  where numAssump = genericLength assump
+
+---------------------------------------------------------------------
+-- Utils
+
+-- | Wraps a non-null pointer with 'Just', or else returns 'Nothing'.
+ptrToMaybe :: Ptr a -> Maybe (Ptr a)
+ptrToMaybe ptr | ptr == nullPtr = Nothing
+               | otherwise      = Just ptr
+

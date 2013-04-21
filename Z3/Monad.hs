@@ -1,6 +1,10 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- This is just to avoid warnings because we import fragile new Z3 API stuff
+  -- from Z3.Base
+
 -- TODO: Error handling
 
 -- |
@@ -29,12 +33,19 @@ module Z3.Monad
   , App
   , Pattern
   , Model
+  , FuncInterp
+  , FuncEntry
   , FuncModel(..)
 
   -- ** Satisfiability result
   , Result(..)
 
+  -- * Context
+  , contextToString
+  , showContext
+
   -- * Symbols
+  , mkIntSymbol
   , mkStringSymbol
 
   -- * Sorts
@@ -42,6 +53,7 @@ module Z3.Monad
   , mkBoolSort
   , mkIntSort
   , mkRealSort
+  , mkBvSort
   , mkArraySort
 
   -- * Constants and Applications
@@ -74,6 +86,56 @@ module Z3.Monad
   , mkReal2Int
   , mkIsInt
 
+  -- * Bit-vectors
+  , mkBvnot
+  , mkBvredand
+  , mkBvredor
+  , mkBvand
+  , mkBvor
+  , mkBvxor
+  , mkBvnand
+  , mkBvnor
+  , mkBvxnor
+  , mkBvneg
+  , mkBvadd
+  , mkBvsub
+  , mkBvmul
+  , mkBvudiv
+  , mkBvsdiv
+  , mkBvurem
+  , mkBvsrem
+  , mkBvsmod
+  , mkBvult
+  , mkBvslt
+  , mkBvule
+  , mkBvsle
+  , mkBvuge
+  , mkBvsge
+  , mkBvugt
+  , mkBvsgt
+  , mkConcat
+  , mkExtract
+  , mkSignExt
+  , mkZeroExt
+  , mkRepeat
+  , mkBvshl
+  , mkBvlshr
+  , mkBvashr
+  , mkRotateLeft
+  , mkRotateRight
+  , mkExtRotateLeft
+  , mkExtRotateRight
+  , mkInt2bv
+  , mkBv2int
+  , mkBvnegNoOverflow
+  , mkBvaddNoOverflow
+  , mkBvaddNoUnderflow
+  , mkBvsubNoOverflow
+  , mkBvsubNoUnderflow
+  , mkBvmulNoOverflow
+  , mkBvmulNoUnderflow
+  , mkBvsdivNoOverflow
+
   -- * Arrays
   , mkSelect
   , mkStore
@@ -93,6 +155,7 @@ module Z3.Monad
   , mkExists
 
   -- * Accessors
+  , getBvSortSize
   , getBool
   , getInt
   , getReal
@@ -102,8 +165,18 @@ module Z3.Monad
   , evalT
   , evalFunc
   , evalArray
+  , getFuncInterp
+  , isAsArray
+  , getAsArrayFuncDecl
+  , funcInterpGetNumEntries
+  , funcInterpGetEntry
+  , funcInterpGetElse
+  , funcInterpGetArity
+  , funcEntryGetValue
+  , funcEntryGetNumArgs
+  , funcEntryGetArg
+  , modelToString
   , showModel
-  , showContext
 
   -- * Constraints
   , assertCnstr
@@ -121,6 +194,7 @@ module Z3.Monad
   , patternToString
   , sortToString
   , funcDeclToString
+  , benchmarkToSMTLibString
   )
   where
 
@@ -133,6 +207,8 @@ import Z3.Base
   , App
   , Pattern
   , Model
+  , FuncInterp
+  , FuncEntry
   , FuncModel(..)
   , Result(..)
   , Logic(..)
@@ -173,6 +249,12 @@ liftFun3 f a b c = getContext >>= \ctx -> liftIO (f ctx a b c)
 liftFun4 :: MonadZ3 z3 => (Base.Context -> a -> b -> c -> d -> IO e)
                 -> a -> b -> c -> d -> z3 e
 liftFun4 f a b c d = getContext >>= \ctx -> liftIO (f ctx a b c d)
+
+liftFun6 :: MonadZ3 z3 =>
+              (Base.Context -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> IO b)
+                -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> z3 b
+liftFun6 f x1 x2 x3 x4 x5 x6 =
+  getContext >>= \ctx -> liftIO (f ctx x1 x2 x3 x4 x5 x6)
 
 liftSolver0 :: MonadZ3 z3 =>
        (Base.Context -> Base.Solver -> IO b)
@@ -220,7 +302,22 @@ evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With Nothing stdOpts
 
 ---------------------------------------------------------------------
+-- Contexts
+
+-- | Convert Z3's logical context into a string.
+contextToString :: MonadZ3 z3 => z3 String
+contextToString = liftScalar Base.contextToString
+
+-- | Alias for 'contextToString'.
+showContext :: MonadZ3 z3 => z3 String
+showContext = contextToString
+
+---------------------------------------------------------------------
 -- Symbols
+
+-- | Create a Z3 symbol using an integer.
+mkIntSymbol :: (MonadZ3 z3, Integral i) => i -> z3 Symbol
+mkIntSymbol = liftFun1 Base.mkIntSymbol
 
 -- | Create a Z3 symbol using a string.
 --
@@ -254,6 +351,14 @@ mkIntSort = liftScalar Base.mkIntSort
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 mkRealSort :: MonadZ3 z3 => z3 Sort
 mkRealSort = liftScalar Base.mkRealSort
+
+-- | Create a bit-vector type of the given size.
+--
+-- This type can also be seen as a machine integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeed000a1bbb84b6ca6fdaac6cf0c1688>
+mkBvSort :: MonadZ3 z3 => Int -> z3 Sort
+mkBvSort = liftFun1 Base.mkBvSort
 
 -- | Create an array type
 --
@@ -434,6 +539,311 @@ mkIsInt :: MonadZ3 z3 => AST -> z3 AST
 mkIsInt = liftFun1 Base.mkIsInt
 
 ---------------------------------------------------------------------
+-- Bit-vectors
+
+-- | Bitwise negation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga36cf75c92c54c1ca633a230344f23080>
+mkBvnot :: MonadZ3 z3 => AST -> z3 AST
+mkBvnot = liftFun1 Base.mkBvnot
+
+-- | Take conjunction of bits in vector, return vector of length 1.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaccc04f2b58903279b1b3be589b00a7d8>
+mkBvredand :: MonadZ3 z3 => AST -> z3 AST
+mkBvredand = liftFun1 Base.mkBvredand
+
+-- | Take disjunction of bits in vector, return vector of length 1.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd18e127c0586abf47ad9cd96895f7d2>
+mkBvredor :: MonadZ3 z3 => AST -> z3 AST
+mkBvredor = liftFun1 Base.mkBvredor
+
+-- | Bitwise and.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab96e0ea55334cbcd5a0e79323b57615d>
+mkBvand :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvand  = liftFun2 Base.mkBvand
+
+-- | Bitwise or.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga77a6ae233fb3371d187c6d559b2843f5>
+mkBvor :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvor = liftFun2 Base.mkBvor
+
+-- | Bitwise exclusive-or.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a3821ea00b1c762205f73e4bc29e7d8>
+mkBvxor :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvxor = liftFun2 Base.mkBvxor
+
+-- | Bitwise nand.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga96dc37d36efd658fff5b2b4df49b0e61>
+mkBvnand :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvnand = liftFun2 Base.mkBvnand 
+
+-- | Bitwise nor.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabf15059e9e8a2eafe4929fdfd259aadb>
+mkBvnor :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvnor = liftFun2 Base.mkBvnor 
+
+-- | Bitwise xnor.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga784f5ca36a4b03b93c67242cc94b21d6>
+mkBvxnor :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvxnor = liftFun2 Base.mkBvxnor 
+
+-- | Standard two's complement unary minus.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0c78be00c03eda4ed6a983224ed5c7b7
+mkBvneg :: MonadZ3 z3 => AST -> z3 AST
+mkBvneg = liftFun1 Base.mkBvneg
+
+-- | Standard two's complement addition.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga819814e33573f3f9948b32fdc5311158>
+mkBvadd :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvadd = liftFun2 Base.mkBvadd
+
+-- | Standard two's complement subtraction.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga688c9aa1347888c7a51be4e46c19178e>
+mkBvsub :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsub = liftFun2 Base.mkBvsub
+
+-- | Standard two's complement multiplication.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6abd3dde2a1ceff1704cf7221a72258c>
+mkBvmul :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvmul = liftFun2 Base.mkBvmul 
+
+-- | Unsigned division.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga56ce0cd61666c6f8cf5777286f590544>
+mkBvudiv :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvudiv = liftFun2 Base.mkBvudiv
+
+-- | Two's complement signed division.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad240fedb2fda1c1005b8e9d3c7f3d5a0>
+mkBvsdiv :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsdiv = liftFun2 Base.mkBvsdiv 
+
+-- | Unsigned remainder.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5df4298ec835e43ddc9e3e0bae690c8d>
+mkBvurem :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvurem = liftFun2 Base.mkBvurem
+
+-- | Two's complement signed remainder (sign follows dividend).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46c18a3042fca174fe659d3185693db1>
+mkBvsrem :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsrem = liftFun2 Base.mkBvsrem 
+
+-- | Two's complement signed remainder (sign follows divisor).
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95dac8e6eecb50f63cb82038560e0879>
+mkBvsmod :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsmod = liftFun2 Base.mkBvsmod
+
+-- | Unsigned less than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5774b22e93abcaf9b594672af6c7c3c4>
+mkBvult :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvult = liftFun2 Base.mkBvult 
+
+-- | Two's complement signed less than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8ce08af4ed1fbdf08d4d6e63d171663a>
+mkBvslt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvslt = liftFun2 Base.mkBvslt
+
+-- | Unsigned less than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab738b89de0410e70c089d3ac9e696e87>
+mkBvule :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvule = liftFun2 Base.mkBvule 
+
+-- | Two's complement signed less than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab7c026feb93e7d2eab180e96f1e6255d>
+mkBvsle :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsle = liftFun2 Base.mkBvsle 
+
+-- | Unsigned greater than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gade58fbfcf61b67bf8c4a441490d3c4df>
+mkBvuge :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvuge = liftFun2 Base.mkBvuge
+
+-- | Two's complement signed greater than or equal to.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeec3414c0e8a90a6aa5a23af36bf6dc5>
+mkBvsge :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsge = liftFun2 Base.mkBvsge 
+
+-- | Unsigned greater than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga063ab9f16246c99e5c1c893613927ee3>
+mkBvugt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvugt = liftFun2 Base.mkBvugt
+
+-- | Two's complement signed greater than.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e93a985aa2a7812c7c11a2c65d7c5f0>
+mkBvsgt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsgt = liftFun2 Base.mkBvsgt 
+
+-- | Concatenate the given bit-vectors.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae774128fa5e9ff7458a36bd10e6ca0fa>
+mkConcat :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkConcat = liftFun2 Base.mkConcat
+
+-- | Extract the bits high down to low from a bitvector of size m to yield a new
+-- bitvector of size /n/, where /n = high - low + 1/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga32d2fe7563f3e6b114c1b97b205d4317>
+mkExtract :: MonadZ3 z3 => Int -> Int -> AST -> z3 AST
+mkExtract = liftFun3 Base.mkExtract
+
+-- | Sign-extend of the given bit-vector to the (signed) equivalent bitvector
+-- of size /m+i/, where /m/ is the size of the given bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad29099270b36d0680bb54b560353c10e>
+mkSignExt :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkSignExt = liftFun2 Base.mkSignExt
+
+-- | Extend the given bit-vector with zeros to the (unsigned) equivalent
+-- bitvector of size /m+i/, where /m/ is the size of the given bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac9322fae11365a78640baf9078c428b3>
+mkZeroExt :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkZeroExt = liftFun2 Base.mkZeroExt
+
+-- | Repeat the given bit-vector up length /i/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga03e81721502ea225c264d1f556c9119d>
+mkRepeat :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkRepeat = liftFun2 Base.mkRepeat
+
+-- | Shift left.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8d5e776c786c1172fa0d7dfede454e1>
+mkBvshl :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvshl = liftFun2 Base.mkBvshl
+
+-- | Logical shift right.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac59645a6edadad79a201f417e4e0c512>
+mkBvlshr :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvlshr = liftFun2 Base.mkBvlshr
+
+-- | Arithmetic shift right.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga674b580ad605ba1c2c9f9d3748be87c4>
+mkBvashr :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvashr = liftFun2 Base.mkBvashr
+
+-- | Rotate bits of /t1/ to the left /i/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4932b7d08fea079dd903cd857a52dcda>
+mkRotateLeft :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkRotateLeft = liftFun2 Base.mkRotateLeft
+
+-- | Rotate bits of /t1/ to the right /i/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3b94e1bf87ecd1a1858af8ebc1da4a1c>
+mkRotateRight :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkRotateRight = liftFun2 Base.mkRotateRight
+
+-- | Rotate bits of /t1/ to the left /t2/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf46f1cb80e5a56044591a76e7c89e5e7>
+mkExtRotateLeft :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkExtRotateLeft = liftFun2 Base.mkExtRotateLeft
+
+-- | Rotate bits of /t1/ to the right /t2/ times.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb227526c592b523879083f12aab281f>
+mkExtRotateRight :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkExtRotateRight = liftFun2 Base.mkExtRotateRight
+
+-- | Create an /n/ bit bit-vector from the integer argument /t1/.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga35f89eb05df43fbd9cce7200cc1f30b5>
+mkInt2bv :: MonadZ3 z3 => Int -> AST -> z3 AST
+mkInt2bv = liftFun2 Base.mkInt2bv
+
+-- | Create an integer from the bit-vector argument /t1/. If /is_signed/ is false,
+-- then the bit-vector /t1/ is treated as unsigned. So the result is non-negative
+-- and in the range [0..2^/N/-1], where /N/ are the number of bits in /t1/.
+-- If /is_signed/ is true, /t1/ is treated as a signed bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac87b227dc3821d57258d7f53a28323d4>
+mkBv2int :: MonadZ3 z3 => AST -> Bool -> z3 AST
+mkBv2int = liftFun2 Base.mkBv2int
+
+-- | Create a predicate that checks that the bit-wise addition of /t1/ and /t2/
+-- does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga88f6b5ec876f05e0d7ba51e96c4b077f>
+mkBvaddNoOverflow :: MonadZ3 z3 => AST -> AST -> Bool -> z3 AST
+mkBvaddNoOverflow = liftFun3 Base.mkBvaddNoOverflow
+
+-- | Create a predicate that checks that the bit-wise signed addition of /t1/
+-- and /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1e2b1927cf4e50000c1600d47a152947>
+mkBvaddNoUnderflow :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvaddNoUnderflow = liftFun2 Base.mkBvaddNoUnderflow
+
+-- | Create a predicate that checks that the bit-wise signed subtraction of /t1/
+-- and /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga785f8127b87e0b42130e6d8f52167d7c>
+mkBvsubNoOverflow :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsubNoOverflow = liftFun2 Base.mkBvsubNoOverflow
+
+-- | Create a predicate that checks that the bit-wise subtraction of /t1/ and
+-- /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6480850f9fa01e14aea936c88ff184c4>
+mkBvsubNoUnderflow :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsubNoUnderflow = liftFun2 Base.mkBvsubNoUnderflow
+
+-- | Create a predicate that checks that the bit-wise signed division of /t1/
+-- and /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa17e7b2c33dfe2abbd74d390927ae83e>
+mkBvsdivNoOverflow :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvsdivNoOverflow = liftFun2 Base.mkBvsdivNoOverflow
+
+-- | Check that bit-wise negation does not overflow when /t1/ is interpreted as
+-- a signed bit-vector.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae9c5d72605ddcd0e76657341eaccb6c7>
+mkBvnegNoOverflow :: MonadZ3 z3 => AST -> z3 AST
+mkBvnegNoOverflow = liftFun1 Base.mkBvnegNoOverflow
+
+-- | Create a predicate that checks that the bit-wise multiplication of /t1/ and
+-- /t2/ does not overflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga86f4415719d295a2f6845c70b3aaa1df>
+mkBvmulNoOverflow :: MonadZ3 z3 => AST -> AST -> Bool -> z3 AST
+mkBvmulNoOverflow = liftFun3 Base.mkBvmulNoOverflow
+
+-- | Create a predicate that checks that the bit-wise signed multiplication of
+-- /t1/ and /t2/ does not underflow.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga501ccc01d737aad3ede5699741717fda>
+mkBvmulNoUnderflow :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkBvmulNoUnderflow = liftFun2 Base.mkBvmulNoUnderflow
+
+---------------------------------------------------------------------
 -- Arrays
 
 -- | Array read. The argument a is the array and i is the index of the array
@@ -509,6 +919,12 @@ mkExists = liftFun4 Base.mkExists
 ---------------------------------------------------------------------
 -- Accessors
 
+-- | Return the size of the given bit-vector sort.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
+getBvSortSize :: MonadZ3 z3 => Sort -> z3 Int
+getBvSortSize = liftFun1 Base.getBvSortSize
+
 -- | Returns @Just True@, @Just False@, or @Nothing@ for /undefined/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
@@ -543,6 +959,80 @@ evalFunc = liftFun2 Base.evalFunc
 evalArray :: MonadZ3 z3 => Model -> AST -> z3 (Maybe FuncModel)
 evalArray = liftFun2 Base.evalArray
 
+-- | Return the interpretation of the function f in the model m.
+-- Return NULL, if the model does not assign an interpretation for f.
+-- That should be interpreted as: the f does not matter.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
+getFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncInterp)
+getFuncInterp = liftFun2 Base.getFuncInterp
+
+-- | The (_ as-array f) AST node is a construct for assigning interpretations
+-- for arrays in Z3. It is the array such that forall indices i we have that
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE
+-- if the a is an as-array AST node.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
+isAsArray :: MonadZ3 z3 => AST -> z3 Bool
+isAsArray = liftFun1 Base.isAsArray
+
+-- | Return the function declaration f associated with a (_ as_array f) node.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
+getAsArrayFuncDecl :: MonadZ3 z3 => AST -> z3 FuncDecl
+getAsArrayFuncDecl = liftFun1 Base.getAsArrayFuncDecl
+
+-- | Return the number of entries in the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
+funcInterpGetNumEntries :: MonadZ3 z3 => FuncInterp -> z3 Int
+funcInterpGetNumEntries = liftFun1 Base.funcInterpGetNumEntries
+
+-- | Return a "point" of the given function intepretation.
+-- It represents the value of f in a particular point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
+funcInterpGetEntry :: MonadZ3 z3 => FuncInterp -> Int -> z3 FuncEntry
+funcInterpGetEntry = liftFun2 Base.funcInterpGetEntry
+
+-- | Return the 'else' value of the given function interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46de7559826ba71b8488d727cba1fb64>
+funcInterpGetElse :: MonadZ3 z3 => FuncInterp -> z3 AST
+funcInterpGetElse = liftFun1 Base.funcInterpGetElse
+
+-- | Return the arity (number of arguments) of the given function
+-- interpretation.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaca22cbdb6f7787aaae5d814f2ab383d8>
+funcInterpGetArity :: MonadZ3 z3 => FuncInterp -> z3 Int
+funcInterpGetArity = liftFun1 Base.funcInterpGetArity
+
+-- | Return the value of this point.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
+funcEntryGetValue :: MonadZ3 z3 => FuncEntry -> z3 AST
+funcEntryGetValue = liftFun1 Base.funcEntryGetValue
+
+-- | Return the number of arguments in a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51aed8c5bc4b1f53f0c371312de3ce1a>
+funcEntryGetNumArgs :: MonadZ3 z3 => FuncEntry -> z3 Int
+funcEntryGetNumArgs = liftFun1 Base.funcEntryGetNumArgs
+
+-- | Return an argument of a Z3_func_entry object.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6fe03fe3c824fceb52766a4d8c2cbeab>
+funcEntryGetArg :: MonadZ3 z3 => FuncEntry -> Int -> z3 AST
+funcEntryGetArg = liftFun2 Base.funcEntryGetArg
+
+-- | Convert the given model into a string.
+modelToString :: MonadZ3 z3 => Model -> z3 String
+modelToString = liftFun1 Base.modelToString
+
+-- | Alias for 'modelToString'.
+showModel :: MonadZ3 z3 => Model -> z3 String
+showModel = modelToString
 
 ---------------------------------------------------------------------
 -- Constraints
@@ -581,14 +1071,6 @@ withModel f = do
  void $ T.traverse delModel mb_m
  return (r, mb_e)
 
--- | Convert the given model into a string.
-showModel :: MonadZ3 z3 => Model -> z3 String
-showModel = liftFun1 Base.showModel
-
--- | Convert Z3's logical context into a string.
-showContext :: MonadZ3 z3 => z3 String
-showContext = liftScalar Base.showContext
-
 -- | Check whether the given logical context is consistent or not.
 check :: MonadZ3 z3 => z3 Result
 check = liftSolver0 Base.solverCheck Base.check
@@ -616,3 +1098,15 @@ sortToString = liftFun1 Base.sortToString
 funcDeclToString :: MonadZ3 z3 => FuncDecl -> z3 String
 funcDeclToString = liftFun1 Base.funcDeclToString
 
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- The output format can be configured via 'setASTPrintMode'.
+benchmarkToSMTLibString :: MonadZ3 z3 =>
+                               String   -- ^ name
+                            -> String   -- ^ logic
+                            -> String   -- ^ status
+                            -> String   -- ^ attributes
+                            -> [AST]    -- ^ assumptions1
+                            -> AST      -- ^ formula
+                            -> z3 String
+benchmarkToSMTLibString = liftFun6 Base.benchmarkToSMTLibString
