@@ -592,19 +592,19 @@ mkBvxor = liftFun2 Base.mkBvxor
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga96dc37d36efd658fff5b2b4df49b0e61>
 mkBvnand :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvnand = liftFun2 Base.mkBvnand 
+mkBvnand = liftFun2 Base.mkBvnand
 
 -- | Bitwise nor.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabf15059e9e8a2eafe4929fdfd259aadb>
 mkBvnor :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvnor = liftFun2 Base.mkBvnor 
+mkBvnor = liftFun2 Base.mkBvnor
 
 -- | Bitwise xnor.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga784f5ca36a4b03b93c67242cc94b21d6>
 mkBvxnor :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvxnor = liftFun2 Base.mkBvxnor 
+mkBvxnor = liftFun2 Base.mkBvxnor
 
 -- | Standard two's complement unary minus.
 --
@@ -628,7 +628,7 @@ mkBvsub = liftFun2 Base.mkBvsub
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6abd3dde2a1ceff1704cf7221a72258c>
 mkBvmul :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvmul = liftFun2 Base.mkBvmul 
+mkBvmul = liftFun2 Base.mkBvmul
 
 -- | Unsigned division.
 --
@@ -640,7 +640,7 @@ mkBvudiv = liftFun2 Base.mkBvudiv
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad240fedb2fda1c1005b8e9d3c7f3d5a0>
 mkBvsdiv :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvsdiv = liftFun2 Base.mkBvsdiv 
+mkBvsdiv = liftFun2 Base.mkBvsdiv
 
 -- | Unsigned remainder.
 --
@@ -652,7 +652,7 @@ mkBvurem = liftFun2 Base.mkBvurem
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46c18a3042fca174fe659d3185693db1>
 mkBvsrem :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvsrem = liftFun2 Base.mkBvsrem 
+mkBvsrem = liftFun2 Base.mkBvsrem
 
 -- | Two's complement signed remainder (sign follows divisor).
 --
@@ -664,7 +664,7 @@ mkBvsmod = liftFun2 Base.mkBvsmod
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5774b22e93abcaf9b594672af6c7c3c4>
 mkBvult :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvult = liftFun2 Base.mkBvult 
+mkBvult = liftFun2 Base.mkBvult
 
 -- | Two's complement signed less than.
 --
@@ -676,13 +676,13 @@ mkBvslt = liftFun2 Base.mkBvslt
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab738b89de0410e70c089d3ac9e696e87>
 mkBvule :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvule = liftFun2 Base.mkBvule 
+mkBvule = liftFun2 Base.mkBvule
 
 -- | Two's complement signed less than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab7c026feb93e7d2eab180e96f1e6255d>
 mkBvsle :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvsle = liftFun2 Base.mkBvsle 
+mkBvsle = liftFun2 Base.mkBvsle
 
 -- | Unsigned greater than or equal to.
 --
@@ -694,7 +694,7 @@ mkBvuge = liftFun2 Base.mkBvuge
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeec3414c0e8a90a6aa5a23af36bf6dc5>
 mkBvsge :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvsge = liftFun2 Base.mkBvsge 
+mkBvsge = liftFun2 Base.mkBvsge
 
 -- | Unsigned greater than.
 --
@@ -706,7 +706,7 @@ mkBvugt = liftFun2 Base.mkBvugt
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e93a985aa2a7812c7c11a2c65d7c5f0>
 mkBvsgt :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkBvsgt = liftFun2 Base.mkBvsgt 
+mkBvsgt = liftFun2 Base.mkBvsgt
 
 -- | Concatenate the given bit-vectors.
 --
