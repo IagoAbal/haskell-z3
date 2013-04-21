@@ -159,12 +159,17 @@ foreign import ccall unsafe "Z3_del_context"
 ---------------------------------------------------------------------
 -- * Symbols
 
+-- | Create a Z3 symbol using an integer.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3df806baf6124df3e63a58cf23e12411>
+foreign import ccall unsafe "Z3_mk_int_symbol"
+    z3_mk_int_symbol :: Ptr Z3_context -> CInt -> IO (Ptr Z3_symbol)
+
 -- | Create a Z3 symbol using a C string.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafebb0d3c212927cf7834c3a20a84ecae>
 foreign import ccall unsafe "Z3_mk_string_symbol"
     z3_mk_string_symbol :: Ptr Z3_context -> Z3_string -> IO (Ptr Z3_symbol)
-
 
 ---------------------------------------------------------------------
 -- * Sorts
@@ -878,9 +883,9 @@ foreign import ccall unsafe "Z3_eval"
             -> Ptr (Ptr Z3_ast)
             -> IO Z3_bool
 
--- | The (_ as-array f) AST node is a construct for assigning interpretations for 
--- arrays in Z3. It is the array such that forall indices i we have that 
--- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if 
+-- | The (_ as-array f) AST node is a construct for assigning interpretations for
+-- arrays in Z3. It is the array such that forall indices i we have that
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE if
 -- the a is an as-array AST node.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
@@ -888,17 +893,17 @@ foreign import ccall unsafe "Z3_is_as_array"
     z3_is_as_array :: Ptr Z3_context
                    -> Ptr Z3_ast
                    -> IO Z3_bool
- 	
+
 -- | Return the function declaration f associated with a (_ as_array f) node.
--- 
+--
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
 foreign import ccall unsafe "Z3_get_as_array_func_decl"
     z3_get_as_array_func_decl :: Ptr Z3_context
                               -> Ptr Z3_ast
                               -> IO (Ptr Z3_func_decl)
 
--- | Return the interpretation of the function f in the model m. 
--- Return NULL, if the model does not assign an interpretation for f. 
+-- | Return the interpretation of the function f in the model m.
+-- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
@@ -916,7 +921,7 @@ foreign import ccall unsafe "Z3_func_interp_get_num_entries"
                                    -> Ptr Z3_func_interp
                                    -> IO CUInt
 
--- | Return a "point" of the given function intepretation. 
+-- | Return a "point" of the given function intepretation.
 -- It represents the value of f in a particular point.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
@@ -1223,6 +1228,20 @@ foreign import ccall unsafe "Z3_sort_to_string"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga15243dcad77f5571e28e8aa1da465675>
 foreign import ccall unsafe "Z3_func_decl_to_string"
     z3_func_decl_to_string :: Ptr Z3_context -> Ptr Z3_func_decl -> IO Z3_string
+
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf93844a5964ad8dee609fac3470d86e4>
+foreign import ccall unsafe "Z3_benchmark_to_smtlib_string"
+    z3_benchmark_to_smtlib_string :: Ptr Z3_context
+                                      -> Z3_string        -- ^ name
+                                      -> Z3_string        -- ^ logic
+                                      -> Z3_string        -- ^ status
+                                      -> Z3_string        -- ^ attributes
+                                      -> CUInt            -- ^ assumptions#
+                                      -> Ptr (Ptr Z3_ast) -- ^ assumptions
+                                      -> Ptr Z3_ast       -- ^ formula
+                                      -> IO Z3_string
 
 ---------------------------------------------------------------------
 -- * Error Handling

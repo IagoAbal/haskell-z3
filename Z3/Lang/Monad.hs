@@ -4,6 +4,10 @@
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- This is just to avoid warnings because we import fragile new Z3 API stuff
+  -- from Z3.Base
+
 -- |
 -- Module    : Z3.Lang.Monad
 -- Copyright : (c) Iago Abal, 2012
@@ -94,12 +98,12 @@ evalZ3With args (Z3 s) =
                               }
 
 -- | Fresh symbol name.
-fresh :: Z3 (Uniq, String)
+fresh :: Z3 Uniq
 fresh = do
     st <- get
     let i = uniqVal st
     put st { uniqVal = i + 1 }
-    return (uniqVal st, 'v':show i)
+    return i
 
 -------------------------------------------------
 -- Arguments
