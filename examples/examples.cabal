@@ -63,6 +63,15 @@ executable mz3-funcModel
                        containers,
                        mtl >2.1
 
+executable mz3-toSMTLib
+  hs-source-dirs:      monad
+  main-is:             ToSMTLib.hs
+  -- other-modules:
+  build-depends:       base ==4.5.*,
+                       z3 >=0.3.1,
+                       containers,
+                       mtl >2.1
+
 executable mz3-tuple
   hs-source-dirs:      monad
   main-is:             Tuple.hs
