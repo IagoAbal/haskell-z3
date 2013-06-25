@@ -26,6 +26,14 @@ import Z3.Lang.TY
 import Control.Applicative ( (<$>) )
 import Data.Typeable
 
+-- | This type allows to reason about natural numbers.
+--
+-- Naturals are just integers plus a @(>= 0)@ invariant, and we ensure that
+-- this invariant is always preserved by transparently adding new assertions
+-- to the context.
+--
+-- Note that arithmetic on naturals must result in natural numbers, otherwise
+-- the problem becomes /unsatisfiable/.
 newtype Nat = Nat { unNat :: Integer }
   deriving (Eq,Ord,Enum,Real,Typeable)
 
