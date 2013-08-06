@@ -212,6 +212,7 @@ module Z3.Base (
   , solverPush
   , solverPop
   , solverReset
+  , solverGetNumScopes
   , solverAssertCnstr
   , solverAssertAndTrack
   , solverCheck
@@ -1513,6 +1514,7 @@ pop :: Context -> Int -> IO ()
 pop ctx cnt = checkError ctx $ z3_pop (unContext ctx) $ fromIntegral cnt
 
 -- TODO Constraints: Z3_get_num_scopes
+
 -- TODO Constraints: Z3_persist_ast
 
 -- | Assert a constraing into the logical context.
@@ -1756,6 +1758,13 @@ solverPop c solver i =
 
 solverReset :: Context -> Solver -> IO ()
 solverReset c solver = checkError c $ z3_solver_reset (unContext c) (unSolver solver)
+
+-- | Number of backtracking points.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd4b4a6465601835341b477b75725b28>
+solverGetNumScopes :: Context -> Solver -> IO Int
+solverGetNumScopes ctx solver = fmap fromIntegral $
+  checkError ctx $ z3_solver_get_num_scopes (unContext ctx) (unSolver solver)
 
 solverAssertCnstr :: Context -> Solver -> AST -> IO ()
 solverAssertCnstr c solver ast =

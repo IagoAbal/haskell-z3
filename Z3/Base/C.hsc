@@ -1176,6 +1176,12 @@ foreign import ccall unsafe "Z3_solver_push"
 foreign import ccall unsafe "Z3_solver_pop"
     z3_solver_pop :: Ptr Z3_context -> Ptr Z3_solver -> CUInt -> IO ()
 
+-- | Number of backtracking points.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd4b4a6465601835341b477b75725b28>
+foreign import ccall unsafe "Z3_solver_get_num_scopes"
+    z3_solver_get_num_scopes :: Ptr Z3_context -> Ptr Z3_solver -> IO CUInt
+
 -- | Remove all assertions from a solver.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4a4a215b9130d7980e3c393fe857335f>

@@ -189,6 +189,7 @@ module Z3.Monad
   , withModel
   , push
   , pop
+  , getNumScopes
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -1064,6 +1065,11 @@ push = liftSolver0 Base.solverPush Base.push
 -- | Backtrack /n/ backtracking points.
 pop :: MonadZ3 z3 => Int -> z3 ()
 pop = liftSolver1 Base.solverPop Base.pop
+
+-- | Get number of backtracking points.
+getNumScopes :: MonadZ3 z3 => z3 Int
+getNumScopes = liftSolver0 Base.solverGetNumScopes
+                           (error "getNumScopes requires solver")
 
 -- | Assert a constraing into the logical context.
 --
