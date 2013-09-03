@@ -192,6 +192,7 @@ module Z3.Monad
   , withModel
   , push
   , pop
+  , reset
   , getNumScopes
 
   -- * String Conversion
@@ -1076,6 +1077,11 @@ push = liftSolver0 Base.solverPush Base.push
 -- | Backtrack /n/ backtracking points.
 pop :: MonadZ3 z3 => Int -> z3 ()
 pop = liftSolver1 Base.solverPop Base.pop
+
+-- | Backtrack all the way.
+reset :: MonadZ3 z3 => z3 ()
+reset = liftSolver0 Base.solverReset
+                    (error "reset requires solver")
 
 -- | Get number of backtracking points.
 getNumScopes :: MonadZ3 z3 => z3 Int
