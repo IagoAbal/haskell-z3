@@ -1805,8 +1805,8 @@ solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
 solverCheckAndGetModel c (Solver s) =
   do res <- checkError c $ toResult <$> withForeignPtr s (z3_solver_check cptr)
      mmodel <- case res of
-                 Sat -> checkError c $ (Just . Model) <$> withForeignPtr s (z3_solver_get_model cptr)
-                 _ -> return Nothing
+                 Unsat -> return Nothing
+                 _ -> checkError c $ (Just . Model) <$> withForeignPtr s (z3_solver_get_model cptr)
      return (res, mmodel)
   where cptr = unContext c
 
