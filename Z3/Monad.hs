@@ -24,6 +24,7 @@ module Z3.Monad
   , Logic(..)
   , evalZ3
   , evalZ3With
+  , evalZ3WithEnv
 
   -- * Types
   , Symbol
@@ -33,9 +34,11 @@ module Z3.Monad
   , App
   , Pattern
   , Model
+  , Base.Context
   , FuncInterp
   , FuncEntry
   , FuncModel(..)
+  , Base.Solver
 
   -- ** Satisfiability result
   , Result(..)
@@ -304,6 +307,14 @@ evalZ3With mbLogic opts (Z3 s) =
 -- | Eval a Z3 script with default configuration options.
 evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With Nothing stdOpts
+
+-- | Eval a Z3 script with a given context and solver.
+evalZ3WithEnv :: Base.Context
+              -> Base.Solver
+              -> Z3 a
+              -> IO a
+evalZ3WithEnv ctx slv (Z3 s) =
+  runReaderT s (Z3Env (Just slv) ctx)
 
 ---------------------------------------------------------------------
 -- Contexts
