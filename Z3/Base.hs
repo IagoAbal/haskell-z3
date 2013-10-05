@@ -246,11 +246,12 @@ import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 import Data.Typeable ( Typeable )
 import Data.Word
-import Foreign hiding ( toBool )
+import Foreign hiding ( toBool, newForeignPtr )
 import Foreign.C
   ( CInt, CUInt, CLLong, CULLong
   , peekCString
   , withCString )
+import Foreign.Concurrent
 
 ---------------------------------------------------------------------
 -- Types
@@ -307,8 +308,12 @@ newtype Params = Params { unParams :: Ptr Z3_params }
     deriving Eq
 
 -- | A Z3 solver engine
-newtype Solver = Solver { unSolver :: Ptr Z3_solver }
+newtype Solver = Solver { _unSolver :: ForeignPtr Z3_solver }
     deriving Eq
+
+withSolverPtr :: Solver -> (Ptr Z3_solver -> IO a) -> IO a
+withSolverPtr (Solver fptr) = withForeignPtr fptr
+
 
 -- | Result of a satisfiability check.
 data Result
@@ -1735,63 +1740,80 @@ instance Show Logic where
   show UFLRA     = "UFLRA"
   show UFNIA     = "UFNIA"
 
+mkSolverForeign :: Context -> Ptr Z3_solver -> IO Solver
+mkSolverForeign c ptr =
+  do z3_solver_inc_ref cPtr ptr
+     Solver <$> newForeignPtr ptr (z3_solver_dec_ref cPtr ptr)
+  where cPtr = unContext c
+
 mkSolver :: Context -> IO Solver
-mkSolver c = checkError c $ Solver <$> z3_mk_solver (unContext c)
+mkSolver c = checkError c (mkSolverForeign c =<< z3_mk_solver cPtr)
+  where cPtr = unContext c
 
 mkSimpleSolver :: Context -> IO Solver
-mkSimpleSolver c = checkError c $ Solver <$> z3_mk_simple_solver (unContext c)
+mkSimpleSolver c = checkError c $ mkSolverForeign c =<< z3_mk_simple_solver (unContext c)
 
 mkSolverForLogic :: Context -> Logic -> IO Solver
 mkSolverForLogic c logic =
   do sym <- mkStringSymbol c (show logic)
-     checkError c $ Solver <$> z3_mk_solver_for_logic (unContext c) (unSymbol sym)
+     checkError c $
+       mkSolverForeign c =<< z3_mk_solver_for_logic (unContext c) (unSymbol sym)
 
 solverSetParams :: Context -> Solver -> Params -> IO ()
-solverSetParams c solver params =
-  checkError c $ z3_solver_set_params (unContext c) (unSolver solver) (unParams params)
+solverSetParams c solver params = checkError c $
+  withSolverPtr solver $ \solv ->
+    z3_solver_set_params (unContext c) solv (unParams params)
 
 solverPush :: Context -> Solver -> IO ()
-solverPush c solver = checkError c $ z3_solver_push (unContext c) (unSolver solver)
+solverPush c solver = checkError c $
+  withSolverPtr solver (z3_solver_push (unContext c))
 
 solverPop :: Context -> Solver -> Int -> IO ()
-solverPop c solver i =
-  checkError c $ z3_solver_pop (unContext c) (unSolver solver) (fromIntegral i)
+solverPop c solver i = checkError c $
+  withSolverPtr solver $ \solv ->
+    z3_solver_pop (unContext c) solv (fromIntegral i)
 
 solverReset :: Context -> Solver -> IO ()
-solverReset c solver = checkError c $ z3_solver_reset (unContext c) (unSolver solver)
+solverReset c solver = checkError c $
+  withSolverPtr solver (z3_solver_reset (unContext c))
 
 -- | Number of backtracking points.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd4b4a6465601835341b477b75725b28>
 solverGetNumScopes :: Context -> Solver -> IO Int
 solverGetNumScopes ctx solver = fmap fromIntegral $
-  checkError ctx $ z3_solver_get_num_scopes (unContext ctx) (unSolver solver)
+  withSolverPtr solver (z3_solver_get_num_scopes (unContext ctx))
 
 solverAssertCnstr :: Context -> Solver -> AST -> IO ()
-solverAssertCnstr c solver ast =
-  checkError c $ z3_solver_assert (unContext c) (unSolver solver) (unAST ast)
+solverAssertCnstr c solver ast = checkError c $
+  withSolverPtr solver $ \solv ->
+                 z3_solver_assert (unContext c) solv (unAST ast)
 
 solverAssertAndTrack :: Context -> Solver -> AST -> AST -> IO ()
 solverAssertAndTrack c solver constraint var =
-  checkError c $ z3_solver_assert_and_track (unContext c) (unSolver solver)
-                                            (unAST constraint) (unAST var)
+  checkError c $ withSolverPtr solver $ \solv ->
+    z3_solver_assert_and_track (unContext c)
+                               solv
+                               (unAST constraint)
+                               (unAST var)
 
 solverCheck :: Context -> Solver -> IO Result
-solverCheck c solver =
-  checkError c $ toResult <$> z3_solver_check (unContext c) (unSolver solver)
+solverCheck c solver = checkError c $ fmap toResult $
+  withSolverPtr solver $ z3_solver_check (unContext c)
 
 solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
 solverCheckAndGetModel c (Solver s) =
-  do res <- checkError c $ toResult <$> z3_solver_check cptr s
+  do res <- checkError c $ toResult <$> withForeignPtr s (z3_solver_check cptr)
      mmodel <- case res of
-                 Sat -> checkError c $ (Just . Model) <$> z3_solver_get_model cptr s
+                 Sat -> checkError c $ (Just . Model) <$> withForeignPtr s (z3_solver_get_model cptr)
                  _ -> return Nothing
      return (res, mmodel)
   where cptr = unContext c
 
 solverGetReasonUnknown :: Context -> Solver -> IO String
-solverGetReasonUnknown c solver =
-  checkError c $ z3_solver_get_reason_unknown (unContext c) (unSolver solver) >>= peekCString
+solverGetReasonUnknown c solver = checkError c $
+  withSolverPtr solver (z3_solver_get_reason_unknown (unContext c))
+    >>= peekCString
 
 ---------------------------------------------------------------------
 -- String Conversion
