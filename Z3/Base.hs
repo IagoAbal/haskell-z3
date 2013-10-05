@@ -156,6 +156,7 @@ module Z3.Base (
   , mkPattern
   , mkBound
   , mkForall
+  , mkForallConst
   , mkExists
 
   -- * Accessors
@@ -164,6 +165,7 @@ module Z3.Base (
   , getBool
   , getInt
   , getReal
+  , toApp
 
   -- * Models
   , FuncModel (..)
@@ -277,7 +279,7 @@ newtype FuncDecl = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
     deriving (Eq, Ord, Show, Storable, Typeable)
 
 -- | A kind of Z3 AST used to represent constant and function declarations.
-newtype App = App { _unApp :: Ptr Z3_app }
+newtype App = App { unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A kind of AST used to represent pattern and multi-patterns used to
@@ -1238,6 +1240,22 @@ mkForall c pats x s p
           | otherwise     = fromIntegral l
           where l = length s
 
+
+mkForallConst :: Context -> [Pattern] -> [App] -> AST -> IO AST
+mkForallConst c pats apps p
+  = withArray (map unPattern pats) $ \patsPtr ->
+    withArray (map unApp     apps) $ \appsPtr ->
+      checkError c $ AST <$>
+        z3_mk_forall_const cptr 0 len appsPtr n patsPtr (unAST p)
+  where n    = genericLength pats
+        cptr = unContext c
+        len
+          | l == 0        = error "Z3.Base.mkForallConst:\
+              \ forall with 0 bound variables"
+          | otherwise     = fromIntegral l
+          where l = length apps
+
+
 mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkExists c pats x s p
   = withArray (map unPattern pats) $ \patsPtr ->
@@ -1310,6 +1328,12 @@ getReal c a = parse <$> getNumeralString c a
         parseDen ('/':sj) = read sj
         parseDen _        = error "Z3.Base.getReal: no parse"
 
+
+-- | Convert an ast into an APP_AST. This is just type casting.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
+toApp :: Context -> AST -> IO App
+toApp c a = checkError c $ App <$> z3_to_app (unContext c) (unAST a)
 
 -- TODO Modifiers
 

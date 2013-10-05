@@ -153,6 +153,7 @@ module Z3.Monad
   , mkPattern
   , mkBound
   , mkForall
+  , mkForallConst
   , mkExists
 
   -- * Accessors
@@ -160,6 +161,7 @@ module Z3.Monad
   , getBool
   , getInt
   , getReal
+  , toApp
 
   -- * Models
   , eval
@@ -924,6 +926,9 @@ mkBound = liftFun2 Base.mkBound
 mkForall :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
 mkForall = liftFun4 Base.mkForall
 
+mkForallConst :: MonadZ3 z3 => [Pattern] -> [App] -> AST -> z3 AST
+mkForallConst = liftFun3 Base.mkForallConst
+
 mkExists :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
 mkExists = liftFun4 Base.mkExists
 
@@ -949,6 +954,10 @@ getInt = liftFun1 Base.getInt
 -- | Return rational value
 getReal :: MonadZ3 z3 => AST -> z3 Rational
 getReal = liftFun1 Base.getReal
+
+-- | Cast AST into an App.
+toApp :: MonadZ3 z3 => AST -> z3 App
+toApp = liftFun1 Base.toApp
 
 ---------------------------------------------------------------------
 -- Models

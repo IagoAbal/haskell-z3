@@ -839,6 +839,20 @@ foreign import ccall unsafe "Z3_mk_forall"
                   -> Ptr Z3_ast
                   -> IO (Ptr Z3_ast)
 
+-- | Create a universal quantifier using a list of constants that
+-- will form the set of bound variables.
+--
+-- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabdb40b3ac220bce5a3801e6d29fb3bb6>
+foreign import ccall unsafe "Z3_mk_forall_const"
+  z3_mk_forall_const :: Ptr Z3_context
+                     -> CUInt
+                     -> CUInt
+                     -> Ptr (Ptr Z3_app)
+                     -> CUInt
+                     -> Ptr (Ptr Z3_pattern)
+                     -> Ptr Z3_ast
+                     -> IO (Ptr Z3_ast)
+
 -- | Create an exists formula.
 --
 -- Referece: http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4ffce34ff9117e6243283f11d87c1407
@@ -879,6 +893,12 @@ foreign import ccall unsafe "Z3_get_bool_value"
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
 foreign import ccall unsafe "Z3_get_numeral_string"
     z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
+
+-- | Convert an ast into an APP_AST. This is just type casting.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
+foreign import ccall unsafe "Z3_to_app"
+  z3_to_app :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_app)
 
 -- TODO Modifiers
 
