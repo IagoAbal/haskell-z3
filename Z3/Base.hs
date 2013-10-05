@@ -1597,6 +1597,7 @@ paramsToString c (Params params) =
           , solverPush
           , solverPop
           , solverReset
+          , solverGetNumScopes
           , solverAssertCnstr
           , solverAssertAndTrack
           , solverCheck
