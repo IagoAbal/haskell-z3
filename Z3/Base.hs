@@ -219,6 +219,7 @@ module Z3.Base (
   --, solverGetModel
   , solverCheckAndGetModel
   , solverGetReasonUnknown
+  , solverToString
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -1814,6 +1815,14 @@ solverGetReasonUnknown :: Context -> Solver -> IO String
 solverGetReasonUnknown c solver = checkError c $
   withSolverPtr solver (z3_solver_get_reason_unknown (unContext c))
     >>= peekCString
+
+
+-- | Convert the given solver into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf52e41db4b12a84188b80255454d3abb>
+solverToString :: Context -> Solver -> IO String
+solverToString ctx solver = checkError ctx $
+  (withSolverPtr solver (z3_solver_to_string (unContext ctx))) >>= peekCString
 
 ---------------------------------------------------------------------
 -- String Conversion
