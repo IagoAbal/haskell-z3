@@ -202,6 +202,7 @@ module Z3.Monad
   , patternToString
   , sortToString
   , funcDeclToString
+  , solverToString
   , benchmarkToSMTLibString
   )
   where
@@ -1140,6 +1141,11 @@ sortToString = liftFun1 Base.sortToString
 -- | Convert a FuncDecl to a string.
 funcDeclToString :: MonadZ3 z3 => FuncDecl -> z3 String
 funcDeclToString = liftFun1 Base.funcDeclToString
+
+-- | Convert the solver to a string.
+solverToString :: MonadZ3 z3 => z3 String
+solverToString = liftSolver0 Base.solverToString
+                           (error "solverToString requires solver")
 
 -- | Convert the given benchmark into SMT-LIB formatted string.
 --

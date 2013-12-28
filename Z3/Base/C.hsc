@@ -1224,6 +1224,12 @@ foreign import ccall unsafe "Z3_solver_get_reason_unknown"
     z3_solver_get_reason_unknown :: Ptr Z3_context -> Ptr Z3_solver ->
                                     IO Z3_string
 
+-- | Convert a solver into a string.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf52e41db4b12a84188b80255454d3abb>
+foreign import ccall unsafe "Z3_solver_to_string"
+    z3_solver_to_string :: Ptr Z3_context -> Ptr Z3_solver -> IO Z3_string
+
 ---------------------------------------------------------------------
 -- * String Conversion
 
