@@ -598,25 +598,21 @@ mkFalse c = checkError c $ AST <$> z3_mk_false (unContext c)
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 mkEq :: Context -> AST -> AST -> IO AST
-mkEq c e1 e2 = checkError c $ AST <$> z3_mk_eq (unContext c) (unAST e1) (unAST e2)
+mkEq = liftAst2 z3_mk_eq
 
 -- | The distinct construct is used for declaring the arguments pairwise
 -- distinct.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa076d3a668e0ec97d61744403153ecf7>
 mkDistinct :: Context -> [AST] -> IO AST
-mkDistinct _ [] = error "Z3.Base.mkDistinct: empty list of expressions"
-mkDistinct c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_distinct (unContext c) n aptr
-  where n = genericLength es
+mkDistinct =
+  liftAstN "Z3.Base.mkDistinct: empty list of expressions" z3_mk_distinct
 
 -- | Create an AST node representing /not(a)/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3329538091996eb7b3dc677760a61072>
 mkNot :: Context -> AST -> IO AST
-mkNot c e = checkError c $ AST <$> z3_mk_not (unContext c) (unAST e)
+mkNot = liftAst1 z3_mk_not
 
 -- | Create an AST node representing an if-then-else: /ite(t1, t2, t3)/.
 --
@@ -629,140 +625,115 @@ mkIte c g e1 e2 =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga930a8e844d345fbebc498ac43a696042>
 mkIff :: Context -> AST -> AST -> IO AST
-mkIff c p q = checkError c $ AST <$> z3_mk_iff (unContext c) (unAST p) (unAST q)
+mkIff = liftAst2 z3_mk_iff
 
 -- | Create an AST node representing /t1 implies t2/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac829c0e25bbbd30343bf073f7b524517>
 mkImplies :: Context -> AST -> AST -> IO AST
-mkImplies c p q = checkError c $ AST <$> z3_mk_implies (unContext c) (unAST p) (unAST q)
+mkImplies = liftAst2 z3_mk_implies
 
 -- | Create an AST node representing /t1 xor t2/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc6d1b848032dec0c4617b594d4229ec>
 mkXor :: Context -> AST -> AST -> IO AST
-mkXor c p q = checkError c $ AST <$> z3_mk_xor (unContext c) (unAST p) (unAST q)
+mkXor = liftAst2 z3_mk_xor
 
 -- | Create an AST node representing args[0] and ... and args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacde98ce4a8ed1dde50b9669db4838c61>
 mkAnd :: Context -> [AST] -> IO AST
-mkAnd _ [] = error "Z3.Base.mkAnd: empty list of expressions"
-mkAnd c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_and (unContext c) n aptr
-  where n = genericLength es
+mkAnd = liftAstN "Z3.Base.mkAnd: empty list of expressions" z3_mk_and
 
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 mkOr :: Context -> [AST] -> IO AST
-mkOr _ [] = error "Z3.Base.mkOr: empty list of expressions"
-mkOr c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_or (unContext c) n aptr
-  where n = genericLength es
+mkOr = liftAstN "Z3.Base.mkOr: empty list of expressions" z3_mk_or
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e4ac0a4e53eee0b4b0ef159ed7d0cd5>
 mkAdd :: Context -> [AST] -> IO AST
-mkAdd _ [] = error "Z3.Base.mkAdd: empty list of expressions"
-mkAdd c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_add (unContext c) n aptr
-  where n = genericLength es
+mkAdd = liftAstN "Z3.Base.mkAdd: empty list of expressions" z3_mk_add
 
 -- | Create an AST node representing args[0] * ... * args[num_args-1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab9affbf8401a18eea474b59ad4adc890>
 mkMul :: Context -> [AST] -> IO AST
-mkMul _ [] = error "Z3.Base.mkMul: empty list of expressions"
-mkMul c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_mul (unContext c) n aptr
-  where n = genericLength es
+mkMul = liftAstN "Z3.Base.mkMul: empty list of expressions" z3_mk_mul
 
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4f5fea9b683f9e674fd8f14d676cc9a9>
 mkSub :: Context -> [AST] -> IO AST
-mkSub _ [] = error "Z3.Base.mkSub: empty list of expressions"
-mkSub c es =
-  withArray (map unAST es) $ \aptr ->
-    checkError c $
-      AST <$> z3_mk_sub (unContext c) n aptr
-  where n = genericLength es
+mkSub = liftAstN "Z3.Base.mkSub: empty list of expressions" z3_mk_sub
 
 -- | Create an AST node representing -arg.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadcd2929ad732937e25f34277ce4988ea>
 mkUnaryMinus :: Context -> AST -> IO AST
-mkUnaryMinus c e = checkError c $ AST <$> z3_mk_unary_minus (unContext c) (unAST e)
+mkUnaryMinus = liftAst1 z3_mk_unary_minus
 
 -- | Create an AST node representing arg1 div arg2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1ac60ee8307af8d0b900375914194ff3>
 mkDiv :: Context -> AST -> AST -> IO AST
-mkDiv c e1 e2 = checkError c $ AST <$> z3_mk_div (unContext c) (unAST e1) (unAST e2)
+mkDiv = liftAst2 z3_mk_div
 
 -- | Create an AST node representing arg1 mod arg2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8e350ac77e6b8fe805f57efe196e7713>
 mkMod :: Context -> AST -> AST -> IO AST
-mkMod c e1 e2 = checkError c $ AST <$> z3_mk_mod (unContext c) (unAST e1) (unAST e2)
+mkMod = liftAst2 z3_mk_mod
 
 -- | Create an AST node representing arg1 rem arg2.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2fcdb17f9039bbdaddf8a30d037bd9ff>
 mkRem :: Context -> AST -> AST -> IO AST
-mkRem c e1 e2 = checkError c $ AST <$> z3_mk_rem (unContext c) (unAST e1) (unAST e2)
+mkRem = liftAst2 z3_mk_rem
 
 -- | Create less than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga58a3dc67c5de52cf599c346803ba1534>
 mkLt :: Context -> AST -> AST -> IO AST
-mkLt c e1 e2 = checkError c $ AST <$> z3_mk_lt (unContext c) (unAST e1) (unAST e2)
+mkLt = liftAst2 z3_mk_lt
 
 -- | Create less than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa9a33d11096841f4e8c407f1578bc0bf>
 mkLe :: Context -> AST -> AST -> IO AST
-mkLe c e1 e2 = checkError c $ AST <$> z3_mk_le (unContext c) (unAST e1) (unAST e2)
+mkLe = liftAst2 z3_mk_le
 
 -- | Create greater than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46167b86067586bb742c0557d7babfd3>
 mkGt :: Context -> AST -> AST -> IO AST
-mkGt c e1 e2 = checkError c $ AST <$> z3_mk_gt (unContext c) (unAST e1) (unAST e2)
+mkGt = liftAst2 z3_mk_gt
 
 -- | Create greater than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad9245cbadb80b192323d01a8360fb942>
 mkGe :: Context -> AST -> AST -> IO AST
-mkGe c e1 e2 = checkError c $ AST <$> z3_mk_ge (unContext c) (unAST e1) (unAST e2)
+mkGe = liftAst2 z3_mk_ge
 
 -- | Coerce an integer to a real.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7130641e614c7ebafd28ae16a7681a21>
 mkInt2Real :: Context -> AST -> IO AST
-mkInt2Real c e = checkError c $ AST <$> z3_mk_int2real (unContext c) (unAST e)
+mkInt2Real = liftAst1 z3_mk_int2real
 
 -- | Coerce a real to an integer.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga759b6563ba1204aae55289009a3fdc6d>
 mkReal2Int :: Context -> AST -> IO AST
-mkReal2Int c e = checkError c $ AST <$> z3_mk_real2int (unContext c) (unAST e)
+mkReal2Int = liftAst1 z3_mk_real2int
 
 -- | Check if a real number is an integer.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaac2ad0fb04e4900fdb4add438d137ad3>
 mkIsInt :: Context -> AST -> IO AST
-mkIsInt c e = checkError c $ AST <$> z3_mk_is_int (unContext c) (unAST e)
+mkIsInt = liftAst1 z3_mk_is_int
 
 ---------------------------------------------------------------------
 -- Bit-vectors
@@ -771,163 +742,163 @@ mkIsInt c e = checkError c $ AST <$> z3_mk_is_int (unContext c) (unAST e)
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga36cf75c92c54c1ca633a230344f23080>
 mkBvnot :: Context -> AST -> IO AST
-mkBvnot c e = checkError c $ AST <$> z3_mk_bvnot (unContext c) (unAST e)
+mkBvnot = liftAst1 z3_mk_bvnot
 
 -- | Take conjunction of bits in vector, return vector of length 1.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaccc04f2b58903279b1b3be589b00a7d8>
 mkBvredand :: Context -> AST -> IO AST
-mkBvredand c e = checkError c $ AST <$> z3_mk_bvredand (unContext c) (unAST e)
+mkBvredand = liftAst1 z3_mk_bvredand
 
 -- | Take disjunction of bits in vector, return vector of length 1.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd18e127c0586abf47ad9cd96895f7d2>
 mkBvredor :: Context -> AST -> IO AST
-mkBvredor c e = checkError c $ AST <$> z3_mk_bvredor (unContext c) (unAST e)
+mkBvredor = liftAst1 z3_mk_bvredor
 
 -- | Bitwise and.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab96e0ea55334cbcd5a0e79323b57615d>
 mkBvand :: Context -> AST -> AST -> IO AST
-mkBvand c e1 e2 = checkError c $ AST <$> z3_mk_bvand (unContext c) (unAST e1) (unAST e2)
+mkBvand = liftAst2 z3_mk_bvand
 
 -- | Bitwise or.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga77a6ae233fb3371d187c6d559b2843f5>
 mkBvor :: Context -> AST -> AST -> IO AST
-mkBvor c e1 e2 = checkError c $ AST <$> z3_mk_bvor (unContext c) (unAST e1) (unAST e2)
+mkBvor = liftAst2 z3_mk_bvor
 
 -- | Bitwise exclusive-or.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a3821ea00b1c762205f73e4bc29e7d8>
 mkBvxor :: Context -> AST -> AST -> IO AST
-mkBvxor c e1 e2 = checkError c $ AST <$> z3_mk_bvxor (unContext c) (unAST e1) (unAST e2)
+mkBvxor = liftAst2 z3_mk_bvxor
 
 -- | Bitwise nand.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga96dc37d36efd658fff5b2b4df49b0e61>
 mkBvnand :: Context -> AST -> AST -> IO AST
-mkBvnand c e1 e2 = checkError c $ AST <$> z3_mk_bvnand (unContext c) (unAST e1) (unAST e2)
+mkBvnand = liftAst2 z3_mk_bvnand
 
 -- | Bitwise nor.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabf15059e9e8a2eafe4929fdfd259aadb>
 mkBvnor :: Context -> AST -> AST -> IO AST
-mkBvnor c e1 e2 = checkError c $ AST <$> z3_mk_bvnor (unContext c) (unAST e1) (unAST e2)
+mkBvnor = liftAst2 z3_mk_bvnor
 
 -- | Bitwise xnor.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga784f5ca36a4b03b93c67242cc94b21d6>
 mkBvxnor :: Context -> AST -> AST -> IO AST
-mkBvxnor c e1 e2 = checkError c $ AST <$> z3_mk_bvxnor (unContext c) (unAST e1) (unAST e2)
+mkBvxnor = liftAst2 z3_mk_bvxnor
 
 -- | Standard two's complement unary minus.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0c78be00c03eda4ed6a983224ed5c7b7
 mkBvneg :: Context -> AST -> IO AST
-mkBvneg c e = checkError c $ AST <$> z3_mk_bvneg (unContext c) (unAST e)
+mkBvneg = liftAst1 z3_mk_bvneg
 
 -- | Standard two's complement addition.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga819814e33573f3f9948b32fdc5311158>
 mkBvadd :: Context -> AST -> AST -> IO AST
-mkBvadd c e1 e2 = checkError c $ AST <$> z3_mk_bvadd (unContext c) (unAST e1) (unAST e2)
+mkBvadd = liftAst2 z3_mk_bvadd
 
 -- | Standard two's complement subtraction.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga688c9aa1347888c7a51be4e46c19178e>
 mkBvsub :: Context -> AST -> AST -> IO AST
-mkBvsub c e1 e2 = checkError c $ AST <$> z3_mk_bvsub (unContext c) (unAST e1) (unAST e2)
+mkBvsub = liftAst2 z3_mk_bvsub
 
 -- | Standard two's complement multiplication.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6abd3dde2a1ceff1704cf7221a72258c>
 mkBvmul :: Context -> AST -> AST -> IO AST
-mkBvmul c e1 e2 = checkError c $ AST <$> z3_mk_bvmul (unContext c) (unAST e1) (unAST e2)
+mkBvmul = liftAst2 z3_mk_bvmul
 
 -- | Unsigned division.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga56ce0cd61666c6f8cf5777286f590544>
 mkBvudiv :: Context -> AST -> AST -> IO AST
-mkBvudiv c e1 e2 = checkError c $ AST <$> z3_mk_bvudiv (unContext c) (unAST e1) (unAST e2)
+mkBvudiv = liftAst2 z3_mk_bvudiv
 
 -- | Two's complement signed division.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad240fedb2fda1c1005b8e9d3c7f3d5a0>
 mkBvsdiv :: Context -> AST -> AST -> IO AST
-mkBvsdiv c e1 e2 = checkError c $ AST <$> z3_mk_bvsdiv (unContext c) (unAST e1) (unAST e2)
+mkBvsdiv = liftAst2 z3_mk_bvsdiv
 
 -- | Unsigned remainder.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5df4298ec835e43ddc9e3e0bae690c8d>
 mkBvurem :: Context -> AST -> AST -> IO AST
-mkBvurem c e1 e2 = checkError c $ AST <$> z3_mk_bvurem (unContext c) (unAST e1) (unAST e2)
+mkBvurem = liftAst2 z3_mk_bvurem
 
 -- | Two's complement signed remainder (sign follows dividend).
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46c18a3042fca174fe659d3185693db1>
 mkBvsrem :: Context -> AST -> AST -> IO AST
-mkBvsrem c e1 e2 = checkError c $ AST <$> z3_mk_bvsrem (unContext c) (unAST e1) (unAST e2)
+mkBvsrem = liftAst2 z3_mk_bvsrem
 
 -- | Two's complement signed remainder (sign follows divisor).
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95dac8e6eecb50f63cb82038560e0879>
 mkBvsmod :: Context -> AST -> AST -> IO AST
-mkBvsmod c e1 e2 = checkError c $ AST <$> z3_mk_bvsmod (unContext c) (unAST e1) (unAST e2)
+mkBvsmod = liftAst2 z3_mk_bvsmod
 
 -- | Unsigned less than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5774b22e93abcaf9b594672af6c7c3c4>
 mkBvult :: Context -> AST -> AST -> IO AST
-mkBvult c e1 e2 = checkError c $ AST <$> z3_mk_bvult (unContext c) (unAST e1) (unAST e2)
+mkBvult = liftAst2 z3_mk_bvult
 
 -- | Two's complement signed less than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8ce08af4ed1fbdf08d4d6e63d171663a>
 mkBvslt :: Context -> AST -> AST -> IO AST
-mkBvslt c e1 e2 = checkError c $ AST <$> z3_mk_bvslt (unContext c) (unAST e1) (unAST e2)
+mkBvslt = liftAst2 z3_mk_bvslt
 
 -- | Unsigned less than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab738b89de0410e70c089d3ac9e696e87>
 mkBvule :: Context -> AST -> AST -> IO AST
-mkBvule c e1 e2 = checkError c $ AST <$> z3_mk_bvule (unContext c) (unAST e1) (unAST e2)
+mkBvule = liftAst2 z3_mk_bvule
 
 -- | Two's complement signed less than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab7c026feb93e7d2eab180e96f1e6255d>
 mkBvsle :: Context -> AST -> AST -> IO AST
-mkBvsle c e1 e2 = checkError c $ AST <$> z3_mk_bvsle (unContext c) (unAST e1) (unAST e2)
+mkBvsle = liftAst2 z3_mk_bvsle
 
 -- | Unsigned greater than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gade58fbfcf61b67bf8c4a441490d3c4df>
 mkBvuge :: Context -> AST -> AST -> IO AST
-mkBvuge c e1 e2 = checkError c $ AST <$> z3_mk_bvuge (unContext c) (unAST e1) (unAST e2)
+mkBvuge = liftAst2 z3_mk_bvuge
 
 -- | Two's complement signed greater than or equal to.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeec3414c0e8a90a6aa5a23af36bf6dc5>
 mkBvsge :: Context -> AST -> AST -> IO AST
-mkBvsge c e1 e2 = checkError c $ AST <$> z3_mk_bvsge (unContext c) (unAST e1) (unAST e2)
+mkBvsge = liftAst2 z3_mk_bvsge
 
 -- | Unsigned greater than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga063ab9f16246c99e5c1c893613927ee3>
 mkBvugt :: Context -> AST -> AST -> IO AST
-mkBvugt c e1 e2 = checkError c $ AST <$> z3_mk_bvugt (unContext c) (unAST e1) (unAST e2)
+mkBvugt = liftAst2 z3_mk_bvugt
 
 -- | Two's complement signed greater than.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e93a985aa2a7812c7c11a2c65d7c5f0>
 mkBvsgt :: Context -> AST -> AST -> IO AST
-mkBvsgt c e1 e2 = checkError c $ AST <$> z3_mk_bvsgt (unContext c) (unAST e1) (unAST e2)
+mkBvsgt = liftAst2 z3_mk_bvsgt
 
 -- | Concatenate the given bit-vectors.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae774128fa5e9ff7458a36bd10e6ca0fa>
 mkConcat :: Context -> AST -> AST -> IO AST
-mkConcat c e1 e2 = checkError c $ AST <$> z3_mk_concat (unContext c) (unAST e1) (unAST e2)
+mkConcat = liftAst2 z3_mk_concat
 
 -- | Extract the bits high down to low from a bitvector of size m to yield a new
 -- bitvector of size /n/, where /n = high - low + 1/.
@@ -942,69 +913,62 @@ mkExtract c j i e
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad29099270b36d0680bb54b560353c10e>
 mkSignExt :: Context -> Int -> AST -> IO AST
-mkSignExt c i e
-  = checkError c $ AST <$> z3_mk_sign_ext (unContext c) (fromIntegral i) (unAST e)
+mkSignExt = liftIntAst z3_mk_sign_ext
 
 -- | Extend the given bit-vector with zeros to the (unsigned) equivalent
 -- bitvector of size /m+i/, where /m/ is the size of the given bit-vector.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac9322fae11365a78640baf9078c428b3>
 mkZeroExt :: Context -> Int -> AST -> IO AST
-mkZeroExt c i e
-  = checkError c $ AST <$> z3_mk_zero_ext (unContext c) (fromIntegral i) (unAST e)
+mkZeroExt = liftIntAst z3_mk_zero_ext
 
 -- | Repeat the given bit-vector up length /i/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga03e81721502ea225c264d1f556c9119d>
 mkRepeat :: Context -> Int -> AST -> IO AST
-mkRepeat c i e
-  = checkError c $ AST <$> z3_mk_repeat (unContext c) (fromIntegral i) (unAST e)
+mkRepeat = liftIntAst z3_mk_repeat
 
 -- | Shift left.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8d5e776c786c1172fa0d7dfede454e1>
 mkBvshl :: Context -> AST -> AST -> IO AST
-mkBvshl c e1 e2 = checkError c $ AST <$> z3_mk_bvshl (unContext c) (unAST e1) (unAST e2)
+mkBvshl = liftAst2 z3_mk_bvshl
 
 -- | Logical shift right.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac59645a6edadad79a201f417e4e0c512>
 mkBvlshr :: Context -> AST -> AST -> IO AST
-mkBvlshr c e1 e2 = checkError c $ AST <$> z3_mk_bvlshr (unContext c) (unAST e1) (unAST e2)
+mkBvlshr = liftAst2 z3_mk_bvlshr
 
 -- | Arithmetic shift right.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga674b580ad605ba1c2c9f9d3748be87c4>
 mkBvashr :: Context -> AST -> AST -> IO AST
-mkBvashr c e1 e2 = checkError c $ AST <$> z3_mk_bvashr (unContext c) (unAST e1) (unAST e2)
+mkBvashr = liftAst2 z3_mk_bvashr
 
 -- | Rotate bits of /t1/ to the left /i/ times.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4932b7d08fea079dd903cd857a52dcda>
 mkRotateLeft :: Context -> Int -> AST -> IO AST
-mkRotateLeft c i e
-  = checkError c $ AST <$> z3_mk_rotate_left (unContext c) (fromIntegral i) (unAST e)
+mkRotateLeft = liftIntAst z3_mk_rotate_left
 
 -- | Rotate bits of /t1/ to the right /i/ times.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3b94e1bf87ecd1a1858af8ebc1da4a1c>
 mkRotateRight :: Context -> Int -> AST -> IO AST
-mkRotateRight c i e
-  = checkError c $ AST <$> z3_mk_rotate_right (unContext c) (fromIntegral i) (unAST e)
+mkRotateRight = liftIntAst z3_mk_rotate_right
 
 -- | Rotate bits of /t1/ to the left /t2/ times.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf46f1cb80e5a56044591a76e7c89e5e7>
 mkExtRotateLeft :: Context -> AST -> AST -> IO AST
-mkExtRotateLeft c e1 e2
-  = checkError c $ AST <$> z3_mk_ext_rotate_left (unContext c) (unAST e1) (unAST e2)
+mkExtRotateLeft = liftAst2 z3_mk_ext_rotate_left
 
 -- | Rotate bits of /t1/ to the right /t2/ times.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb227526c592b523879083f12aab281f>
 mkExtRotateRight :: Context -> AST -> AST -> IO AST
-mkExtRotateRight c e1 e2
-  = checkError c $ AST <$> z3_mk_ext_rotate_right (unContext c) (unAST e1) (unAST e2)
+mkExtRotateRight = liftAst2 z3_mk_ext_rotate_right
 
 -- | Create an /n/ bit bit-vector from the integer argument /t1/.
 --
@@ -1037,40 +1001,35 @@ mkBvaddNoOverflow c e1 e2 is_signed =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1e2b1927cf4e50000c1600d47a152947>
 mkBvaddNoUnderflow :: Context -> AST -> AST -> IO AST
-mkBvaddNoUnderflow c e1 e2 =
-  checkError c $ AST <$> z3_mk_bvadd_no_underflow (unContext c) (unAST e1) (unAST e2)
+mkBvaddNoUnderflow = liftAst2 z3_mk_bvadd_no_underflow
 
 -- | Create a predicate that checks that the bit-wise signed subtraction of /t1/
 -- and /t2/ does not overflow.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga785f8127b87e0b42130e6d8f52167d7c>
 mkBvsubNoOverflow :: Context -> AST -> AST -> IO AST
-mkBvsubNoOverflow c e1 e2 =
-  checkError c $ AST <$> z3_mk_bvsub_no_overflow (unContext c) (unAST e1) (unAST e2)
+mkBvsubNoOverflow = liftAst2 z3_mk_bvsub_no_overflow
 
 -- | Create a predicate that checks that the bit-wise subtraction of /t1/ and
 -- /t2/ does not underflow.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6480850f9fa01e14aea936c88ff184c4>
 mkBvsubNoUnderflow :: Context -> AST -> AST -> IO AST
-mkBvsubNoUnderflow c e1 e2 =
-  checkError c $ AST <$> z3_mk_bvsub_no_underflow (unContext c) (unAST e1) (unAST e2)
+mkBvsubNoUnderflow = liftAst2 z3_mk_bvsub_no_underflow
 
 -- | Create a predicate that checks that the bit-wise signed division of /t1/
 -- and /t2/ does not overflow.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa17e7b2c33dfe2abbd74d390927ae83e>
 mkBvsdivNoOverflow :: Context -> AST -> AST -> IO AST
-mkBvsdivNoOverflow c e1 e2 =
-  checkError c $ AST <$> z3_mk_bvsdiv_no_overflow (unContext c) (unAST e1) (unAST e2)
+mkBvsdivNoOverflow = liftAst2 z3_mk_bvsdiv_no_overflow
 
 -- | Check that bit-wise negation does not overflow when /t1/ is interpreted as
 -- a signed bit-vector.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae9c5d72605ddcd0e76657341eaccb6c7>
 mkBvnegNoOverflow :: Context -> AST -> IO AST
-mkBvnegNoOverflow c e =
-  checkError c $ AST <$> z3_mk_bvneg_no_overflow (unContext c) (unAST e)
+mkBvnegNoOverflow = liftAst1 z3_mk_bvneg_no_overflow
 
 -- | Create a predicate that checks that the bit-wise multiplication of /t1/ and
 -- /t2/ does not overflow.
@@ -1086,8 +1045,7 @@ mkBvmulNoOverflow c e1 e2 is_signed =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga501ccc01d737aad3ede5699741717fda>
 mkBvmulNoUnderflow :: Context -> AST -> AST -> IO AST
-mkBvmulNoUnderflow c e1 e2 =
-  checkError c $ AST <$> z3_mk_bvmul_no_underflow (unContext c) (unAST e1) (unAST e2)
+mkBvmulNoUnderflow = liftAst2 z3_mk_bvmul_no_underflow
 
 ---------------------------------------------------------------------
 -- Arrays
@@ -1097,7 +1055,7 @@ mkBvmulNoUnderflow c e1 e2 =
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
 mkSelect :: Context -> AST -> AST -> IO AST
-mkSelect c a1 a2 = checkError c $ AST <$> z3_mk_select (unContext c) (unAST a1) (unAST a2)
+mkSelect = liftAst2 z3_mk_select
 
 -- | Array update.   
 --
@@ -1123,7 +1081,7 @@ mkMap c f n args = withArray (map unAST args) $ \args' ->
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
 mkArrayDefault :: Context -> AST -> IO AST
-mkArrayDefault c a = checkError c $ AST <$> z3_mk_array_default (unContext c) (unAST a)
+mkArrayDefault = liftAst1 z3_mk_array_default
 
 -- TODO Sets
 
@@ -1899,6 +1857,38 @@ benchmarkToSMTLibString c name logic st attr assump f =
                                   numAssump cassump (unAST f)
       >>= peekCString
   where numAssump = genericLength assump
+
+---------------------------------------------------------------------
+-- Lifting
+
+liftAst1 :: (Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast))
+              -> Context -> AST -> IO AST
+liftAst1 f c e = checkError c $
+  AST <$> f (unContext c) (unAST e)
+{-# INLINE liftAst1 #-}
+
+liftAst2 :: (Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast))
+              -> Context -> AST -> AST -> IO AST
+liftAst2 f c e1 e2 = checkError c $
+  AST <$> f (unContext c) (unAST e1) (unAST e2)
+{-# INLINE liftAst2 #-}
+
+liftAstN :: String
+            -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
+            -> Context -> [AST] -> IO AST
+liftAstN s _ _ [] = error s
+liftAstN _ f c es =
+  withArray (map unAST es) $ \aptr ->
+    checkError c $
+      AST <$> f (unContext c) n aptr
+  where n = genericLength es
+{-# INLINE liftAstN #-}
+
+liftIntAst :: (Ptr Z3_context -> CUInt-> Ptr Z3_ast -> IO (Ptr Z3_ast))
+              -> Context -> Int -> AST -> IO AST
+liftIntAst f c i e = checkError c $
+  AST <$> f (unContext c) (fromIntegral i) (unAST e)
+{-# INLINE liftIntAst #-}
 
 ---------------------------------------------------------------------
 -- Utils
