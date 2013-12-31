@@ -5,10 +5,10 @@
 
 -- |
 -- Module    : Z3.Base
--- Copyright : (c) Iago Abal, 2012-2013
+-- Copyright : (c) Iago Abal, 2012-2014
 --             (c) David Castro, 2012-2013
 -- License   : BSD3
--- Maintainer: Iago Abal <iago.abal@gmail.com>,
+-- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
 --
 -- Low-level bindings to Z3 API.
