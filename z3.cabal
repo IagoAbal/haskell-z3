@@ -26,12 +26,12 @@ Description:
 Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE
-Author:              Iago Abal <iago.abal@gmail.com>,
+Author:              Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
-Maintainer:          Iago Abal <iago.abal@gmail.com>,
+Maintainer:          Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
-Copyright:           2012-2013, Iago Abal, David Castro
-Category:            Math, Theorem Provers, Formal Methods
+Copyright:           2012-2014, Iago Abal, David Castro
+Category:            Math, SMT, Theorem Provers, Formal Methods
 Build-type:          Simple
 Cabal-version:       >= 1.6
 
