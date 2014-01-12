@@ -21,7 +21,7 @@ executable 4queens
   main-is:             4queens.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 
@@ -30,7 +30,7 @@ executable Nqueens
   main-is:             Nqueens.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 
@@ -39,7 +39,7 @@ executable NqueensAll
   main-is:             NqueensAll.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 -------------------------------------------------
@@ -50,7 +50,7 @@ executable mz3-4queens
   main-is:             4queens.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 
@@ -59,7 +59,7 @@ executable mz3-funcModel
   main-is:             FuncModel.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 
@@ -68,7 +68,7 @@ executable mz3-toSMTLib
   main-is:             ToSMTLib.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 >=0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
 
@@ -77,6 +77,6 @@ executable mz3-tuple
   main-is:             Tuple.hs
   -- other-modules:
   build-depends:       base ==4.5.*,
-                       z3 ==0.3.1,
+                       z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
