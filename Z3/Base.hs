@@ -393,14 +393,10 @@ checkError c m = m <* (z3_get_error_code (unContext c) >>= throwZ3Exn)
 -- Configuration
 
 -- | Create a configuration.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d6c40d9b79fe8a8851cc8540970787f>
 mkConfig :: IO Config
 mkConfig = Config <$> z3_mk_config
 
 -- | Delete a configuration.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e620acf5d55d0271097c9bb97219774>
 delConfig :: Config -> IO ()
 delConfig = z3_del_config . unConfig
 
@@ -409,10 +405,6 @@ withConfig :: (Config -> IO a) -> IO a
 withConfig = bracket mkConfig delConfig
 
 -- | Set a configuration parameter.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga001ade87a1671fe77d7e53ed0f4f1ec3>
---
--- See: <http://research.microsoft.com/en-us/um/redmond/projects/z3/config.html>
 setParamValue :: Config -> String -> String -> IO ()
 setParamValue cfg s1 s2 =
   withCString s1  $ \cs1 ->
@@ -423,8 +415,6 @@ setParamValue cfg s1 s2 =
 -- Context
 
 -- | Create a context using the given configuration.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0bd93cfab4d749dd3e2f2a4416820a46>
 mkContext :: Config -> IO Context
 mkContext cfg = do
   ctxPtr <- z3_mk_context (unConfig cfg)
@@ -432,8 +422,6 @@ mkContext cfg = do
   return $ Context ctxPtr
 
 -- | Delete the given logical context.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga556eae80ed43ab13e1e7dc3b38c35200>
 delContext :: Context -> IO ()
 delContext = z3_del_context . unContext
 
@@ -442,8 +430,6 @@ withContext :: Config -> (Context -> IO a) -> IO a
 withContext cfg = bracket (mkContext cfg) delContext
 
 -- | Convert the given logical context into a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga165e38ddfc928f586cb738cdf6c5f216>
 contextToString :: Context -> IO String
 contextToString = liftFun0 z3_context_to_string
 
@@ -455,8 +441,6 @@ showContext = contextToString
 -- Symbols
 
 -- | Create a Z3 symbol using an integer.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3df806baf6124df3e63a58cf23e12411>
 mkIntSymbol :: Integral int => Context -> int -> IO Symbol
 mkIntSymbol ctx i
   | 0 <= i && i <= 2^(30::Int)-1
@@ -468,8 +452,6 @@ mkIntSymbol ctx i
 {-# SPECIALIZE mkIntSymbol :: Context -> Integer -> IO Symbol #-}
 
 -- | Create a Z3 symbol using a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafebb0d3c212927cf7834c3a20a84ecae>
 mkStringSymbol :: Context -> String -> IO Symbol
 mkStringSymbol = liftFun1 z3_mk_string_symbol
 
@@ -479,47 +461,32 @@ mkStringSymbol = liftFun1 z3_mk_string_symbol
 -- TODO Sorts: Z3_is_eq_sort
 
 -- | Create a free (uninterpreted) type using the given name (symbol).
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
 mkUninterpretedSort :: Context -> Symbol -> IO Sort
 mkUninterpretedSort = liftFun1 z3_mk_uninterpreted_sort
 
 -- | Create the /Boolean/ type.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacdc73510b69a010b71793d429015f342>
 mkBoolSort :: Context -> IO Sort
 mkBoolSort = liftFun0 z3_mk_bool_sort
 
 -- | Create an /integer/ type.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6cd426ab5748653b77d389fd3eac1015>
 mkIntSort :: Context -> IO Sort
 mkIntSort = liftFun0 z3_mk_int_sort
 
 -- | Create a /real/ type.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga40ef93b9738485caed6dc84631c3c1a0>
 mkRealSort :: Context -> IO Sort
 mkRealSort = liftFun0 z3_mk_real_sort
 
 -- | Create a bit-vector type of the given size.
 --
 -- This type can also be seen as a machine integer.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeed000a1bbb84b6ca6fdaac6cf0c1688>
 mkBvSort :: Context -> Int -> IO Sort
 mkBvSort = liftFun1 z3_mk_bv_sort
 
 -- | Create an array type
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafe617994cce1b516f46128e448c84445>
---
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
 
 -- | Create a tuple type
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7156b9c0a76a28fae46c81f8e3cdf0f1>
 mkTupleSort :: Context                         -- ^ Context
             -> Symbol                          -- ^ Name of the sort
             -> [(Symbol, Sort)]                -- ^ Name and sort of each field
@@ -558,8 +525,6 @@ mkFuncDecl ctx smb dom rng =
                                       (unSort rng)
 
 -- | Create a constant or function application.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga33a202d86bf628bfab9b6f437536cebe>
 mkApp :: Context -> FuncDecl -> [AST] -> IO AST
 mkApp ctx fd args =
   withAstArray args $ \numArgs pargs ->
@@ -569,8 +534,6 @@ mkApp ctx fd args =
         fdPtr   = unFuncDecl fd
 
 -- | Declare and create a constant.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
 mkConst :: Context -> Symbol -> Sort -> IO AST
 mkConst = liftFun2 z3_mk_const
 
@@ -578,154 +541,104 @@ mkConst = liftFun2 z3_mk_const
 -- TODO Constants and Applications: Z3_mk_fresh_const
 
 -- | Create an AST node representing /true/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae898e7380409bbc57b56cc5205ef1db7>
 mkTrue :: Context -> IO AST
 mkTrue = liftFun0 z3_mk_true
 
 -- | Create an AST node representing /false/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5952ac17671117a02001fed6575c778d>
 mkFalse :: Context -> IO AST
 mkFalse = liftFun0 z3_mk_false
 
 -- | Create an AST node representing /l = r/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95a19ce675b70e22bb0401f7137af37c>
 mkEq :: Context -> AST -> AST -> IO AST
 mkEq = liftFun2 z3_mk_eq
 
 -- | The distinct construct is used for declaring the arguments pairwise
 -- distinct.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa076d3a668e0ec97d61744403153ecf7>
 mkDistinct :: Context -> [AST] -> IO AST
 mkDistinct =
   liftAstN "Z3.Base.mkDistinct: empty list of expressions" z3_mk_distinct
 
 -- | Create an AST node representing /not(a)/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3329538091996eb7b3dc677760a61072>
 mkNot :: Context -> AST -> IO AST
 mkNot = liftFun1 z3_mk_not
 
 -- | Create an AST node representing an if-then-else: /ite(t1, t2, t3)/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94417eed5c36e1ad48bcfc8ad6e83547>
 mkIte :: Context -> AST -> AST -> AST -> IO AST
 mkIte = liftFun3 z3_mk_ite
 
 -- | Create an AST node representing /t1 iff t2/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga930a8e844d345fbebc498ac43a696042>
 mkIff :: Context -> AST -> AST -> IO AST
 mkIff = liftFun2 z3_mk_iff
 
 -- | Create an AST node representing /t1 implies t2/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac829c0e25bbbd30343bf073f7b524517>
 mkImplies :: Context -> AST -> AST -> IO AST
 mkImplies = liftFun2 z3_mk_implies
 
 -- | Create an AST node representing /t1 xor t2/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc6d1b848032dec0c4617b594d4229ec>
 mkXor :: Context -> AST -> AST -> IO AST
 mkXor = liftFun2 z3_mk_xor
 
 -- | Create an AST node representing args[0] and ... and args[num_args-1].
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacde98ce4a8ed1dde50b9669db4838c61>
 mkAnd :: Context -> [AST] -> IO AST
 mkAnd = liftAstN "Z3.Base.mkAnd: empty list of expressions" z3_mk_and
 
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 mkOr :: Context -> [AST] -> IO AST
 mkOr = liftAstN "Z3.Base.mkOr: empty list of expressions" z3_mk_or
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e4ac0a4e53eee0b4b0ef159ed7d0cd5>
 mkAdd :: Context -> [AST] -> IO AST
 mkAdd = liftAstN "Z3.Base.mkAdd: empty list of expressions" z3_mk_add
 
 -- | Create an AST node representing args[0] * ... * args[num_args-1].
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab9affbf8401a18eea474b59ad4adc890>
 mkMul :: Context -> [AST] -> IO AST
 mkMul = liftAstN "Z3.Base.mkMul: empty list of expressions" z3_mk_mul
 
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4f5fea9b683f9e674fd8f14d676cc9a9>
 mkSub :: Context -> [AST] -> IO AST
 mkSub = liftAstN "Z3.Base.mkSub: empty list of expressions" z3_mk_sub
 
 -- | Create an AST node representing -arg.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadcd2929ad732937e25f34277ce4988ea>
 mkUnaryMinus :: Context -> AST -> IO AST
 mkUnaryMinus = liftFun1 z3_mk_unary_minus
 
 -- | Create an AST node representing arg1 div arg2.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1ac60ee8307af8d0b900375914194ff3>
 mkDiv :: Context -> AST -> AST -> IO AST
 mkDiv = liftFun2 z3_mk_div
 
 -- | Create an AST node representing arg1 mod arg2.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8e350ac77e6b8fe805f57efe196e7713>
 mkMod :: Context -> AST -> AST -> IO AST
 mkMod = liftFun2 z3_mk_mod
 
 -- | Create an AST node representing arg1 rem arg2.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2fcdb17f9039bbdaddf8a30d037bd9ff>
 mkRem :: Context -> AST -> AST -> IO AST
 mkRem = liftFun2 z3_mk_rem
 
 -- | Create less than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga58a3dc67c5de52cf599c346803ba1534>
 mkLt :: Context -> AST -> AST -> IO AST
 mkLt = liftFun2 z3_mk_lt
 
 -- | Create less than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa9a33d11096841f4e8c407f1578bc0bf>
 mkLe :: Context -> AST -> AST -> IO AST
 mkLe = liftFun2 z3_mk_le
 
 -- | Create greater than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46167b86067586bb742c0557d7babfd3>
 mkGt :: Context -> AST -> AST -> IO AST
 mkGt = liftFun2 z3_mk_gt
 
 -- | Create greater than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad9245cbadb80b192323d01a8360fb942>
 mkGe :: Context -> AST -> AST -> IO AST
 mkGe = liftFun2 z3_mk_ge
 
 -- | Coerce an integer to a real.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7130641e614c7ebafd28ae16a7681a21>
 mkInt2Real :: Context -> AST -> IO AST
 mkInt2Real = liftFun1 z3_mk_int2real
 
 -- | Coerce a real to an integer.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga759b6563ba1204aae55289009a3fdc6d>
 mkReal2Int :: Context -> AST -> IO AST
 mkReal2Int = liftFun1 z3_mk_real2int
 
 -- | Check if a real number is an integer.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaac2ad0fb04e4900fdb4add438d137ad3>
 mkIsInt :: Context -> AST -> IO AST
 mkIsInt = liftFun1 z3_mk_is_int
 
@@ -733,239 +646,161 @@ mkIsInt = liftFun1 z3_mk_is_int
 -- Bit-vectors
 
 -- | Bitwise negation.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga36cf75c92c54c1ca633a230344f23080>
 mkBvnot :: Context -> AST -> IO AST
 mkBvnot = liftFun1 z3_mk_bvnot
 
 -- | Take conjunction of bits in vector, return vector of length 1.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaccc04f2b58903279b1b3be589b00a7d8>
 mkBvredand :: Context -> AST -> IO AST
 mkBvredand = liftFun1 z3_mk_bvredand
 
 -- | Take disjunction of bits in vector, return vector of length 1.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd18e127c0586abf47ad9cd96895f7d2>
 mkBvredor :: Context -> AST -> IO AST
 mkBvredor = liftFun1 z3_mk_bvredor
 
 -- | Bitwise and.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab96e0ea55334cbcd5a0e79323b57615d>
 mkBvand :: Context -> AST -> AST -> IO AST
 mkBvand = liftFun2 z3_mk_bvand
 
 -- | Bitwise or.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga77a6ae233fb3371d187c6d559b2843f5>
 mkBvor :: Context -> AST -> AST -> IO AST
 mkBvor = liftFun2 z3_mk_bvor
 
 -- | Bitwise exclusive-or.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a3821ea00b1c762205f73e4bc29e7d8>
 mkBvxor :: Context -> AST -> AST -> IO AST
 mkBvxor = liftFun2 z3_mk_bvxor
 
 -- | Bitwise nand.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga96dc37d36efd658fff5b2b4df49b0e61>
 mkBvnand :: Context -> AST -> AST -> IO AST
 mkBvnand = liftFun2 z3_mk_bvnand
 
 -- | Bitwise nor.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabf15059e9e8a2eafe4929fdfd259aadb>
 mkBvnor :: Context -> AST -> AST -> IO AST
 mkBvnor = liftFun2 z3_mk_bvnor
 
 -- | Bitwise xnor.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga784f5ca36a4b03b93c67242cc94b21d6>
 mkBvxnor :: Context -> AST -> AST -> IO AST
 mkBvxnor = liftFun2 z3_mk_bvxnor
 
 -- | Standard two's complement unary minus.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0c78be00c03eda4ed6a983224ed5c7b7
 mkBvneg :: Context -> AST -> IO AST
 mkBvneg = liftFun1 z3_mk_bvneg
 
 -- | Standard two's complement addition.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga819814e33573f3f9948b32fdc5311158>
 mkBvadd :: Context -> AST -> AST -> IO AST
 mkBvadd = liftFun2 z3_mk_bvadd
 
 -- | Standard two's complement subtraction.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga688c9aa1347888c7a51be4e46c19178e>
 mkBvsub :: Context -> AST -> AST -> IO AST
 mkBvsub = liftFun2 z3_mk_bvsub
 
 -- | Standard two's complement multiplication.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6abd3dde2a1ceff1704cf7221a72258c>
 mkBvmul :: Context -> AST -> AST -> IO AST
 mkBvmul = liftFun2 z3_mk_bvmul
 
 -- | Unsigned division.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga56ce0cd61666c6f8cf5777286f590544>
 mkBvudiv :: Context -> AST -> AST -> IO AST
 mkBvudiv = liftFun2 z3_mk_bvudiv
 
 -- | Two's complement signed division.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad240fedb2fda1c1005b8e9d3c7f3d5a0>
 mkBvsdiv :: Context -> AST -> AST -> IO AST
 mkBvsdiv = liftFun2 z3_mk_bvsdiv
 
 -- | Unsigned remainder.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5df4298ec835e43ddc9e3e0bae690c8d>
 mkBvurem :: Context -> AST -> AST -> IO AST
 mkBvurem = liftFun2 z3_mk_bvurem
 
 -- | Two's complement signed remainder (sign follows dividend).
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46c18a3042fca174fe659d3185693db1>
 mkBvsrem :: Context -> AST -> AST -> IO AST
 mkBvsrem = liftFun2 z3_mk_bvsrem
 
 -- | Two's complement signed remainder (sign follows divisor).
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga95dac8e6eecb50f63cb82038560e0879>
 mkBvsmod :: Context -> AST -> AST -> IO AST
 mkBvsmod = liftFun2 z3_mk_bvsmod
 
 -- | Unsigned less than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5774b22e93abcaf9b594672af6c7c3c4>
 mkBvult :: Context -> AST -> AST -> IO AST
 mkBvult = liftFun2 z3_mk_bvult
 
 -- | Two's complement signed less than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8ce08af4ed1fbdf08d4d6e63d171663a>
 mkBvslt :: Context -> AST -> AST -> IO AST
 mkBvslt = liftFun2 z3_mk_bvslt
 
 -- | Unsigned less than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab738b89de0410e70c089d3ac9e696e87>
 mkBvule :: Context -> AST -> AST -> IO AST
 mkBvule = liftFun2 z3_mk_bvule
 
 -- | Two's complement signed less than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab7c026feb93e7d2eab180e96f1e6255d>
 mkBvsle :: Context -> AST -> AST -> IO AST
 mkBvsle = liftFun2 z3_mk_bvsle
 
 -- | Unsigned greater than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gade58fbfcf61b67bf8c4a441490d3c4df>
 mkBvuge :: Context -> AST -> AST -> IO AST
 mkBvuge = liftFun2 z3_mk_bvuge
 
 -- | Two's complement signed greater than or equal to.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeec3414c0e8a90a6aa5a23af36bf6dc5>
 mkBvsge :: Context -> AST -> AST -> IO AST
 mkBvsge = liftFun2 z3_mk_bvsge
 
 -- | Unsigned greater than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga063ab9f16246c99e5c1c893613927ee3>
 mkBvugt :: Context -> AST -> AST -> IO AST
 mkBvugt = liftFun2 z3_mk_bvugt
 
 -- | Two's complement signed greater than.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4e93a985aa2a7812c7c11a2c65d7c5f0>
 mkBvsgt :: Context -> AST -> AST -> IO AST
 mkBvsgt = liftFun2 z3_mk_bvsgt
 
 -- | Concatenate the given bit-vectors.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae774128fa5e9ff7458a36bd10e6ca0fa>
 mkConcat :: Context -> AST -> AST -> IO AST
 mkConcat = liftFun2 z3_mk_concat
 
 -- | Extract the bits high down to low from a bitvector of size m to yield a new
 -- bitvector of size /n/, where /n = high - low + 1/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga32d2fe7563f3e6b114c1b97b205d4317>
 mkExtract :: Context -> Int -> Int -> AST -> IO AST
 mkExtract = liftFun3 z3_mk_extract
 
 -- | Sign-extend of the given bit-vector to the (signed) equivalent bitvector
 -- of size /m+i/, where /m/ is the size of the given bit-vector.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad29099270b36d0680bb54b560353c10e>
 mkSignExt :: Context -> Int -> AST -> IO AST
 mkSignExt = liftFun2 z3_mk_sign_ext
 
 -- | Extend the given bit-vector with zeros to the (unsigned) equivalent
 -- bitvector of size /m+i/, where /m/ is the size of the given bit-vector.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac9322fae11365a78640baf9078c428b3>
 mkZeroExt :: Context -> Int -> AST -> IO AST
 mkZeroExt = liftFun2 z3_mk_zero_ext
 
 -- | Repeat the given bit-vector up length /i/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga03e81721502ea225c264d1f556c9119d>
 mkRepeat :: Context -> Int -> AST -> IO AST
 mkRepeat = liftFun2 z3_mk_repeat
 
 -- | Shift left.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8d5e776c786c1172fa0d7dfede454e1>
 mkBvshl :: Context -> AST -> AST -> IO AST
 mkBvshl = liftFun2 z3_mk_bvshl
 
 -- | Logical shift right.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac59645a6edadad79a201f417e4e0c512>
 mkBvlshr :: Context -> AST -> AST -> IO AST
 mkBvlshr = liftFun2 z3_mk_bvlshr
 
 -- | Arithmetic shift right.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga674b580ad605ba1c2c9f9d3748be87c4>
 mkBvashr :: Context -> AST -> AST -> IO AST
 mkBvashr = liftFun2 z3_mk_bvashr
 
 -- | Rotate bits of /t1/ to the left /i/ times.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4932b7d08fea079dd903cd857a52dcda>
 mkRotateLeft :: Context -> Int -> AST -> IO AST
 mkRotateLeft = liftFun2 z3_mk_rotate_left
 
 -- | Rotate bits of /t1/ to the right /i/ times.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3b94e1bf87ecd1a1858af8ebc1da4a1c>
 mkRotateRight :: Context -> Int -> AST -> IO AST
 mkRotateRight = liftFun2 z3_mk_rotate_right
 
 -- | Rotate bits of /t1/ to the left /t2/ times.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf46f1cb80e5a56044591a76e7c89e5e7>
 mkExtRotateLeft :: Context -> AST -> AST -> IO AST
 mkExtRotateLeft = liftFun2 z3_mk_ext_rotate_left
 
 -- | Rotate bits of /t1/ to the right /t2/ times.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb227526c592b523879083f12aab281f>
 mkExtRotateRight :: Context -> AST -> AST -> IO AST
 mkExtRotateRight = liftFun2 z3_mk_ext_rotate_right
 
 -- | Create an /n/ bit bit-vector from the integer argument /t1/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga35f89eb05df43fbd9cce7200cc1f30b5>
 mkInt2bv :: Context -> Int -> AST -> IO AST
 mkInt2bv = liftFun2 z3_mk_int2bv
 
@@ -973,64 +808,46 @@ mkInt2bv = liftFun2 z3_mk_int2bv
 -- then the bit-vector /t1/ is treated as unsigned. So the result is non-negative
 -- and in the range [0..2^/N/-1], where /N/ are the number of bits in /t1/.
 -- If /is_signed/ is true, /t1/ is treated as a signed bit-vector.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac87b227dc3821d57258d7f53a28323d4>
 mkBv2int :: Context -> AST -> Bool -> IO AST
 mkBv2int = liftFun2 z3_mk_bv2int
 
 -- | Create a predicate that checks that the bit-wise addition of /t1/ and /t2/
 -- does not overflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga88f6b5ec876f05e0d7ba51e96c4b077f>
 mkBvaddNoOverflow :: Context -> AST -> AST -> Bool -> IO AST
 mkBvaddNoOverflow = liftFun3 z3_mk_bvadd_no_overflow
 
 -- | Create a predicate that checks that the bit-wise signed addition of /t1/
 -- and /t2/ does not underflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1e2b1927cf4e50000c1600d47a152947>
 mkBvaddNoUnderflow :: Context -> AST -> AST -> IO AST
 mkBvaddNoUnderflow = liftFun2 z3_mk_bvadd_no_underflow
 
 -- | Create a predicate that checks that the bit-wise signed subtraction of /t1/
 -- and /t2/ does not overflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga785f8127b87e0b42130e6d8f52167d7c>
 mkBvsubNoOverflow :: Context -> AST -> AST -> IO AST
 mkBvsubNoOverflow = liftFun2 z3_mk_bvsub_no_overflow
 
 -- | Create a predicate that checks that the bit-wise subtraction of /t1/ and
 -- /t2/ does not underflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6480850f9fa01e14aea936c88ff184c4>
 mkBvsubNoUnderflow :: Context -> AST -> AST -> IO AST
 mkBvsubNoUnderflow = liftFun2 z3_mk_bvsub_no_underflow
 
 -- | Create a predicate that checks that the bit-wise signed division of /t1/
 -- and /t2/ does not overflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa17e7b2c33dfe2abbd74d390927ae83e>
 mkBvsdivNoOverflow :: Context -> AST -> AST -> IO AST
 mkBvsdivNoOverflow = liftFun2 z3_mk_bvsdiv_no_overflow
 
 -- | Check that bit-wise negation does not overflow when /t1/ is interpreted as
 -- a signed bit-vector.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae9c5d72605ddcd0e76657341eaccb6c7>
 mkBvnegNoOverflow :: Context -> AST -> IO AST
 mkBvnegNoOverflow = liftFun1 z3_mk_bvneg_no_overflow
 
 -- | Create a predicate that checks that the bit-wise multiplication of /t1/ and
 -- /t2/ does not overflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga86f4415719d295a2f6845c70b3aaa1df>
 mkBvmulNoOverflow :: Context -> AST -> AST -> Bool -> IO AST
 mkBvmulNoOverflow = liftFun3 z3_mk_bvmul_no_overflow
 
 -- | Create a predicate that checks that the bit-wise signed multiplication of
 -- /t1/ and /t2/ does not underflow.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga501ccc01d737aad3ede5699741717fda>
 mkBvmulNoUnderflow :: Context -> AST -> AST -> IO AST
 mkBvmulNoUnderflow = liftFun2 z3_mk_bvmul_no_underflow
 
@@ -1039,34 +856,24 @@ mkBvmulNoUnderflow = liftFun2 z3_mk_bvmul_no_underflow
 
 -- | Array read. The argument a is the array and i is the index of the array
 -- that gets read.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
 mkSelect :: Context -> AST -> AST -> IO AST
 mkSelect = liftFun2 z3_mk_select
 
 -- | Array update.   
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae305a4f54b4a64f7e5973ae6ccb13593>
 mkStore :: Context -> AST -> AST -> AST -> IO AST
 mkStore = liftFun3 z3_mk_store
 
 -- | Create the constant array.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga84ea6f0c32b99c70033feaa8f00e8f2d>
 mkConstArray :: Context -> Sort -> AST -> IO AST
 mkConstArray = liftFun2 z3_mk_const_array
 
 -- | map f on the the argument arrays.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9150242d9430a8c3d55d2ca3b9a4362d>
 mkMap :: Context -> FuncDecl -> Int -> [AST] -> IO AST
 mkMap c f n args = withArray (map unAST args) $ \args' ->
     checkError c $ liftVal c =<< z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) args'
 
 -- | Access the array default value. Produces the default range value, for
 -- arrays that can be represented as finite maps with a default range value.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
 mkArrayDefault :: Context -> AST -> IO AST
 mkArrayDefault = liftFun1 z3_mk_array_default
 
@@ -1076,8 +883,6 @@ mkArrayDefault = liftFun1 z3_mk_array_default
 -- Numerals
 
 -- | Create a numeral of a given sort.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac8aca397e32ca33618d8024bff32948c>
 mkNumeral :: Context -> String -> Sort -> IO AST
 mkNumeral = liftFun2 z3_mk_numeral
 
@@ -1219,14 +1024,10 @@ mkExists c pats x s p
 -- Accessors
 
 -- | Return the size of the given bit-vector sort.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 getBvSortSize :: Context -> Sort -> IO Int
 getBvSortSize = liftFun1 z3_get_bv_sort_size
 
 -- | Return the sort of an AST node.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a4dac7e9397ff067136354cd33cb933>
 getSort :: Context -> AST -> IO Sort
 getSort = liftFun1 z3_get_sort
 
@@ -1240,15 +1041,11 @@ castLBool lb
 
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
 getBool :: Context -> AST -> IO (Maybe Bool)
 getBool c a = checkError c $
   castLBool <$> z3_get_bool_value (unContext c) (unAST a)
 
 -- | Return numeral value, as a string of a numeric constant term.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
 getNumeralString :: Context -> AST -> IO String
 getNumeralString = liftFun1 z3_get_numeral_string
 
@@ -1271,8 +1068,6 @@ getReal c a = parse <$> getNumeralString c a
 
 
 -- | Convert an ast into an APP_AST. This is just type casting.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
 toApp :: Context -> AST -> IO App
 toApp = liftFun1 z3_to_app
 
@@ -1332,8 +1127,6 @@ evalArray ctx model array =
 
 
 -- | Return the function declaration f associated with a (_ as_array f) node.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
 getAsArrayFuncDecl :: Context -> AST -> IO FuncDecl
 getAsArrayFuncDecl = liftFun1 z3_get_as_array_func_decl
 
@@ -1341,8 +1134,6 @@ getAsArrayFuncDecl = liftFun1 z3_get_as_array_func_decl
 -- for arrays in Z3. It is the array such that forall indices i we have that
 -- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE
 -- if the a is an as-array AST node.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: Context -> AST -> IO Bool
 isAsArray = liftFun1 z3_is_as_array
 
@@ -1367,8 +1158,6 @@ getEntryArgs ctx entry =
 -- | Return the interpretation of the function f in the model m.
 -- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
 getFuncInterp :: Context -> Model -> FuncDecl -> IO (Maybe FuncInterp)
 getFuncInterp c m fd = do
   ptr <- checkError c $
@@ -1376,52 +1165,36 @@ getFuncInterp c m fd = do
   return $ FuncInterp <$> ptrToMaybe ptr
 
 -- | Return the number of entries in the given function interpretation.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
 funcInterpGetNumEntries :: Context -> FuncInterp -> IO Int
 funcInterpGetNumEntries = liftFun1 z3_func_interp_get_num_entries
 
 -- | Return a _point_ of the given function intepretation.
 -- It represents the value of f in a particular point.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf157e1e1cd8c0cfe6a21be6370f659da>
 funcInterpGetEntry :: Context -> FuncInterp -> Int -> IO FuncEntry
 funcInterpGetEntry = liftFun2 z3_func_interp_get_entry
 
 -- | Return the 'else' value of the given function interpretation.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga46de7559826ba71b8488d727cba1fb64>
 funcInterpGetElse :: Context -> FuncInterp -> IO AST
 funcInterpGetElse = liftFun1 z3_func_interp_get_else
 
 -- | Return the arity (number of arguments) of the given function
 -- interpretation.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaca22cbdb6f7787aaae5d814f2ab383d8>
 funcInterpGetArity :: Context -> FuncInterp -> IO Int
 funcInterpGetArity = liftFun1 z3_func_interp_get_arity
 
 -- | Return the value of this point.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
 funcEntryGetValue :: Context -> FuncEntry -> IO AST
 funcEntryGetValue = liftFun1 z3_func_entry_get_value
 
 -- | Return the number of arguments in a Z3_func_entry object.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga51aed8c5bc4b1f53f0c371312de3ce1a>
 funcEntryGetNumArgs :: Context -> FuncEntry -> IO Int
 funcEntryGetNumArgs = liftFun1 z3_func_entry_get_num_args
 
 -- | Return an argument of a Z3_func_entry object.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6fe03fe3c824fceb52766a4d8c2cbeab>
 funcEntryGetArg :: Context -> FuncEntry -> Int -> IO AST
 funcEntryGetArg = liftFun2 z3_func_entry_get_arg
 
 -- | Convert the given model into a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
 modelToString :: Context -> Model -> IO String
 modelToString = liftFun1 z3_model_to_string
 
@@ -1433,14 +1206,10 @@ showModel = modelToString
 -- Constraints
 
 -- | Create a backtracking point.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad651ad68c7a060cbb5616349233cb10f>
 push :: Context -> IO ()
 push = liftFun0 z3_push
 
 -- | Backtrack /n/ backtracking points.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab2b3a542006c86c8d86dc37872f88b61>
 pop :: Context -> Int -> IO ()
 pop = liftFun1 z3_pop
 
@@ -1449,14 +1218,10 @@ pop = liftFun1 z3_pop
 -- TODO Constraints: Z3_persist_ast
 
 -- | Assert a constraing into the logical context.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 assertCnstr :: Context -> AST -> IO ()
 assertCnstr = liftFun1 z3_assert_cnstr
 
 -- | Get model (logical context is consistent)
---
--- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 getModel :: Context -> IO (Result, Maybe Model)
 getModel c =
   alloca $ \mptr ->
@@ -1469,14 +1234,10 @@ getModel c =
         mkModel = fmap Model . ptrToMaybe
 
 -- | Delete a model object.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0cc98d3ce68047f873e119bccaabdbee>
 delModel :: Context -> Model -> IO ()
 delModel = liftFun1 z3_del_model
 
 -- | Check whether the given logical context is consistent or not.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 check :: Context -> IO Result
 check ctx = checkError ctx $ toResult <$> z3_check (unContext ctx)
 
@@ -1688,8 +1449,6 @@ solverReset :: Context -> Solver -> IO ()
 solverReset = liftFun1 z3_solver_reset
 
 -- | Number of backtracking points.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafd4b4a6465601835341b477b75725b28>
 solverGetNumScopes :: Context -> Solver -> IO Int
 solverGetNumScopes = liftFun1 z3_solver_get_num_scopes
 
@@ -1716,8 +1475,6 @@ solverGetReasonUnknown :: Context -> Solver -> IO String
 solverGetReasonUnknown = liftFun1 z3_solver_get_reason_unknown
 
 -- | Convert the given solver into a string.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf52e41db4b12a84188b80255454d3abb>
 solverToString :: Context -> Solver -> IO String
 solverToString = liftFun1 z3_solver_to_string
 
@@ -1772,8 +1529,6 @@ funcDeclToString = liftFun1 z3_func_decl_to_string
 -- | Convert the given benchmark into SMT-LIB formatted string.
 --
 -- The output format can be configured via 'setASTPrintMode'.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf93844a5964ad8dee609fac3470d86e4>
 benchmarkToSMTLibString :: Context
                             -> String   -- ^ name
                             -> String   -- ^ logic
