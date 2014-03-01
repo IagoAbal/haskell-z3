@@ -13,8 +13,34 @@
 --             David Castro <david.castro.dcp@gmail.com>
 --
 -- Low-level bindings to Z3 API.
+--
+-- There is (mostly) a one-to-one correspondence with Z3 C API, thus see
+-- <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html>
+-- for further details.
+--
+-- Note that these bindings still focus on the old Z3 3.x API, and will not
+-- handle reference counting for you if you decide to use Z3 4.x API functions.
+-- Mixing both API is known to cause some segmentation faults!
+--
+-- Supporting Z3 4.x API (and removing support for 3.x) is planned for
+-- the 0.4 version of these bindings.
 
--- TODO Rename showModel and showContext to match Z3 C API names.
+{- HACKING
+
+Add here the IO-based wrapper for a new Z3 API function:
+
+* Take a look to a few others API functions and follow the same coding style.
+    * 2-space wide indentation, no tabs.
+    * No trailing spaces, please.
+    * ...
+* Place the API function in the right section, according to the Z3's API documentation.
+* Annotate the API function with a short but concise haddock comment.
+    * Look at the Z3 API documentation for inspiration.
+* Add the API function to the module export list, (only) if needed.
+
+This should be straightforward for most cases using [MARSHALLING HELPERS].
+-}
+
 module Z3.Base (
 
   -- * Types
@@ -157,8 +183,8 @@ module Z3.Base (
   , mkPattern
   , mkBound
   , mkForall
-  , mkForallConst
   , mkExists
+  , mkForallConst
 
   -- * Accessors
   , getBvSortSize
@@ -194,7 +220,6 @@ module Z3.Base (
   , delModel
   , push
   , pop
-
 
   -- * Parameters
   , mkParams
@@ -266,28 +291,32 @@ newtype Config = Config { unConfig :: Ptr Z3_config }
 newtype Context = Context { unContext :: Ptr Z3_context }
     deriving Eq
 
--- | A Z3 /Lisp-link symbol/.
+-- | A Z3 /symbol/.
+--
+-- Used to name types, constants and functions.
 newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A Z3 /AST node/.
+--
+-- This is the data-structure used in Z3 to represent terms, formulas and types.
 newtype AST = AST { unAST :: Ptr Z3_ast }
     deriving (Eq, Ord, Show, Storable, Typeable)
 
--- | Kind of Z3 AST representing /types/.
+-- | A kind of AST representing /types/.
 newtype Sort = Sort { unSort :: Ptr Z3_sort }
     deriving (Eq, Ord, Show, Storable)
 
--- | Kind of AST used to represent function symbols.
+-- | A kind of AST representing function symbols.
 newtype FuncDecl = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
     deriving (Eq, Ord, Show, Storable, Typeable)
 
--- | A kind of Z3 AST used to represent constant and function declarations.
+-- | A kind of AST representing constant and function declarations.
 newtype App = App { unApp :: Ptr Z3_app }
     deriving (Eq, Ord, Show, Storable)
 
--- | A kind of AST used to represent pattern and multi-patterns used to
---   guide quantifier instantiation.
+-- | A kind of AST representing pattern and multi-patterns to
+-- guide quantifier instantiation.
 newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
     deriving (Eq, Ord, Show, Storable)
 
@@ -295,99 +324,36 @@ newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
 newtype Model = Model { unModel :: Ptr Z3_model }
     deriving Eq
 
--- | A interpretation of a function.
+-- | An interpretation of a function in a model.
 newtype FuncInterp = FuncInterp { unFuncInterp :: Ptr Z3_func_interp }
     deriving Eq
 
---  | An entry in an interpreted function
+-- | Representation of the value of a 'Z3_func_interp' at a particular point.
 newtype FuncEntry = FuncEntry { unFuncEntry :: Ptr Z3_func_entry }
     deriving Eq
 
--- | A Z3 parameter set. Starting at Z3 4.0, parameter sets are used
--- to configure many components such as: simplifiers, tactics,
--- solvers, etc.
+-- | A Z3 parameter set.
+--
+-- Starting at Z3 4.0, parameter sets are used to configure many components
+-- such as: simplifiers, tactics, solvers, etc.
 newtype Params = Params { unParams :: Ptr Z3_params }
     deriving Eq
 
--- | A Z3 solver engine
+-- | A Z3 solver engine.
+--
+-- A(n) (incremental) solver, possibly specialized by a particular tactic
+-- or logic.
 newtype Solver = Solver { _unSolver :: ForeignPtr Z3_solver }
     deriving Eq
 
-withSolverPtr :: Solver -> (Ptr Z3_solver -> IO a) -> IO a
-withSolverPtr (Solver fptr) = withForeignPtr fptr
-
-
 -- | Result of a satisfiability check.
+--
+-- This corresponds to the /z3_lbool/ type in the C API.
 data Result
     = Sat
     | Unsat
     | Undef
     deriving (Eq, Ord, Read, Show)
-
--- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
-toResult :: Z3_lbool -> Result
-toResult lb
-    | lb == z3_l_true  = Sat
-    | lb == z3_l_false = Unsat
-    | lb == z3_l_undef = Undef
-    | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
-
--- | Convert 'Z3_bool' to 'Bool'.
---
--- 'Foreign.toBool' should be OK but this is more convenient.
-toBool :: Z3_bool -> Bool
-toBool b
-    | b == z3_true  = True
-    | b == z3_false = False
-    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
-
--- | Convert 'Bool' to 'Z3_bool'.
-unBool :: Bool -> Z3_bool
-unBool True  = z3_true
-unBool False = z3_false
-
--- | Z3 exceptions.
-data Z3Error = Z3Error
-    { errCode :: Z3ErrorCode
-    , errMsg  :: String
-    }
-  deriving Typeable
-
-instance Show Z3Error where
-  show (Z3Error _ s) = s
-
-data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
-  | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
-  | InvalidUsage   | DecRefError | Z3Exception
-  deriving (Show, Typeable)
-
-toZ3Error :: Z3_error_code -> Z3ErrorCode
-toZ3Error e
-  | e == z3_sort_error        = SortError
-  | e == z3_iob               = IOB
-  | e == z3_invalid_arg       = InvalidArg
-  | e == z3_parser_error      = ParserError
-  | e == z3_no_parser         = NoParser
-  | e == z3_invalid_pattern   = InvalidPattern
-  | e == z3_memout_fail       = MemoutFail
-  | e == z3_file_access_error = FileAccessError
-  | e == z3_internal_fatal    = InternalFatal
-  | e == z3_invalid_usage     = InvalidUsage
-  | e == z3_dec_ref_error     = DecRefError
-  | e == z3_exception         = Z3Exception
-  | otherwise                 = error "Z3.Base.toZ3Error: illegal `Z3_error_code' value"
-
-instance Exception Z3Error
-
--- | Throws a z3 error
-z3Error :: Z3ErrorCode -> String -> IO ()
-z3Error cd = throw . Z3Error cd
-
--- | Throw an exception if a Z3 error happened
-checkError :: Context -> IO a -> IO a
-checkError c m = m <* (z3_get_error_code (unContext c) >>= throwZ3Exn)
-  where throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
-        getErrStr i  = peekCString =<< z3_get_error_msg_ex (unContext c) i
 
 ---------------------------------------------------------------------
 -- Configuration
@@ -401,6 +367,9 @@ delConfig :: Config -> IO ()
 delConfig = z3_del_config . unConfig
 
 -- | Run a computation using a temporally created configuration.
+--
+-- Note that the configuration object can be thrown away once
+-- it has been used to create the Z3 'Context'.
 withConfig :: (Config -> IO a) -> IO a
 withConfig = bracket mkConfig delConfig
 
@@ -436,15 +405,18 @@ contextToString = liftFun0 z3_context_to_string
 -- | Alias for 'contextToString'.
 showContext :: Context -> IO String
 showContext = contextToString
+{-# DEPRECATED showContext "Use contextToString instead." #-}
 
 ---------------------------------------------------------------------
 -- Symbols
 
 -- | Create a Z3 symbol using an integer.
+--
+-- @mkIntSymbol c i@ /requires/ @0 <= i < 2^30@
 mkIntSymbol :: Integral int => Context -> int -> IO Symbol
-mkIntSymbol ctx i
+mkIntSymbol c i
   | 0 <= i && i <= 2^(30::Int)-1
-  = liftVal ctx =<< z3_mk_int_symbol (unContext ctx) (fromIntegral i)
+  = liftVal c =<< z3_mk_int_symbol (unContext c) (fromIntegral i)
   | otherwise
   = error "Z3.Base.mkIntSymbol: invalid range"
 
@@ -458,35 +430,53 @@ mkStringSymbol = liftFun1 z3_mk_string_symbol
 ---------------------------------------------------------------------
 -- Sorts
 
--- TODO Sorts: Z3_is_eq_sort
-
 -- | Create a free (uninterpreted) type using the given name (symbol).
+--
+-- Two free types are considered the same iff the have the same name.
 mkUninterpretedSort :: Context -> Symbol -> IO Sort
 mkUninterpretedSort = liftFun1 z3_mk_uninterpreted_sort
 
--- | Create the /Boolean/ type.
+-- | Create the /boolean/ type.
+--
+-- This type is used to create propositional variables and predicates.
 mkBoolSort :: Context -> IO Sort
 mkBoolSort = liftFun0 z3_mk_bool_sort
 
 -- | Create an /integer/ type.
+--
+-- This is the type of arbitrary precision integers.
+-- A machine integer can be represented using bit-vectors, see 'mkBvSort'.
 mkIntSort :: Context -> IO Sort
 mkIntSort = liftFun0 z3_mk_int_sort
 
 -- | Create a /real/ type.
+--
+-- This type is not a floating point number.
+-- Z3 does not have support for floating point numbers yet.
 mkRealSort :: Context -> IO Sort
 mkRealSort = liftFun0 z3_mk_real_sort
 
 -- | Create a bit-vector type of the given size.
 --
 -- This type can also be seen as a machine integer.
+--
+-- @mkBvSort c sz@ /requires/ @sz >= 0@
 mkBvSort :: Context -> Int -> IO Sort
 mkBvSort = liftFun1 z3_mk_bv_sort
 
+-- TODO: Z3_mk_finite_domain_sort
+
 -- | Create an array type
+--
+-- We usually represent the array type as: [domain -> range].
+-- Arrays are usually used to model the heap/memory in software verification.
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
 
 -- | Create a tuple type
+--
+-- A tuple with n fields has a constructor and n projections.
+-- This function will also declare the constructor and projection functions.
 mkTupleSort :: Context                         -- ^ Context
             -> Symbol                          -- ^ Name of the sort
             -> [(Symbol, Sort)]                -- ^ Name and sort of each field
@@ -507,14 +497,17 @@ mkTupleSort c sym symSorts = checkError c $
        outProjs  <- peekArray n outProjsPtr
        return (Sort sort, FuncDecl outConstr, map FuncDecl outProjs)
 
-
--- TODO Sorts: from Z3_mk_array_sort on
+-- TODO Sorts: from Z3_mk_enumeration_sort on
 
 ---------------------------------------------------------------------
 -- Constants and Applications
 
--- | A Z3 function
-mkFuncDecl :: Context -> Symbol -> [Sort] -> Sort -> IO FuncDecl
+-- | Declare a constant or function.
+mkFuncDecl :: Context   -- ^ Logical context.
+            -> Symbol   -- ^ Name of the function (or constant).
+            -> [Sort]   -- ^ Function domain (empty for constants).
+            -> Sort     -- ^ Return sort of the function.
+            -> IO FuncDecl
 mkFuncDecl ctx smb dom rng =
   withArray (map unSort dom) $ \c_dom ->
     checkError ctx $
@@ -534,6 +527,9 @@ mkApp ctx fd args =
         fdPtr   = unFuncDecl fd
 
 -- | Declare and create a constant.
+--
+-- This is a shorthand for:
+-- @do xd <- mkFunDecl c x [] s; mkApp c xd []@
 mkConst :: Context -> Symbol -> Sort -> IO AST
 mkConst = liftFun2 z3_mk_const
 
@@ -554,6 +550,8 @@ mkEq = liftFun2 z3_mk_eq
 
 -- | The distinct construct is used for declaring the arguments pairwise
 -- distinct.
+--
+-- That is, @and [ args!!i /= args!!j | i <- [0..length(args)-1], j <- [i+1..length(args)-1] ]@
 mkDistinct :: Context -> [AST] -> IO AST
 mkDistinct =
   liftAstN "Z3.Base.mkDistinct: empty list of expressions" z3_mk_distinct
@@ -804,9 +802,11 @@ mkExtRotateRight = liftFun2 z3_mk_ext_rotate_right
 mkInt2bv :: Context -> Int -> AST -> IO AST
 mkInt2bv = liftFun2 z3_mk_int2bv
 
--- | Create an integer from the bit-vector argument /t1/. If /is_signed/ is false,
--- then the bit-vector /t1/ is treated as unsigned. So the result is non-negative
--- and in the range [0..2^/N/-1], where /N/ are the number of bits in /t1/.
+-- | Create an integer from the bit-vector argument /t1/.
+--
+-- If /is_signed/ is false, then the bit-vector /t1/ is treated as unsigned.
+-- So the result is non-negative and in the range [0..2^/N/-1],
+-- where /N/ are the number of bits in /t1/.
 -- If /is_signed/ is true, /t1/ is treated as a signed bit-vector.
 mkBv2int :: Context -> AST -> Bool -> IO AST
 mkBv2int = liftFun2 z3_mk_bv2int
@@ -856,28 +856,52 @@ mkBvmulNoUnderflow = liftFun2 z3_mk_bvmul_no_underflow
 
 -- | Array read. The argument a is the array and i is the index of the array
 -- that gets read.
-mkSelect :: Context -> AST -> AST -> IO AST
+mkSelect :: Context
+            -> AST      -- ^ Array.
+            -> AST      -- ^ Index of the array to read.
+            -> IO AST
 mkSelect = liftFun2 z3_mk_select
 
--- | Array update.   
-mkStore :: Context -> AST -> AST -> AST -> IO AST
+-- | Array update.
+--
+-- The result of this function is an array that is equal to the input array
+-- (with respect to select) on all indices except for i, where it maps to v.
+--
+-- The semantics of this function is given by the theory of arrays described
+-- in the SMT-LIB standard. See <http://smtlib.org> for more details.
+mkStore :: Context
+          -> AST      -- ^ Array.
+          -> AST      -- ^ Index /i/ of the array.
+          -> AST      -- ^ New value for /i/.
+          -> IO AST
 mkStore = liftFun3 z3_mk_store
 
 -- | Create the constant array.
-mkConstArray :: Context -> Sort -> AST -> IO AST
+--
+-- The resulting term is an array, such that a select on an arbitrary index
+-- produces the value /v/.
+mkConstArray :: Context
+            -> Sort   -- ^ Domain sort of the array.
+            -> AST    -- ^ Value /v/ that the array maps to.
+            -> IO AST
 mkConstArray = liftFun2 z3_mk_const_array
 
--- | map f on the the argument arrays.
+-- | Map a function /f/ on the the argument arrays.
 mkMap :: Context -> FuncDecl -> Int -> [AST] -> IO AST
 mkMap c f n args = withArray (map unAST args) $ \args' ->
     checkError c $ liftVal c =<< z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) args'
+-- TODO: Fix mkMap, it must return another list of ASTs
 
--- | Access the array default value. Produces the default range value, for
--- arrays that can be represented as finite maps with a default range value.
-mkArrayDefault :: Context -> AST -> IO AST
+-- | Access the array default value.
+--
+-- Produces the default range value, for arrays that can be represented as
+-- finite maps with a default range value.
+mkArrayDefault :: Context
+                -> AST      -- ^ Array.
+                -> IO AST
 mkArrayDefault = liftFun1 z3_mk_array_default
 
--- TODO Sets
+-- TODO: Sets
 
 ---------------------------------------------------------------------
 -- Numerals
@@ -963,16 +987,51 @@ mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
 ---------------------------------------------------------------------
 -- Quantifiers
 
-mkPattern :: Context -> [AST] -> IO Pattern
+-- | Create a pattern for quantifier instantiation.
+--
+-- Z3 uses pattern matching to instantiate quantifiers.
+-- If a pattern is not provided for a quantifier, then Z3 will automatically
+-- compute a set of patterns for it. However, for optimal performance,
+-- the user should provide the patterns.
+--
+-- Patterns comprise a list of terms.
+-- The list should be non-empty.
+-- If the list comprises of more than one term, it is a called a multi-pattern.
+--
+-- In general, one can pass in a list of (multi-)patterns in the quantifier
+-- constructor.
+mkPattern :: Context
+              -> [AST]        -- ^ Terms.
+              -> IO Pattern
 mkPattern _ [] = error "Z3.Base.mkPattern: empty list of expressions"
 mkPattern c es = marshal z3_mk_pattern c $ withAstArray es
 
-mkBound :: Context -> Int -> Sort -> IO AST
+-- | Create a bound variable.
+--
+-- Bound variables are indexed by de-Bruijn indices.
+--
+-- See <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1d4da8849fca699b345322f8ee1fa31e>
+mkBound :: Context
+            -> Int    -- ^ de-Bruijn index.
+            -> Sort
+            -> IO AST
 mkBound c i s
   | i >= 0    = liftFun2 z3_mk_bound c i s
   | otherwise = error "Z3.Base.mkBound: negative de-Bruijn index"
 
-mkForall :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
+-- | Create a forall formula.
+--
+-- The bound variables are de-Bruijn indices created using 'mkBound'.
+--
+-- Z3 applies the convention that the last element in /xs/ refers to the
+-- variable with index 0, the second to last element of /xs/ refers to the
+-- variable with index 1, etc.
+mkForall :: Context
+          -> [Pattern]  -- ^ Instantiation patterns (see 'mkPattern').
+          -> [Symbol]   -- ^ Bound (quantified) variables /xs/.
+          -> [Sort]     -- ^ Sorts of the bound variables.
+          -> AST        -- ^ Body of the quantifier.
+          -> IO AST
 mkForall c pats x s p
   = withArray (map unPattern pats) $ \patsPtr ->
     withArray (map unSymbol  x   ) $ \xptr ->
@@ -987,9 +1046,36 @@ mkForall c pats x s p
               \ different number of symbols and sorts"
           | otherwise     = fromIntegral l
           where l = length s
+-- TODO: Allow the user to specify the quantifier weight!
 
+-- | Create an exists formula.
+--
+-- Similar to 'mkForall'.
+mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
+mkExists c pats x s p
+  = withArrayLen (map unPattern pats) $ \numPats patsPtr ->
+    withArray (map unSymbol  x   ) $ \xptr ->
+    withArray (map unSort    s   ) $ \sptr ->
+      checkError c $ AST <$> z3_mk_exists cptr 0
+                                (fromIntegral numPats) patsPtr
+                                len sptr xptr
+                                (unAST p)
+  where cptr = unContext c
+        len
+          | l == 0        = error "Z3.Base.mkForall:\
+              \ forall with 0 bound variables"
+          | l /= length x = error "Z3.Base.mkForall:\
+              \ different number of symbols and sorts"
+          | otherwise     = fromIntegral l
+          where l = length s
 
-mkForallConst :: Context -> [Pattern] -> [App] -> AST -> IO AST
+-- | Create a universal quantifier using a list of constants that will form the
+-- set of bound variables.
+mkForallConst :: Context
+              -> [Pattern] -- ^ Instantiation patterns (see 'mkPattern').
+              -> [App]     -- ^ Constants to be abstracted into bound variables.
+              -> AST       -- ^ Quantifier body.
+              -> IO AST
 mkForallConst c pats apps p
   = withArray (map unPattern pats) $ \patsPtr ->
     withArray (map unApp     apps) $ \appsPtr ->
@@ -1002,23 +1088,6 @@ mkForallConst c pats apps p
               \ forall with 0 bound variables"
           | otherwise     = fromIntegral l
           where l = length apps
-
-
-mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
-mkExists c pats x s p
-  = withArray (map unPattern pats) $ \patsPtr ->
-    withArray (map unSymbol  x   ) $ \xptr ->
-    withArray (map unSort    s   ) $ \sptr ->
-      checkError c $ AST <$> z3_mk_exists cptr 0 n patsPtr len sptr xptr (unAST p)
-  where n    = fromIntegral $ length pats
-        cptr = unContext c
-        len
-          | l == 0        = error "Z3.Base.mkForall:\
-              \ forall with 0 bound variables"
-          | l /= length x = error "Z3.Base.mkForall:\
-              \ different number of symbols and sorts"
-          | otherwise     = fromIntegral l
-          where l = length s
 
 ---------------------------------------------------------------------
 -- Accessors
@@ -1077,7 +1146,16 @@ toApp = liftFun1 z3_to_app
 -- Models
 
 -- | Evaluate an AST node in the given model.
-eval :: Context -> Model -> AST -> IO (Maybe AST)
+--
+-- The evaluation may fail for the following reasons:
+--
+--     * /t/ contains a quantifier.
+--     * the model m is partial.
+--     * /t/ is type incorrect.
+eval :: Context
+        -> Model  -- ^ Model /m/.
+        -> AST    -- ^ Expression to evaluate /t/.
+        -> IO (Maybe AST)
 eval ctx m a =
   alloca $ \aptr2 ->
     checkError ctx $ z3_eval ctxPtr (unModel m) (unAST a) aptr2 >>= peekAST aptr2 . toBool
@@ -1087,15 +1165,16 @@ eval ctx m a =
 
         ctxPtr = unContext ctx
 
--- | Evaluate a collection of AST nodes in the given model.
+-- | Evaluate a /collection/ of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
 evalT c m = fmap T.sequence . T.mapM (eval c m)
 
--- | The interpretation of a function is a mapping part (arguments to values)
--- and an 'else' part.
+-- | The interpretation of a function.
 data FuncModel = FuncModel
     { interpMap :: [([AST], AST)]
+      -- ^ Mapping from arguments to values.
     , interpElse :: AST
+      -- ^ Default value.
     }
 
 -- | Evaluate a function declaration to a list of argument/value pairs.
@@ -1201,6 +1280,7 @@ modelToString = liftFun1 z3_model_to_string
 -- | Alias for 'modelToString'.
 showModel :: Context -> Model -> IO String
 showModel = modelToString
+{-# DEPRECATED showModel "Use modelToString instead." #-}
 
 ---------------------------------------------------------------------
 -- Constraints
@@ -1246,9 +1326,18 @@ check ctx = checkError ctx $ toResult <$> z3_check (unContext ctx)
 
 -- TODO From section 'Constraints' on.
 
-
 ---------------------------------------------------------------------
--- * Parameters
+-- Parameters
+
+{-# WARNING mkParams
+          , paramsSetBool
+          , paramsSetUInt
+          , paramsSetDouble
+          , paramsSetSymbol
+          , paramsToString
+          "New Z3 API support is still incomplete and fragile: \
+          \you may experience segmentation faults!"
+  #-}
 
 mkParams :: Context -> IO Params
 mkParams = liftFun0 z3_mk_params
@@ -1267,7 +1356,6 @@ paramsSetSymbol = liftFun3 z3_params_set_symbol
 
 paramsToString :: Context -> Params -> IO String
 paramsToString = liftFun1 z3_params_to_string
-
 
 ---------------------------------------------------------------------
 -- Solvers
@@ -1547,7 +1635,68 @@ benchmarkToSMTLibString c name logic st attr assump f =
                                   numAssump cassump (unAST f)
 
 ---------------------------------------------------------------------
--- Lifting
+-- Error handling
+
+-- | Z3 exceptions.
+data Z3Error = Z3Error
+    { errCode :: Z3ErrorCode
+    , errMsg  :: String
+    }
+  deriving Typeable
+
+instance Show Z3Error where
+  show (Z3Error _ s) = s
+
+data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
+  | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
+  | InvalidUsage   | DecRefError | Z3Exception
+  deriving (Show, Typeable)
+
+toZ3Error :: Z3_error_code -> Z3ErrorCode
+toZ3Error e
+  | e == z3_sort_error        = SortError
+  | e == z3_iob               = IOB
+  | e == z3_invalid_arg       = InvalidArg
+  | e == z3_parser_error      = ParserError
+  | e == z3_no_parser         = NoParser
+  | e == z3_invalid_pattern   = InvalidPattern
+  | e == z3_memout_fail       = MemoutFail
+  | e == z3_file_access_error = FileAccessError
+  | e == z3_internal_fatal    = InternalFatal
+  | e == z3_invalid_usage     = InvalidUsage
+  | e == z3_dec_ref_error     = DecRefError
+  | e == z3_exception         = Z3Exception
+  | otherwise                 = error "Z3.Base.toZ3Error: illegal `Z3_error_code' value"
+
+instance Exception Z3Error
+
+-- | Throws a z3 error
+z3Error :: Z3ErrorCode -> String -> IO ()
+z3Error cd = throw . Z3Error cd
+
+-- | Throw an exception if a Z3 error happened
+checkError :: Context -> IO a -> IO a
+checkError c m = m <* (z3_get_error_code (unContext c) >>= throwZ3Exn)
+  where throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
+        getErrStr i  = peekCString =<< z3_get_error_msg_ex (unContext c) i
+
+-- TODO: Z3_get_version
+
+---------------------------------------------------------------------
+-- Marshalling
+
+{- MARSHALLING HELPERS
+
+We try to get rid of most of the marshalling boilerplate which, by the way,
+is going to be essential for transitioning to Z3 4 API.
+
+Most API functions can be lifted using 'liftFun'{0-3} helpers. Otherwise try
+using 'marshal'. Worst case scenario, write the marshalling code yourself.
+
+-}
+
+withSolverPtr :: Solver -> (Ptr Z3_solver -> IO a) -> IO a
+withSolverPtr (Solver fptr) = withForeignPtr fptr
 
 withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
 withIntegral x f = f (fromIntegral x)
@@ -1690,6 +1839,28 @@ liftFun3 f c x y z = checkError c $
 
 ---------------------------------------------------------------------
 -- Utils
+
+-- | Convert 'Z3_lbool' from Z3.Base.C to 'Result'
+toResult :: Z3_lbool -> Result
+toResult lb
+    | lb == z3_l_true  = Sat
+    | lb == z3_l_false = Unsat
+    | lb == z3_l_undef = Undef
+    | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
+
+-- | Convert 'Z3_bool' to 'Bool'.
+--
+-- 'Foreign.toBool' should be OK but this is more convenient.
+toBool :: Z3_bool -> Bool
+toBool b
+    | b == z3_true  = True
+    | b == z3_false = False
+    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
+
+-- | Convert 'Bool' to 'Z3_bool'.
+unBool :: Bool -> Z3_bool
+unBool True  = z3_true
+unBool False = z3_false
 
 -- | Wraps a non-null pointer with 'Just', or else returns 'Nothing'.
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
