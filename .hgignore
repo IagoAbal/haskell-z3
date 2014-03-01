@@ -1,5 +1,6 @@
-dist$
-cabal-dev$
+dist
+\.cabal-sandbox
+cabal\.sandbox\.config
 
 .*\.swp$
 .*\.hs~$
