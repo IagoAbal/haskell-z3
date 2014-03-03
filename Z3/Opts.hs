@@ -1,19 +1,25 @@
 
 -- |
 -- Module    : Z3.Opts
--- Copyright : (c) Iago Abal, 2013
+-- Copyright : (c) Iago Abal, 2013-2014
 --             (c) David Castro, 2013
 -- License   : BSD3
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 --
--- High-level interface to configuration options.
+-- Configuring Z3.
+--
+-- Z3 has plenty of configuration options and these vary quite a lot
+-- across Z3 versions, being hard to design a proper abstraction.
+-- We decided to keep this simple.
 
 module Z3.Opts
-  ( Opts
+  ( -- * Z3 configuration
+    Opts
   , setOpts
   , stdOpts
   , (+?)
+    -- * Z3 options
   , opt
   , OptValue
   )
@@ -33,6 +39,9 @@ instance Monoid Opts where
   mempty = Opts []
   mappend (Opts ps1) (Opts ps2) = Opts (ps1++ps2)
 
+singleton :: Opt -> Opts
+singleton o = Opts [o]
+
 -- | Default configuration.
 stdOpts :: Opts
 stdOpts = mempty
@@ -43,9 +52,12 @@ stdOpts = mempty
 
 -- | Set a configuration option.
 opt :: OptValue val => String -> val -> Opts
-opt oid val = Opts [option oid val]
+opt oid val = singleton $ option oid val
 
 -- | Set configuration.
+--
+-- If you are using 'Z3.Lang' or 'Z3.Monad' interfaces, you don't need
+-- to call this function directly, just pass your 'Opts' to /evalZ3*/.
 setOpts :: Base.Config -> Opts -> IO ()
 setOpts baseCfg (Opts params) = mapM_ (setOpt baseCfg) params
 
@@ -65,8 +77,7 @@ class OptValue val where
   option :: String -> val -> Opt
 
 instance OptValue Bool where
-  option oid True  = Opt oid "true"
-  option oid False = Opt oid "false"
+  option oid = Opt oid . boolVal
 
 instance OptValue Int where
   option oid = Opt oid . show
@@ -79,3 +90,10 @@ instance OptValue Double where
 
 instance OptValue [Char] where
   option = Opt
+
+-------------------------------------------------
+-- Utils
+
+boolVal :: Bool -> String
+boolVal True  = "true"
+boolVal False = "false"
