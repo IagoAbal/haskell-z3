@@ -18,12 +18,17 @@
 -- A simple monadic wrapper for 'Z3.Base'.
 
 module Z3.Monad
-  ( MonadZ3(..)
+  ( -- * Z3 monad
+    MonadZ3(..)
   , Z3
   , module Z3.Opts
   , Logic(..)
   , evalZ3
   , evalZ3With
+    -- ** Z3 enviroments
+  , Z3Env
+  , newEnv
+  , delEnv
   , evalZ3WithEnv
 
   -- * Types
@@ -192,6 +197,7 @@ module Z3.Monad
   , withModel
   , push
   , pop
+  , local
   , reset
   , getNumScopes
 
@@ -231,6 +237,7 @@ import Z3.Base
 import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
+import qualified Control.Exception as E
 import Control.Monad ( void )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
@@ -292,6 +299,7 @@ liftSolver1 f_s f_no_s a =
 newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
     deriving (Functor, Applicative, Monad, MonadIO)
 
+-- | Z3 environment.
 data Z3Env
   = Z3Env {
       envSolver  :: Maybe Base.Solver
@@ -305,23 +313,40 @@ instance MonadZ3 Z3 where
 -- | Eval a Z3 script.
 evalZ3With :: Maybe Logic -> Opts -> Z3 a -> IO a
 evalZ3With mbLogic opts (Z3 s) =
-  Base.withConfig $ \cfg -> do
-    setOpts cfg opts
-    Base.withContext cfg $ \ctx -> do
-      mbSolver <- T.mapM (Base.mkSolverForLogic ctx) mbLogic
-      runReaderT s (Z3Env mbSolver ctx)
+  E.bracket (newEnv mbLogic opts) delEnv $ runReaderT s
 
 -- | Eval a Z3 script with default configuration options.
 evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With Nothing stdOpts
 
--- | Eval a Z3 script with a given context and solver.
-evalZ3WithEnv :: Base.Context
-              -> Base.Solver
-              -> Z3 a
+-- | Create a new Z3 environment.
+--
+-- Until we move to Z3 API 4.0 you need to manually freed this
+-- environment using 'delEnv'.
+newEnv :: Maybe Logic -> Opts -> IO Z3Env
+newEnv mbLogic opts =
+  Base.withConfig $ \cfg -> do
+    setOpts cfg opts
+    ctx <- Base.mkContext cfg
+    mbSolver <- T.mapM (Base.mkSolverForLogic ctx) mbLogic
+    return $ Z3Env mbSolver ctx
+
+-- | Free a Z3 environment.
+delEnv :: Z3Env -> IO ()
+delEnv = Base.delContext . envContext
+
+-- | Eval a Z3 script with a given environment.
+--
+-- Environments may facilitate running many queries under the same
+-- logical context.
+--
+-- Note that an environment may change after each query.
+-- If you want to preserve the same environment then use 'local', as in
+-- @evalZ3WithEnv /env/ (local /query/)@.
+evalZ3WithEnv :: Z3 a
+              -> Z3Env
               -> IO a
-evalZ3WithEnv ctx slv (Z3 s) =
-  runReaderT s (Z3Env (Just slv) ctx)
+evalZ3WithEnv (Z3 s) = runReaderT s
 
 ---------------------------------------------------------------------
 -- Contexts
@@ -1083,6 +1108,16 @@ push = liftSolver0 Base.solverPush Base.push
 -- | Backtrack /n/ backtracking points.
 pop :: MonadZ3 z3 => Int -> z3 ()
 pop = liftSolver1 Base.solverPop Base.pop
+
+-- | Run a query and restore the initial logical context.
+--
+-- This is a shorthand for 'push', run the query, and 'pop'.
+local :: MonadZ3 z3 => z3 a -> z3 a
+local q = do
+  push
+  r <- q
+  pop 1
+  return r
 
 -- | Backtrack all the way.
 reset :: MonadZ3 z3 => z3 ()
