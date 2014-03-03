@@ -924,3 +924,10 @@ foreign import ccall unsafe "Z3_get_error_msg"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae0aba52b5738b2ea78e0d6ad67ef1f92>
 foreign import ccall unsafe "Z3_get_error_msg_ex"
     z3_get_error_msg_ex :: Ptr Z3_context -> Z3_error_code -> IO Z3_string
+
+---------------------------------------------------------------------
+-- * Miscellaneous
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga45fcd18a00379b13a536c5b6117190ae>
+foreign import ccall unsafe "Z3_get_version"
+    z3_get_version :: Ptr CUInt -> Ptr CUInt -> Ptr CUInt -> Ptr CUInt -> IO ()

@@ -204,6 +204,10 @@ module Z3.Monad
   , funcDeclToString
   , solverToString
   , benchmarkToSMTLibString
+
+  -- * Miscellaneous
+  , Version(..)
+  , getVersion
   )
   where
 
@@ -222,6 +226,7 @@ import Z3.Base
   , Result(..)
   , Logic(..)
   , ASTPrintMode(..)
+  , Version(..)
   )
 import qualified Z3.Base as Base
 
@@ -1159,3 +1164,10 @@ benchmarkToSMTLibString :: MonadZ3 z3 =>
                             -> AST      -- ^ formula
                             -> z3 String
 benchmarkToSMTLibString = liftFun6 Base.benchmarkToSMTLibString
+
+---------------------------------------------------------------------
+-- Miscellaneous
+
+-- | Return Z3 version number information.
+getVersion :: MonadZ3 z3 => z3 Version
+getVersion = liftIO Base.getVersion
