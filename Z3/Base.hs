@@ -891,10 +891,17 @@ mkConstArray :: Context
 mkConstArray = liftFun2 z3_mk_const_array
 
 -- | Map a function /f/ on the the argument arrays.
-mkMap :: Context -> FuncDecl -> Int -> [AST] -> IO AST
-mkMap c f n args = withArray (map unAST args) $ \args' ->
-    checkError c $ liftVal c =<< z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) args'
--- TODO: Fix mkMap, it must return another list of ASTs
+--
+-- The /n/ nodes args must be of array sorts [domain -> range_i].
+-- The function declaration /f/ must have type range_1 .. range_n -> range.
+-- The sort of the result is [domain -> range].
+mkMap :: Context
+        -> FuncDecl   -- ^ Function /f/.
+        -> [AST]      -- ^ List of arrays.
+        -> IO AST
+mkMap c f args = withArrayLen (map unAST args) $ \n ptrArgs ->
+  checkError c $ liftVal c =<<
+      z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) ptrArgs
 
 -- | Access the array default value.
 --

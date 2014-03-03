@@ -925,8 +925,8 @@ mkConstArray = liftFun2 Base.mkConstArray
 -- | map f on the the argument arrays.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9150242d9430a8c3d55d2ca3b9a4362d>
-mkMap :: MonadZ3 z3 => FuncDecl -> Int -> [AST] -> z3 AST
-mkMap = liftFun3 Base.mkMap
+mkMap :: MonadZ3 z3 => FuncDecl -> [AST] -> z3 AST
+mkMap = liftFun2 Base.mkMap
 
 -- | Access the array default value. Produces the default range value, for
 -- arrays that can be represented as finite maps with a default range value.
