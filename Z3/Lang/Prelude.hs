@@ -47,6 +47,7 @@ module Z3.Lang.Prelude (
     , showContext
     , exprToString
     , push, pop
+    , getVersion
 
     -- ** Models
     , Model

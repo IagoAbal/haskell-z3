@@ -256,6 +256,10 @@ module Z3.Base (
   , funcDeclToString
   , benchmarkToSMTLibString
 
+  -- * Miscellaneous
+  , Version(..)
+  , getVersion
+
   -- * Error Handling
   , Z3Error(..)
   , Z3ErrorCode(..)
@@ -1680,7 +1684,35 @@ checkError c m = m <* (z3_get_error_code (unContext c) >>= throwZ3Exn)
   where throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
         getErrStr i  = peekCString =<< z3_get_error_msg_ex (unContext c) i
 
--- TODO: Z3_get_version
+---------------------------------------------------------------------
+-- Miscellaneous
+
+data Version
+  = Version {
+      z3Major    :: !Int
+    , z3Minor    :: !Int
+    , z3Build    :: !Int
+    , z3Revision :: !Int
+    }
+  deriving (Eq,Ord)
+
+instance Show Version where
+  show (Version major minor build _) =
+    show major ++ "." ++ show minor ++ "." ++ show build
+
+-- | Return Z3 version number information.
+getVersion :: IO Version
+getVersion =
+  alloca $ \ptrMinor ->
+  alloca $ \ptrMajor ->
+  alloca $ \ptrBuild ->
+  alloca $ \ptrRevision -> do
+    z3_get_version ptrMinor ptrMajor ptrBuild ptrRevision
+    minor    <- fromIntegral <$> peek ptrMinor
+    major    <- fromIntegral <$> peek ptrMajor
+    build    <- fromIntegral <$> peek ptrBuild
+    revision <- fromIntegral <$> peek ptrRevision
+    return $ Version minor major build revision
 
 ---------------------------------------------------------------------
 -- Marshalling
