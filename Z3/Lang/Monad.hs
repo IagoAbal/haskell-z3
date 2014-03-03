@@ -59,6 +59,7 @@ import Z3.Opts
 
 import Control.Applicative ( Applicative )
 import Control.Monad.State
+import Data.Maybe ( fromMaybe )
 import qualified Data.Traversable as T
 
 ---------------------------------------------------------------------
@@ -136,7 +137,7 @@ setArgs :: Base.Config -> Args -> IO ()
 setArgs cfg args = do
   Base.setParamValue cfg "SOFT_TIMEOUT" soft_timeout_val
   setOpts cfg $ options args
-  where soft_timeout_val = show $ maybe 0 id $ softTimeout args
+  where soft_timeout_val = show $ fromMaybe 0 $ softTimeout args
 
 -------------------------------------------------
 -- HOAX-deBruijn conversion
