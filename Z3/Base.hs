@@ -185,6 +185,7 @@ module Z3.Base (
   , mkForall
   , mkExists
   , mkForallConst
+  , mkExistsConst
 
   -- * Accessors
   , getBvSortSize
@@ -1080,6 +1081,34 @@ mkForall = marshalMkQ z3_mk_forall
 mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkExists = marshalMkQ z3_mk_exists
 
+type MkZ3QuantifierConst = Ptr Z3_context
+                           -> CUInt
+                           -> CUInt
+                           -> Ptr (Ptr Z3_app)
+                           -> CUInt
+                           -> Ptr (Ptr Z3_pattern)
+                           -> Ptr Z3_ast
+                           -> IO (Ptr Z3_ast)
+
+marshalMkQConst :: MkZ3QuantifierConst
+                  -> Context
+                  -> [Pattern]
+                  -> [App]
+                  -> AST
+                -> IO AST
+marshalMkQConst z3_mk_Q_const c pats apps p =
+  withArrayLen (map unPattern pats) $ \n patsPtr ->
+  withArray    (map unApp     apps) $ \appsPtr ->
+      checkError c $ liftVal c =<<
+        z3_mk_Q_const cptr 0 len appsPtr (fromIntegral n) patsPtr (unAST p)
+  where cptr = unContext c
+        len
+          | l == 0        = error "Z3.Base.mkQuantifierConst:\
+              \ quantifier with 0 bound variables"
+          | otherwise     = fromIntegral l
+          where l = length apps
+-- TODO: Allow the user to specify the quantifier weight!
+
 -- | Create a universal quantifier using a list of constants that will form the
 -- set of bound variables.
 mkForallConst :: Context
@@ -1087,18 +1116,16 @@ mkForallConst :: Context
               -> [App]     -- ^ Constants to be abstracted into bound variables.
               -> AST       -- ^ Quantifier body.
               -> IO AST
-mkForallConst c pats apps p
-  = withArray (map unPattern pats) $ \patsPtr ->
-    withArray (map unApp     apps) $ \appsPtr ->
-      checkError c $ liftVal c =<<
-        z3_mk_forall_const cptr 0 len appsPtr n patsPtr (unAST p)
-  where n    = genericLength pats
-        cptr = unContext c
-        len
-          | l == 0        = error "Z3.Base.mkForallConst:\
-              \ forall with 0 bound variables"
-          | otherwise     = fromIntegral l
-          where l = length apps
+mkForallConst = marshalMkQConst z3_mk_forall_const
+
+-- | Create a existential quantifier using a list of constants that will form
+-- the set of bound variables.
+mkExistsConst :: Context
+              -> [Pattern] -- ^ Instantiation patterns (see 'mkPattern').
+              -> [App]     -- ^ Constants to be abstracted into bound variables.
+              -> AST       -- ^ Quantifier body.
+              -> IO AST
+mkExistsConst = marshalMkQConst z3_mk_exists_const
 
 ---------------------------------------------------------------------
 -- Accessors
