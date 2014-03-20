@@ -1351,6 +1351,7 @@ getModel c =
                     | otherwise    = mkModel <$> peek p
         mkModel :: Ptr Z3_model -> Maybe Model
         mkModel = fmap Model . ptrToMaybe
+{-# DEPRECATED getModel "Use checkAndGetModel instead." #-}
 
 -- | Check whether the given logical context is consistent or not.
 --
