@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE TupleSections              #-}
-{-# LANGUAGE TypeFamilies               #-}
 
 -- |
 -- Module    : Z3.Base
@@ -421,7 +421,7 @@ showContext = contextToString
 mkIntSymbol :: Integral int => Context -> int -> IO Symbol
 mkIntSymbol c i
   | 0 <= i && i <= 2^(30::Int)-1
-  = liftVal c =<< z3_mk_int_symbol (unContext c) (fromIntegral i)
+  = c2h c =<< z3_mk_int_symbol (unContext c) (fromIntegral i)
   | otherwise
   = error "Z3.Base.mkIntSymbol: invalid range"
 
@@ -516,7 +516,7 @@ mkFuncDecl :: Context   -- ^ Logical context.
 mkFuncDecl ctx smb dom rng =
   withArray (map unSort dom) $ \c_dom ->
     checkError ctx $
-      liftVal ctx =<< z3_mk_func_decl (unContext ctx)
+      c2h ctx =<< z3_mk_func_decl (unContext ctx)
                                       (unSymbol smb)
                                       (genericLength dom)
                                       c_dom
@@ -527,7 +527,7 @@ mkApp :: Context -> FuncDecl -> [AST] -> IO AST
 mkApp ctx fd args =
   withAstArray args $ \numArgs pargs ->
     checkError ctx $
-      liftVal ctx =<< z3_mk_app ctxPtr fdPtr numArgs pargs
+      c2h ctx =<< z3_mk_app ctxPtr fdPtr numArgs pargs
   where ctxPtr  = unContext ctx
         fdPtr   = unFuncDecl fd
 
@@ -901,7 +901,7 @@ mkMap :: Context
         -> [AST]      -- ^ List of arrays.
         -> IO AST
 mkMap c f args = withArrayLen (map unAST args) $ \n ptrArgs ->
-  checkError c $ liftVal c =<<
+  checkError c $ c2h c =<<
       z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) ptrArgs
 
 -- | Access the array default value.
@@ -932,12 +932,12 @@ mkInt c n = mkIntSort c >>= mkNumeral c n_str
 
 {-# INLINE mkIntZ3 #-}
 mkIntZ3 :: Context -> Int32 -> Sort -> IO AST
-mkIntZ3 c n s = marshal z3_mk_int c $ withVal s . withIntegral n
+mkIntZ3 c n s = marshal z3_mk_int c $ h2c s . withIntegral n
 
 {-# INLINE mkUnsignedIntZ3 #-}
 mkUnsignedIntZ3 :: Context -> Word32 -> Sort -> IO AST
 mkUnsignedIntZ3 c n s = marshal z3_mk_unsigned_int c $
-  withVal s . withIntegral n
+  h2c s . withIntegral n
 
 {-# INLINE mkInt64Z3 #-}
 mkInt64Z3 :: Context -> Int64 -> Sort -> IO AST
@@ -976,7 +976,7 @@ mkReal c n = mkRealSort c >>= mkNumeral c n_str
 
 {-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
 mkRealZ3 :: Context -> Ratio Int32 -> IO AST
-mkRealZ3 c r = checkError c $ liftVal c =<< z3_mk_real (unContext c) n d
+mkRealZ3 c r = checkError c $ c2h c =<< z3_mk_real (unContext c) n d
   where n = (fromIntegral $ numerator r)   :: CInt
         d = (fromIntegral $ denominator r) :: CInt
 
@@ -1048,7 +1048,7 @@ marshalMkQ z3_mk_Q c pats x s body =
   withArrayLen (map unPattern pats) $ \n patsPtr ->
   withArray (map unSymbol x) $ \xptr ->
   withArray (map unSort   s) $ \sptr ->
-    checkError c $ liftVal c =<<
+    checkError c $ c2h c =<<
         z3_mk_Q cptr 0 (fromIntegral n) patsPtr len sptr xptr (unAST body)
   where cptr = unContext c
         len
@@ -1099,7 +1099,7 @@ marshalMkQConst :: MkZ3QuantifierConst
 marshalMkQConst z3_mk_Q_const c pats apps p =
   withArrayLen (map unPattern pats) $ \n patsPtr ->
   withArray    (map unApp     apps) $ \appsPtr ->
-      checkError c $ liftVal c =<<
+      checkError c $ c2h c =<<
         z3_mk_Q_const cptr 0 len appsPtr (fromIntegral n) patsPtr (unAST p)
   where cptr = unContext c
         len
@@ -1668,7 +1668,7 @@ benchmarkToSMTLibString c name logic st attr assump f =
   withCString logic $ \clogic ->
   withCString st $ \cst ->
   withCString attr $ \cattr ->
-  withAstArray assump $ \numAssump cassump -> liftVal c =<<
+  withAstArray assump $ \numAssump cassump -> c2h c =<<
     z3_benchmark_to_smtlib_string (unContext c) cname clogic cst cattr
                                   numAssump cassump (unAST f)
 
@@ -1778,129 +1778,111 @@ liftAstN s _ _ [] = error s
 liftAstN _ f c es = marshal f c $ withAstArray es
 {-# INLINE liftAstN #-}
 
-class LiftVal a where
-  type Lifted a :: *
-  liftVal :: Context -> a -> IO (Lifted a)
-  withVal :: Lifted a -> (a -> IO b) -> IO b
+class Marshal h c where
+  c2h :: Context -> c -> IO h
+  h2c :: h -> (c -> IO r) -> IO r
 
-instance LiftVal () where
-  type Lifted () = ()
-  liftVal _ = return
-  withVal x f = f x
+instance Marshal () () where
+  c2h _ = return
+  h2c x f = f x
 
-instance LiftVal Z3_bool where
-  type Lifted Z3_bool = Bool
-  liftVal _ = return . toBool
-  withVal b f = f (unBool b)
+instance Marshal Bool Z3_bool where
+  c2h _ = return . toBool
+  h2c b f = f (unBool b)
 
-instance LiftVal CUInt where
-  type Lifted CUInt = Int
-  liftVal _ = return . fromIntegral
-  withVal i f = f (fromIntegral i)
+instance Integral h => Marshal h CUInt where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
 
-instance LiftVal CLLong where
-  type Lifted CLLong = Int64
-  liftVal _ = return . fromIntegral
-  withVal i f = f (fromIntegral i)
+instance Integral h => Marshal h CLLong where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
 
-instance LiftVal CULLong where
-  type Lifted CULLong = Word64
-  liftVal _ = return . fromIntegral
-  withVal i f = f (fromIntegral i)
+instance Integral h => Marshal h CULLong where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
 
-instance LiftVal CDouble where
-  type Lifted CDouble = Double
-  liftVal _ = return . realToFrac
-  withVal d f = f (realToFrac d)
+instance Marshal Double CDouble where
+  c2h _ = return . realToFrac
+  h2c d f = f (realToFrac d)
 
-instance LiftVal CString where
-  type Lifted CString = String
-  liftVal _ = peekCString
-  withVal   = withCString
+instance Marshal String CString where
+  c2h _ = peekCString
+  h2c   = withCString
 
-instance LiftVal (Ptr Z3_app) where
-  type Lifted (Ptr Z3_app) = App
-  liftVal _ = return . App
-  withVal a f = f (unApp a)
+instance Marshal App (Ptr Z3_app) where
+  c2h _ = return . App
+  h2c a f = f (unApp a)
 
-instance LiftVal (Ptr Z3_params) where
-  type Lifted (Ptr Z3_params) = Params
-  liftVal _ = return . Params
-  withVal p f = f (unParams p)
+instance Marshal Params (Ptr Z3_params) where
+  c2h _ = return . Params
+  h2c p f = f (unParams p)
 
-instance LiftVal (Ptr Z3_symbol) where
-  type Lifted (Ptr Z3_symbol) = Symbol
-  liftVal _ = return . Symbol
-  withVal s f = f (unSymbol s)
+instance Marshal Symbol (Ptr Z3_symbol) where
+  c2h _ = return . Symbol
+  h2c s f = f (unSymbol s)
 
-instance LiftVal (Ptr Z3_ast) where
-  type Lifted (Ptr Z3_ast) = AST
-  liftVal _ = return . AST
-  withVal a f = f (unAST a)
+instance Marshal AST (Ptr Z3_ast) where
+  c2h _ = return . AST
+  h2c a f = f (unAST a)
 
-instance LiftVal (Ptr Z3_sort) where
-  type Lifted (Ptr Z3_sort) = Sort
-  liftVal _ = return . Sort
-  withVal a f = f (unSort a)
+instance Marshal Sort (Ptr Z3_sort) where
+  c2h _ = return . Sort
+  h2c a f = f (unSort a)
 
-instance LiftVal (Ptr Z3_func_decl) where
-  type Lifted (Ptr Z3_func_decl) = FuncDecl
-  liftVal _ = return . FuncDecl
-  withVal a f = f (unFuncDecl a)
+instance Marshal FuncDecl (Ptr Z3_func_decl) where
+  c2h _ = return . FuncDecl
+  h2c a f = f (unFuncDecl a)
 
-instance LiftVal (Ptr Z3_func_entry) where
-  type Lifted (Ptr Z3_func_entry) = FuncEntry
-  liftVal _ = return . FuncEntry
-  withVal e f = f (unFuncEntry e)
+instance Marshal FuncEntry (Ptr Z3_func_entry) where
+  c2h _ = return . FuncEntry
+  h2c e f = f (unFuncEntry e)
 
-instance LiftVal (Ptr Z3_func_interp) where
-  type Lifted (Ptr Z3_func_interp) = FuncInterp
-  liftVal _ = return . FuncInterp
-  withVal a f = f (unFuncInterp a)
+instance Marshal FuncInterp (Ptr Z3_func_interp) where
+  c2h _ = return . FuncInterp
+  h2c a f = f (unFuncInterp a)
 
-instance LiftVal (Ptr Z3_model) where
-  type Lifted (Ptr Z3_model) = Model
-  liftVal _ = return . Model
-  withVal m f = f (unModel m)
+instance Marshal Model (Ptr Z3_model) where
+  c2h _ = return . Model
+  h2c m f = f (unModel m)
 
-instance LiftVal (Ptr Z3_pattern) where
-  type Lifted (Ptr Z3_pattern) = Pattern
-  liftVal _ = return . Pattern
-  withVal a f = f (unPattern a)
+instance Marshal Pattern (Ptr Z3_pattern) where
+  c2h _ = return . Pattern
+  h2c a f = f (unPattern a)
 
-instance LiftVal (Ptr Z3_solver) where
-  type Lifted (Ptr Z3_solver) = Solver
-  liftVal = mkSolverForeign
-  withVal = withSolverPtr
+instance Marshal Solver (Ptr Z3_solver) where
+  c2h = mkSolverForeign
+  h2c = withSolverPtr
 
-marshal :: LiftVal r => (Ptr Z3_context -> t)
-                       -> Context -> (t -> IO r) -> IO (Lifted r)
-marshal f c cont = checkError c $ cont (f (unContext c)) >>= liftVal c
+marshal :: Marshal rh rc => (Ptr Z3_context -> t) ->
+              Context -> (t -> IO rc) -> IO rh
+marshal f c cont = checkError c $ cont (f (unContext c)) >>= c2h c
 
-liftFun0 :: LiftVal r => (Ptr Z3_context -> IO r) ->
-              Context -> IO (Lifted r)
-liftFun0 f c = checkError c $ liftVal c =<< f (unContext c)
+liftFun0 :: Marshal rh rc => (Ptr Z3_context -> IO rc) ->
+              Context -> IO rh
+liftFun0 f c = checkError c $ c2h c =<< f (unContext c)
 {-# INLINE liftFun0 #-}
 
-liftFun1 :: (LiftVal a, LiftVal r) => (Ptr Z3_context -> a -> IO r) ->
-              Context -> Lifted a -> IO (Lifted r)
-liftFun1 f c x = checkError c $ withVal x $ \a ->
-  liftVal c =<< f (unContext c) a
+liftFun1 :: (Marshal ah ac, Marshal rh rc) =>
+              (Ptr Z3_context -> ac -> IO rc) ->
+              Context -> ah -> IO rh
+liftFun1 f c x = checkError c $ h2c x $ \a ->
+  c2h c =<< f (unContext c) a
 {-# INLINE liftFun1 #-}
 
-liftFun2 :: (LiftVal a, LiftVal b, LiftVal r) =>
-              (Ptr Z3_context -> a -> b -> IO r) ->
-              Context -> Lifted a -> Lifted b -> IO (Lifted r)
-liftFun2 f c x y = checkError c $ withVal x $ \a -> withVal y $ \b ->
-  liftVal c =<< f (unContext c) a b
+liftFun2 :: (Marshal ah ac, Marshal bh bc, Marshal rh rc) =>
+              (Ptr Z3_context -> ac -> bc -> IO rc) ->
+              Context -> ah -> bh -> IO rh
+liftFun2 f c x y = checkError c $ h2c x $ \a -> h2c y $ \b ->
+  c2h c =<< f (unContext c) a b
 {-# INLINE liftFun2 #-}
 
-liftFun3 :: (LiftVal a, LiftVal b, LiftVal c, LiftVal r) =>
-              (Ptr Z3_context -> a -> b -> c -> IO r) ->
-              Context -> Lifted a -> Lifted b -> Lifted c -> IO (Lifted r)
+liftFun3 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal rh rc) =>
+              (Ptr Z3_context -> ac -> bc -> cc -> IO rc) ->
+              Context -> ah -> bh -> ch -> IO rh
 liftFun3 f c x y z = checkError c $
-  withVal x $ \x1 -> withVal y $ \y1 -> withVal z $ \z1 ->
-    liftVal c =<< f (unContext c) x1 y1 z1
+  h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
+    c2h c =<< f (unContext c) x1 y1 z1
 {-# INLINE liftFun3 #-}
 
 ---------------------------------------------------------------------
