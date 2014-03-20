@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE PatternGuards              #-}
@@ -217,6 +218,7 @@ module Z3.Base (
   -- * Constraints
   , assertCnstr
   , check
+  , checkAndGetModel
   , getModel
   , delModel
   , push
@@ -231,6 +233,10 @@ module Z3.Base (
   , paramsToString
 
   -- * Solvers
+  -- /EXPERIMENTAL/ support for solvers,
+  -- very fragile and likely to cause crashes!!!
+  --
+  -- Yet, there are people using it, so you may want to give it a try.
   , Logic(..)
   , mkSolver
   , mkSimpleSolver
@@ -243,7 +249,7 @@ module Z3.Base (
   , solverAssertCnstr
   , solverAssertAndTrack
   , solverCheck
-  --, solverGetModel
+  , solverGetModel
   , solverCheckAndGetModel
   , solverGetReasonUnknown
   , solverToString
@@ -271,7 +277,6 @@ import Z3.Base.C
 import Control.Applicative ( (<$>), (<*) )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( when )
-import Data.List ( genericLength )
 import Data.Int
 import Data.Ratio ( Ratio, numerator, denominator, (%) )
 import Data.Traversable ( Traversable )
@@ -421,7 +426,7 @@ showContext = contextToString
 mkIntSymbol :: Integral int => Context -> int -> IO Symbol
 mkIntSymbol c i
   | 0 <= i && i <= 2^(30::Int)-1
-  = c2h c =<< z3_mk_int_symbol (unContext c) (fromIntegral i)
+  = marshal z3_mk_int_symbol c $ h2c i
   | otherwise
   = error "Z3.Base.mkIntSymbol: invalid range"
 
@@ -489,18 +494,18 @@ mkTupleSort :: Context                         -- ^ Context
                                                -- declarations for the
                                                -- constructor and projections.
 mkTupleSort c sym symSorts = checkError c $
-  let (syms, sorts) = unzip symSorts
-  in withArrayLen (map unSymbol syms) $ \ n symsPtr ->
-     withArray (map unSort sorts) $ \ sortsPtr ->
-     alloca $ \ outConstrPtr ->
-     allocaArray n $ \ outProjsPtr -> do
-       sort <- checkError c $ z3_mk_tuple_sort
-                   (unContext c) (unSymbol sym)
-                   (fromIntegral n) symsPtr sortsPtr
-                   outConstrPtr outProjsPtr
-       outConstr <- peek outConstrPtr
-       outProjs  <- peekArray n outProjsPtr
-       return (Sort sort, FuncDecl outConstr, map FuncDecl outProjs)
+  h2c sym $ \symPtr ->
+  marshalArrayLen syms $ \ n symsPtr ->
+  marshalArray sorts $ \ sortsPtr ->
+  alloca $ \ outConstrPtr ->
+  allocaArray n $ \ outProjsPtr -> do
+    sort <- z3_mk_tuple_sort (unContext c) symPtr
+                            (fromIntegral n) symsPtr sortsPtr
+                            outConstrPtr outProjsPtr
+    outConstr <- peek outConstrPtr
+    outProjs  <- peekArray n outProjsPtr
+    return (Sort sort, FuncDecl outConstr, map FuncDecl outProjs)
+  where (syms, sorts) = unzip symSorts
 
 -- TODO Sorts: from Z3_mk_enumeration_sort on
 
@@ -514,22 +519,18 @@ mkFuncDecl :: Context   -- ^ Logical context.
             -> Sort     -- ^ Return sort of the function.
             -> IO FuncDecl
 mkFuncDecl ctx smb dom rng =
-  withArray (map unSort dom) $ \c_dom ->
-    checkError ctx $
-      c2h ctx =<< z3_mk_func_decl (unContext ctx)
-                                      (unSymbol smb)
-                                      (genericLength dom)
-                                      c_dom
-                                      (unSort rng)
+  marshal z3_mk_func_decl ctx $ \f ->
+    h2c smb $ \ptrSym ->
+    marshalArrayLen dom $ \domNum domArr ->
+    h2c rng $ \ptrRange ->
+      f ptrSym domNum domArr ptrRange
 
 -- | Create a constant or function application.
 mkApp :: Context -> FuncDecl -> [AST] -> IO AST
-mkApp ctx fd args =
-  withAstArray args $ \numArgs pargs ->
-    checkError ctx $
-      c2h ctx =<< z3_mk_app ctxPtr fdPtr numArgs pargs
-  where ctxPtr  = unContext ctx
-        fdPtr   = unFuncDecl fd
+mkApp ctx fd args = marshal z3_mk_app ctx $ \f ->
+  h2c fd $ \fdPtr ->
+  marshalArrayLen args $ \argsNum argsArr ->
+    f fdPtr argsNum argsArr
 
 -- | Declare and create a constant.
 --
@@ -900,9 +901,10 @@ mkMap :: Context
         -> FuncDecl   -- ^ Function /f/.
         -> [AST]      -- ^ List of arrays.
         -> IO AST
-mkMap c f args = withArrayLen (map unAST args) $ \n ptrArgs ->
-  checkError c $ c2h c =<<
-      z3_mk_map (unContext c) (unFuncDecl f) (fromIntegral n) ptrArgs
+mkMap ctx fun args = marshal z3_mk_map ctx $ \f ->
+  h2c fun $ \funPtr ->
+  marshalArrayLen args $ \argsNum argsArr ->
+    f funPtr argsNum argsArr
 
 -- | Access the array default value.
 --
@@ -1016,7 +1018,7 @@ mkPattern :: Context
               -> [AST]        -- ^ Terms.
               -> IO Pattern
 mkPattern _ [] = error "Z3.Base.mkPattern: empty list of expressions"
-mkPattern c es = marshal z3_mk_pattern c $ withAstArray es
+mkPattern c es = marshal z3_mk_pattern c $ marshalArrayLen es
 
 -- | Create a bound variable.
 --
@@ -1037,6 +1039,7 @@ type MkZ3Quantifier = Ptr Z3_context -> CUInt
                       -> Ptr Z3_ast
                       -> IO (Ptr Z3_ast)
 
+-- TODO: Allow the user to specify the quantifier weight!
 marshalMkQ :: MkZ3Quantifier
           -> Context
           -> [Pattern]
@@ -1044,21 +1047,19 @@ marshalMkQ :: MkZ3Quantifier
           -> [Sort]
           -> AST
           -> IO AST
-marshalMkQ z3_mk_Q c pats x s body =
-  withArrayLen (map unPattern pats) $ \n patsPtr ->
-  withArray (map unSymbol x) $ \xptr ->
-  withArray (map unSort   s) $ \sptr ->
-    checkError c $ c2h c =<<
-        z3_mk_Q cptr 0 (fromIntegral n) patsPtr len sptr xptr (unAST body)
-  where cptr = unContext c
-        len
+marshalMkQ z3_mk_Q ctx pats x s body = marshal z3_mk_Q ctx $ \f ->
+  marshalArrayLen pats $ \n patsArr ->
+  marshalArray x $ \xArr ->
+  marshalArray s $ \sArr ->
+  h2c body $ \bodyPtr ->
+    f 0 n patsArr len sArr xArr bodyPtr
+  where len
           | l == 0        = error "Z3.Base.mkQuantifier:\
               \ quantifier with 0 bound variables"
           | l /= length x = error "Z3.Base.mkQuantifier:\
               \ different number of symbols and sorts"
           | otherwise     = fromIntegral l
           where l = length s
--- TODO: Allow the user to specify the quantifier weight!
 
 -- | Create a forall formula.
 --
@@ -1096,13 +1097,13 @@ marshalMkQConst :: MkZ3QuantifierConst
                   -> [App]
                   -> AST
                 -> IO AST
-marshalMkQConst z3_mk_Q_const c pats apps p =
-  withArrayLen (map unPattern pats) $ \n patsPtr ->
-  withArray    (map unApp     apps) $ \appsPtr ->
-      checkError c $ c2h c =<<
-        z3_mk_Q_const cptr 0 len appsPtr (fromIntegral n) patsPtr (unAST p)
-  where cptr = unContext c
-        len
+marshalMkQConst z3_mk_Q_const ctx pats apps body =
+  marshal z3_mk_Q_const ctx $ \f ->
+    marshalArrayLen pats $ \patsNum patsArr ->
+    marshalArray    apps $ \appsArr ->
+    h2c body $ \bodyPtr ->
+      f 0 len appsArr patsNum patsArr bodyPtr
+  where len
           | l == 0        = error "Z3.Base.mkQuantifierConst:\
               \ quantifier with 0 bound variables"
           | otherwise     = fromIntegral l
@@ -1276,10 +1277,10 @@ getEntryArgs ctx entry =
 -- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
 getFuncInterp :: Context -> Model -> FuncDecl -> IO (Maybe FuncInterp)
-getFuncInterp c m fd = do
-  ptr <- checkError c $
-           z3_model_get_func_interp (unContext c) (unModel m) (unFuncDecl fd)
-  return $ FuncInterp <$> ptrToMaybe ptr
+getFuncInterp ctx m fd = marshal z3_model_get_func_interp ctx $ \f ->
+  h2c m $ \mPtr ->
+  h2c fd $ \fdPtr ->
+    f mPtr fdPtr
 
 -- | Return the number of entries in the given function interpretation.
 funcInterpGetNumEntries :: Context -> FuncInterp -> IO Int
@@ -1339,7 +1340,7 @@ pop = liftFun1 z3_pop
 assertCnstr :: Context -> AST -> IO ()
 assertCnstr = liftFun1 z3_assert_cnstr
 
--- | Get model (logical context is consistent)
+-- | Check whether the given logical context is consistent or not.
 getModel :: Context -> IO (Result, Maybe Model)
 getModel c =
   alloca $ \mptr ->
@@ -1350,6 +1351,14 @@ getModel c =
                     | otherwise    = mkModel <$> peek p
         mkModel :: Ptr Z3_model -> Maybe Model
         mkModel = fmap Model . ptrToMaybe
+
+-- | Check whether the given logical context is consistent or not.
+--
+-- If the logical context is not unsatisfiable  and model construction is
+-- enabled (via 'mkConfig'), then a model is returned. The caller is
+-- responsible for deleting the model using the function 'delModel'.
+checkAndGetModel :: Context -> IO (Result, Maybe Model)
+checkAndGetModel = getModel
 
 -- | Delete a model object.
 delModel :: Context -> Model -> IO ()
@@ -1584,18 +1593,27 @@ solverAssertCnstr = liftFun2 z3_solver_assert
 solverAssertAndTrack :: Context -> Solver -> AST -> AST -> IO ()
 solverAssertAndTrack = liftFun3 z3_solver_assert_and_track
 
+-- | Check whether the assertions in a given solver are consistent or not.
 solverCheck :: Context -> Solver -> IO Result
-solverCheck c solver = checkError c $ fmap toResult $
-  withSolverPtr solver $ z3_solver_check (unContext c)
+solverCheck ctx solver = marshal z3_solver_check ctx $ withSolverPtr solver
+
+-- Retrieve the model for the last 'Z3_solver_check'.
+--
+-- The error handler is invoked if a model is not available because
+-- the commands above were not invoked for the given solver,
+-- or if the result was 'Unsat'.
+solverGetModel :: Context -> Solver -> IO Model
+solverGetModel ctx solver = marshal z3_solver_get_model ctx $ \f ->
+  h2c solver $ \solverPtr ->
+    f solverPtr
 
 solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
-solverCheckAndGetModel c (Solver s) =
-  do res <- checkError c $ toResult <$> withForeignPtr s (z3_solver_check cptr)
-     mmodel <- case res of
-                 Unsat -> return Nothing
-                 _ -> checkError c $ (Just . Model) <$> withForeignPtr s (z3_solver_get_model cptr)
-     return (res, mmodel)
-  where cptr = unContext c
+solverCheckAndGetModel ctx solver =
+  do res <- solverCheck ctx solver
+     mbModel <- case res of
+                  Unsat -> return Nothing
+                  _     -> Just <$> solverGetModel ctx solver
+     return (res, mbModel)
 
 solverGetReasonUnknown :: Context -> Solver -> IO String
 solverGetReasonUnknown = liftFun1 z3_solver_get_reason_unknown
@@ -1663,14 +1681,15 @@ benchmarkToSMTLibString :: Context
                             -> [AST]    -- ^ assumptions
                             -> AST      -- ^ formula
                             -> IO String
-benchmarkToSMTLibString c name logic st attr assump f =
-  withCString name $ \cname ->
-  withCString logic $ \clogic ->
-  withCString st $ \cst ->
-  withCString attr $ \cattr ->
-  withAstArray assump $ \numAssump cassump -> c2h c =<<
-    z3_benchmark_to_smtlib_string (unContext c) cname clogic cst cattr
-                                  numAssump cassump (unAST f)
+benchmarkToSMTLibString ctx name logic status attr assump form =
+  marshal z3_benchmark_to_smtlib_string ctx $ \f ->
+    withCString name $ \namePtr ->
+    withCString logic $ \logicPtr ->
+    withCString status $ \statusPtr ->
+    withCString attr $ \attrPtr ->
+    marshalArrayLen assump $ \assumpNum assumpArr ->
+    h2c form $ \formPtr ->
+      f namePtr logicPtr statusPtr attrPtr assumpNum assumpArr formPtr
 
 ---------------------------------------------------------------------
 -- Error handling
@@ -1767,20 +1786,35 @@ withSolverPtr (Solver fptr) = withForeignPtr fptr
 withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
 withIntegral x f = f (fromIntegral x)
 
-withAstArray :: [AST] -> (CUInt -> Ptr (Ptr Z3_ast) -> IO a) -> IO a
-withAstArray as f = withArrayLen (map unAST as) $ \n -> f (fromIntegral n)
-{-# INLINE withAstArray #-}
+marshalArray :: (Marshal h c, Storable c) => [h] -> (Ptr c -> IO a) -> IO a
+marshalArray hs f = hs2cs hs $ \cs -> withArray cs f
+
+marshalArrayLen :: (Marshal h c, Storable c, Integral i) =>
+    [h] -> (i -> Ptr c -> IO a) -> IO a
+marshalArrayLen hs f =
+  hs2cs hs $ \cs -> withArrayLen cs $ \n -> f (fromIntegral n)
 
 liftAstN :: String
             -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
             -> Context -> [AST] -> IO AST
 liftAstN s _ _ [] = error s
-liftAstN _ f c es = marshal f c $ withAstArray es
+liftAstN _ f c es = marshal f c $ marshalArrayLen es
 {-# INLINE liftAstN #-}
 
 class Marshal h c where
   c2h :: Context -> c -> IO h
   h2c :: h -> (c -> IO r) -> IO r
+
+hs2cs :: Marshal h c => [h] -> ([c] -> IO r) -> IO r
+hs2cs []     f = f []
+hs2cs (h:hs) f =
+  h2c h $ \c ->
+  hs2cs hs $ \cs -> f (c:cs)
+
+instance Marshal h (Ptr x) => Marshal (Maybe h) (Ptr x) where
+  c2h c = T.mapM (c2h c) . ptrToMaybe
+  h2c Nothing  f = f nullPtr
+  h2c (Just x) f = h2c x f
 
 instance Marshal () () where
   c2h _ = return
@@ -1789,6 +1823,14 @@ instance Marshal () () where
 instance Marshal Bool Z3_bool where
   c2h _ = return . toBool
   h2c b f = f (unBool b)
+
+instance Marshal Result Z3_lbool where
+  c2h _ = return . toResult
+  h2c = error "Marshal Result Z3_lbool => h2c not implemented"
+
+instance Integral h => Marshal h CInt where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
 
 instance Integral h => Marshal h CUInt where
   c2h _ = return . fromIntegral
