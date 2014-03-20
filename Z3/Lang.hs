@@ -8,8 +8,14 @@
 --             David Castro <david.castro.dcp@gmail.com>
 -- Stability : experimental
 
-module Z3.Lang (
-    module Z3.Lang.Prelude
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- Imports deprecated modules, but it is a depcrecated module itself.
+
+module Z3.Lang
+  {-# DEPRECATED
+        "The Z3.Lang interface will be moved to a dedicated package."
+        #-}
+  ( module Z3.Lang.Prelude
   , module Z3.Lang.Nat
   ) where
 

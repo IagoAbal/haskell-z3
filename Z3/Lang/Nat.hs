@@ -5,6 +5,9 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- Imports deprecated modules, but it is a depcrecated module itself.
+
 -- |
 -- Module    : Z3.Lang.Nat
 -- Copyright : (c) Iago Abal, 2012
@@ -14,6 +17,9 @@
 --             David Castro <david.castro.dcp@gmail.com>
 
 module Z3.Lang.Nat
+  {-# DEPRECATED
+        "The Z3.Lang interface will be moved to a dedicated package."
+        #-}
   ( Nat )
   where
 

@@ -26,9 +26,11 @@
 
 -- TODO: Pretty-printing of expressions
 
-module Z3.Lang.Prelude (
-
-    -- * Z3 script
+module Z3.Lang.Prelude
+  {-# DEPRECATED
+        "The Z3.Lang interface will be moved to a dedicated package."
+        #-}
+  ( -- * Z3 script
       Z3
     , Base.Result
     , evalZ3

@@ -9,8 +9,14 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- Imports deprecated modules, but it is a depcrecated module itself.
+
 -- TODO generalize for x^y
 module Z3.Lang.Pow2
+  {-# DEPRECATED
+        "The Z3.Lang interface will be moved to a dedicated package."
+        #-}
   ( declarePow2 )
   where
 
