@@ -62,24 +62,26 @@ data Z3_solver
 data Z3_params
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6c2de6ea89b244e37c3ffb17a9ea2a89>
-type Z3_lbool = CInt
+newtype Z3_lbool = Z3_lbool CInt
+  deriving Eq
 
 z3_l_true, z3_l_false, z3_l_undef :: Z3_lbool
-z3_l_true  = #const Z3_L_TRUE
-z3_l_false = #const Z3_L_FALSE
-z3_l_undef = #const Z3_L_UNDEF
+z3_l_true  = Z3_lbool (#const Z3_L_TRUE)
+z3_l_false = Z3_lbool (#const Z3_L_FALSE)
+z3_l_undef = Z3_lbool (#const Z3_L_UNDEF)
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3a65ded0ada3ee285865759a21140eeb>
-type Z3_bool = CInt
+newtype Z3_bool = Z3_bool CInt
+  deriving Eq
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga311274c8a65a5d25cf715ebdf0c68747>
 type Z3_error_handler = Ptr Z3_context -> Z3_error_code -> IO ()
 
-z3_true, z3_false :: Z3_lbool
+z3_true, z3_false :: Z3_bool
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad86c8730a2e4e61bac585b240a6288d4>
-z3_true  = #const Z3_TRUE
+z3_true  = Z3_bool(#const Z3_TRUE)
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1d9cee57472b2c7623642f123b8f1781>
-z3_false = #const Z3_FALSE
+z3_false = Z3_bool(#const Z3_FALSE)
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga49f047b93b0282e686956678da5b86b1>
 type Z3_string = CString
