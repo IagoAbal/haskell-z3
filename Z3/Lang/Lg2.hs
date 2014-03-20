@@ -9,7 +9,13 @@
 -- Maintainer: Iago Abal <iago.abal@gmail.com>,
 --             David Castro <david.castro.dcp@gmail.com>
 
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
+  -- Imports deprecated modules, but it is a depcrecated module itself.
+
 module Z3.Lang.Lg2
+  {-# DEPRECATED
+        "The Z3.Lang interface will be moved to a dedicated package."
+        #-}
   ( declareLg2 )
   where
 
