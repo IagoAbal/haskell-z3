@@ -595,6 +595,16 @@ foreign import ccall unsafe "Z3_mk_forall"
                   -> Ptr Z3_ast
                   -> IO (Ptr Z3_ast)
 
+-- | Referece: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4ffce34ff9117e6243283f11d87c1407>
+foreign import ccall unsafe "Z3_mk_exists"
+  z3_mk_exists :: Ptr Z3_context -> CUInt
+                  -> CUInt -> Ptr (Ptr Z3_pattern)
+                  -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol)
+                  -> Ptr Z3_ast
+                  -> IO (Ptr Z3_ast)
+
+-- TODO: Z3_mk_quantifier, Z3_mk_quantifier_ex
+
 -- | Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabdb40b3ac220bce5a3801e6d29fb3bb6>
 foreign import ccall unsafe "Z3_mk_forall_const"
   z3_mk_forall_const :: Ptr Z3_context
@@ -606,16 +616,18 @@ foreign import ccall unsafe "Z3_mk_forall_const"
                      -> Ptr Z3_ast
                      -> IO (Ptr Z3_ast)
 
--- | Referece: http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4ffce34ff9117e6243283f11d87c1407
-foreign import ccall unsafe "Z3_mk_exists"
-  z3_mk_exists :: Ptr Z3_context -> CUInt
-                  -> CUInt -> Ptr (Ptr Z3_pattern)
-                  -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol)
-                  -> Ptr Z3_ast
-                  -> IO (Ptr Z3_ast)
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2011bea0f4445d58ec4d7cefe4499ceb>
+foreign import ccall unsafe "Z3_mk_exists_const"
+  z3_mk_exists_const :: Ptr Z3_context
+                     -> CUInt
+                     -> CUInt
+                     -> Ptr (Ptr Z3_app)
+                     -> CUInt
+                     -> Ptr (Ptr Z3_pattern)
+                     -> Ptr Z3_ast
+                     -> IO (Ptr Z3_ast)
 
--- TODO: Z3_mk_quantifier, Z3_mk_quantifier_ex, Z3_mk_forall_const,
--- Z3_mk_exists_const, Z3_mk_quantifier_const, Z3_mk_quantifier_const_ex
+-- TODO: Z3_mk_quantifier_const, Z3_mk_quantifier_const_ex
 
 ---------------------------------------------------------------------
 -- * Accessors
