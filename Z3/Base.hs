@@ -1030,6 +1030,35 @@ mkBound c i s
   | i >= 0    = liftFun2 z3_mk_bound c i s
   | otherwise = error "Z3.Base.mkBound: negative de-Bruijn index"
 
+type MkZ3Quantifier = Ptr Z3_context -> CUInt
+                      -> CUInt -> Ptr (Ptr Z3_pattern)
+                      -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol)
+                      -> Ptr Z3_ast
+                      -> IO (Ptr Z3_ast)
+
+marshalMkQ :: MkZ3Quantifier
+          -> Context
+          -> [Pattern]
+          -> [Symbol]
+          -> [Sort]
+          -> AST
+          -> IO AST
+marshalMkQ z3_mk_Q c pats x s body =
+  withArrayLen (map unPattern pats) $ \n patsPtr ->
+  withArray (map unSymbol x) $ \xptr ->
+  withArray (map unSort   s) $ \sptr ->
+    checkError c $ liftVal c =<<
+        z3_mk_Q cptr 0 (fromIntegral n) patsPtr len sptr xptr (unAST body)
+  where cptr = unContext c
+        len
+          | l == 0        = error "Z3.Base.mkQuantifier:\
+              \ quantifier with 0 bound variables"
+          | l /= length x = error "Z3.Base.mkQuantifier:\
+              \ different number of symbols and sorts"
+          | otherwise     = fromIntegral l
+          where l = length s
+-- TODO: Allow the user to specify the quantifier weight!
+
 -- | Create a forall formula.
 --
 -- The bound variables are de-Bruijn indices created using 'mkBound'.
@@ -1043,42 +1072,13 @@ mkForall :: Context
           -> [Sort]     -- ^ Sorts of the bound variables.
           -> AST        -- ^ Body of the quantifier.
           -> IO AST
-mkForall c pats x s p
-  = withArray (map unPattern pats) $ \patsPtr ->
-    withArray (map unSymbol  x   ) $ \xptr ->
-    withArray (map unSort    s   ) $ \sptr ->
-      checkError c $ liftVal c =<< z3_mk_forall cptr 0 n patsPtr len sptr xptr (unAST p)
-  where n    = genericLength pats
-        cptr = unContext c
-        len
-          | l == 0        = error "Z3.Base.mkForall:\
-              \ forall with 0 bound variables"
-          | l /= length x = error "Z3.Base.mkForall:\
-              \ different number of symbols and sorts"
-          | otherwise     = fromIntegral l
-          where l = length s
--- TODO: Allow the user to specify the quantifier weight!
+mkForall = marshalMkQ z3_mk_forall
 
 -- | Create an exists formula.
 --
 -- Similar to 'mkForall'.
 mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
-mkExists c pats x s p
-  = withArrayLen (map unPattern pats) $ \numPats patsPtr ->
-    withArray (map unSymbol  x   ) $ \xptr ->
-    withArray (map unSort    s   ) $ \sptr ->
-      checkError c $ AST <$> z3_mk_exists cptr 0
-                                (fromIntegral numPats) patsPtr
-                                len sptr xptr
-                                (unAST p)
-  where cptr = unContext c
-        len
-          | l == 0        = error "Z3.Base.mkForall:\
-              \ forall with 0 bound variables"
-          | l /= length x = error "Z3.Base.mkForall:\
-              \ different number of symbols and sorts"
-          | otherwise     = fromIntegral l
-          where l = length s
+mkExists = marshalMkQ z3_mk_exists
 
 -- | Create a universal quantifier using a list of constants that will form the
 -- set of bound variables.
