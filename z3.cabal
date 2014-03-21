@@ -12,17 +12,22 @@ Description:
     The "Z3.Lang" API provides a high-level interface to Z3, but it is still
     very experimental and likely to change.
     .
+    * In version 0.3.2 the "Z3.Lang" interface has been deprecated, we will move
+    it to a dedicated package.
+    .
     Important notes:
     .
     * Installation (Unix-like): Just be sure to use the standard locations for
     dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else
     use the --extra-lib-dirs and --extra-include-dirs Cabal flags.
     .
+    * Haddock documentation can be found at
+    <http://www.iagoabal.eu/z3-haskell/doc/0.3.2>.
+    .
     * Hackage fails to compile this package because of the (unsatisfied) /libz3/
     dependency.
     .
-    * Haddock documentation can be found at
-    <http://www.iagoabal.eu/z3-haskell/doc/0.3.1>.
+    A changelog is available at <https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md>
 Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE
