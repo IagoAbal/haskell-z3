@@ -6,8 +6,8 @@ version:             0.1.0
 homepage:            https://bitbucket.org/iago/z3-haskell
 license:             BSD3
 license-file:        LICENSE
-author:              Iago Abal <iago.abal@gmail.com>
-maintainer:          Iago Abal <iago.abal@gmail.com>
+author:              Iago Abal <mail@iagoabal.eu>
+maintainer:          Iago Abal <mail@iagoabal.eu>
 -- copyright:
 category:            Example
 build-type:          Simple
