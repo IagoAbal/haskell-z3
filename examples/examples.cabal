@@ -20,7 +20,7 @@ executable 4queens
   hs-source-dirs:      lang
   main-is:             4queens.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -29,7 +29,7 @@ executable Nqueens
   hs-source-dirs:      lang
   main-is:             Nqueens.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -38,7 +38,7 @@ executable NqueensAll
   hs-source-dirs:      lang
   main-is:             NqueensAll.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -49,7 +49,7 @@ executable mz3-4queens
   hs-source-dirs:      monad
   main-is:             4queens.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -58,7 +58,7 @@ executable mz3-funcModel
   hs-source-dirs:      monad
   main-is:             FuncModel.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -67,7 +67,7 @@ executable mz3-toSMTLib
   hs-source-dirs:      monad
   main-is:             ToSMTLib.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
@@ -76,7 +76,7 @@ executable mz3-tuple
   hs-source-dirs:      monad
   main-is:             Tuple.hs
   -- other-modules:
-  build-depends:       base ==4.5.*,
+  build-depends:       base >=4.5 && < 5,
                        z3 >=0.3.1 && <0.4,
                        containers,
                        mtl >2.1
