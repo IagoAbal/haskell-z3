@@ -308,8 +308,8 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 -- | A Z3 /AST node/.
 --
 -- This is the data-structure used in Z3 to represent terms, formulas and types.
-newtype AST = AST { unAST :: Ptr Z3_ast }
-    deriving (Eq, Ord, Show, Storable, Typeable)
+newtype AST = AST { unAST :: ForeignPtr Z3_ast }
+    deriving (Eq, Ord, Show, Typeable)
 
 -- | A kind of AST representing /types/.
 newtype Sort = Sort { unSort :: Ptr Z3_sort }
@@ -394,7 +394,7 @@ setParamValue cfg s1 s2 =
 -- | Create a context using the given configuration.
 mkContext :: Config -> IO Context
 mkContext cfg = do
-  ctxPtr <- z3_mk_context (unConfig cfg)
+  ctxPtr <- z3_mk_context_rc (unConfig cfg)
   z3_set_error_handler ctxPtr nullFunPtr
   return $ Context ctxPtr
 
@@ -1148,8 +1148,8 @@ castLBool lb
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
 getBool :: Context -> AST -> IO (Maybe Bool)
-getBool c a = checkError c $
-  castLBool <$> z3_get_bool_value (unContext c) (unAST a)
+getBool c a = checkError c $ h2c a $ \astPtr ->
+  castLBool <$> z3_get_bool_value (unContext c) astPtr
 
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: Context -> AST -> IO String
@@ -1195,10 +1195,11 @@ eval :: Context
         -> IO (Maybe AST)
 eval ctx m a =
   alloca $ \aptr2 ->
-    checkError ctx $ z3_eval ctxPtr (unModel m) (unAST a) aptr2 >>= peekAST aptr2 . toBool
+    h2c a $ \astPtr ->
+    checkError ctx $ z3_eval ctxPtr (unModel m) astPtr aptr2 >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
-        peekAST  p True  = Just . AST <$> peek p
+        peekAST  p True  = fmap Just . c2h ctx =<< peek p
 
         ctxPtr = unContext ctx
 
@@ -1864,8 +1865,11 @@ instance Marshal Symbol (Ptr Z3_symbol) where
   h2c s f = f (unSymbol s)
 
 instance Marshal AST (Ptr Z3_ast) where
-  c2h _ = return . AST
-  h2c a f = f (unAST a)
+  c2h ctx astPtr = do
+    z3_inc_ref ctxPtr astPtr
+    AST <$> newForeignPtr astPtr (z3_dec_ref ctxPtr astPtr)
+    where ctxPtr = unContext ctx
+  h2c a f = withForeignPtr (unAST a) f
 
 instance Marshal Sort (Ptr Z3_sort) where
   c2h _ = return . Sort

@@ -133,13 +133,21 @@ foreign import ccall unsafe "Z3_set_param_value"
 ---------------------------------------------------------------------
 -- * Create context
 
--- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0bd93cfab4d749dd3e2f2a4416820a46>
-foreign import ccall unsafe "Z3_mk_context"
-    z3_mk_context :: Ptr Z3_config -> IO (Ptr Z3_context)
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga98acd59d946eceb4f261bc50489216ee>
+foreign import ccall unsafe "Z3_mk_context_rc"
+    z3_mk_context_rc :: Ptr Z3_config -> IO (Ptr Z3_context)
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga556eae80ed43ab13e1e7dc3b38c35200>
 foreign import ccall unsafe "Z3_del_context"
     z3_del_context :: Ptr Z3_context -> IO ()
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4a11514494fbf3467b89f0a80ac81e7a>
+foreign import ccall unsafe "Z3_inc_ref"
+  z3_inc_ref :: Ptr Z3_context -> Ptr Z3_ast -> IO ()
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9cd52225142c085630495044acc68bd2>
+foreign import ccall unsafe "Z3_inc_ref"
+  z3_dec_ref :: Ptr Z3_context -> Ptr Z3_ast -> IO ()
 
 ---------------------------------------------------------------------
 -- * Symbols
