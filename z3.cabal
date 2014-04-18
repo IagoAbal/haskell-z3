@@ -1,5 +1,5 @@
 Name:                z3
-Version:             0.3.2
+Version:             4.0.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the Z3 Theorem Prover (<http://z3.codeplex.com>).
@@ -8,12 +8,6 @@ Description:
     still incomplete but pretty much stable.
     .
     A simple but convenient wrapper for "Z3.Base" is provided by "Z3.Monad".
-    .
-    The "Z3.Lang" API provides a high-level interface to Z3, but it is still
-    very experimental and likely to change.
-    .
-    * In version 0.3.2 the "Z3.Lang" interface has been deprecated, we will move
-    it to a dedicated package.
     .
     Important notes:
     .
@@ -53,19 +47,9 @@ Library
 
         Z3.Monad
 
-        Z3.Lang
-        Z3.Lang.Prelude
-        Z3.Lang.Nat
-        Z3.Lang.Lg2
-        Z3.Lang.Pow2
-
     Other-modules:
 
         Z3.Base.C
-
-        Z3.Lang.Exprs
-        Z3.Lang.Monad
-        Z3.Lang.TY
 
     ghc-options: -Wall
 
