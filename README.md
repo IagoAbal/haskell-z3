@@ -3,6 +3,10 @@
 
 These are Haskell bindings for the Z3 theorem prover.
 
+A changelog is available [here](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md).
+
+## Example
+
 We offer several interfaces to the Z3 API, the most widely used is Z3.Monad, here is an example script that solves the 4-queen puzzle:
 
     script :: Z3 (Maybe [Integer])
