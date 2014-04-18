@@ -58,7 +58,15 @@ Library
 
     Build-tools:         hsc2hs
     Extensions:          FlexibleInstances
+                         FlexibleContexts
                          ForeignFunctionInterface
+                         MultiParamTypeClasses
+
+    Other-extensions:    DeriveDataTypeable
+                         EmptyDataDecls
+                         GeneralizedNewtypeDeriving
+                         PatternGuards
+                         TupleSections
 
     includes:            z3.h
 
