@@ -6,4 +6,5 @@ cabal\.sandbox\.config
 .*\.hs~$
 .*\.hsc~$
 .*\.cabal~$
+.*\.md~$
 .*\.orig$
