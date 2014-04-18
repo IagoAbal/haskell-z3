@@ -39,6 +39,8 @@ source-repository head
   location: https://bitbucket.org/iago/z3-haskell
 
 Library
+    hs-source-dirs: src
+
     Exposed-modules:
 
         Z3.Base
