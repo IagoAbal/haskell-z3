@@ -242,6 +242,7 @@ import qualified Control.Exception as E
 import Control.Monad ( void )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
+import Control.Monad.Fix ( MonadFix )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 
@@ -298,7 +299,7 @@ liftSolver1 f_s f_no_s a =
 -- A simple Z3 monad.
 
 newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
-    deriving (Functor, Applicative, Monad, MonadIO)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFix)
 
 -- | Z3 environment.
 data Z3Env
