@@ -3,11 +3,11 @@
 
 ## 0.3.2
 
-Thanks to Scott West and Natalia Polikarpova for contributing to this release.
+Thanks to Scott West and Nadia Polikarpova for contributing to this release.
 
 ### Fixes
 
-* Fixed _solverCheckAndGetModel_ to return a model from an unknown satisfiability result, if one exists. (Natalia Polikarpova)
+* Fixed _solverCheckAndGetModel_ to return a model from an unknown satisfiability result, if one exists. (Nadia Polikarpova)
 * Fixed mkMap API function to do **not** take the number of arrays as an input parameter, this should be equals to the length of the input array list.
   Strictly speaking this is a minor break of the API but it was considered a but and therefore fixed.
 
@@ -24,7 +24,7 @@ Thanks to Scott West and Natalia Polikarpova for contributing to this release.
 
 ### Newly supported API functions
 
-* Many solver-related API functions (Scott West and Natalia Polikarpova).
+* Many solver-related API functions (Scott West and Nadia Polikarpova).
 * z3_mk_forall_const (Scott West), z3_mk_exists_const.
 * Z3_get_version.
 
