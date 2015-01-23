@@ -113,6 +113,24 @@ type Z3_error_code = CInt
   , z3_dec_ref_error     = Z3_DEC_REF_ERROR
   , z3_exception         = Z3_EXCEPTION
   }
+    
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga015148ad21a032e79a496629651dedb8>
+type Z3_ast_kind = CInt
+z3_numeral_ast :: Z3_ast_kind
+z3_numeral_ast = #const Z3_NUMERAL_AST
+z3_app_ast :: Z3_ast_kind
+z3_app_ast = #const Z3_APP_AST 	
+z3_var_ast :: Z3_ast_kind
+z3_var_ast = #const Z3_VAR_AST
+z3_quantifier_ast :: Z3_ast_kind
+z3_quantifier_ast = #const Z3_QUANTIFIER_AST
+z3_sort_ast :: Z3_ast_kind
+z3_sort_ast = #const Z3_SORT_AST
+z3_func_decl_ast :: Z3_ast_kind
+z3_func_decl_ast = #const Z3_FUNC_DECL_AST
+z3_unknown_ast :: Z3_ast_kind
+z3_unknown_ast = #const Z3_UNKNOWN_AST
+  
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -638,6 +656,10 @@ foreign import ccall unsafe "Z3_mk_exists_const"
 
 ---------------------------------------------------------------------
 -- * Accessors
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
+foreign import ccall unsafe "Z3_get_ast_kind"
+    z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind	
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 foreign import ccall unsafe "Z3_get_bv_sort_size"

@@ -56,6 +56,7 @@ module Z3.Base (
   , FuncEntry
   , Params
   , Solver
+  , ASTKind(..)
 
   -- ** Satisfiability result
   , Result(..)
@@ -187,6 +188,7 @@ module Z3.Base (
   , mkExistsConst
 
   -- * Accessors
+  , getAstKind
   , getBvSortSize
   , getSort
   , getBool
@@ -362,6 +364,16 @@ data Result
     | Unsat
     | Undef
     deriving (Eq, Ord, Read, Show)
+    
+-- | Different kinds of Z3 AST nodes.
+data ASTKind
+    = Z3_NUMERAL_AST 	
+    | Z3_APP_AST 	
+    | Z3_VAR_AST 	
+    | Z3_QUANTIFIER_AST 	
+    | Z3_SORT_AST 	
+    | Z3_FUNC_DECL_AST 	
+    | Z3_UNKNOWN_AST    
 
 ---------------------------------------------------------------------
 -- Configuration
@@ -1128,6 +1140,20 @@ mkExistsConst = marshalMkQConst z3_mk_exists_const
 
 ---------------------------------------------------------------------
 -- Accessors
+
+-- | Return the kind of the given AST.
+getAstKind :: Context -> AST -> IO ASTKind
+getAstKind ctx ast = toAstKind <$> liftFun1 z3_get_ast_kind ctx ast
+
+toAstKind :: Z3_ast_kind -> ASTKind
+toAstKind k
+  | k == z3_numeral_ast       = Z3_NUMERAL_AST
+  | k == z3_app_ast           = Z3_APP_AST
+  | k == z3_var_ast           = Z3_VAR_AST
+  | k == z3_quantifier_ast    = Z3_QUANTIFIER_AST
+  | k == z3_sort_ast          = Z3_SORT_AST
+  | k == z3_func_decl_ast     = Z3_FUNC_DECL_AST
+  | k == z3_unknown_ast       = Z3_UNKNOWN_AST  
 
 -- | Return the size of the given bit-vector sort.
 getBvSortSize :: Context -> Sort -> IO Int

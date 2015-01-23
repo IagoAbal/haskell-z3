@@ -44,6 +44,7 @@ module Z3.Monad
   , FuncEntry
   , FuncModel(..)
   , Base.Solver
+  , ASTKind(..)
 
   -- ** Satisfiability result
   , Result(..)
@@ -166,6 +167,7 @@ module Z3.Monad
   , mkExistsConst
 
   -- * Accessors
+  , getAstKind
   , getBvSortSize
   , getBool
   , getInt
@@ -234,6 +236,7 @@ import Z3.Base
   , Logic(..)
   , ASTPrintMode(..)
   , Version(..)
+  , ASTKind(..)
   )
 import qualified Z3.Base as Base
 
@@ -983,6 +986,12 @@ mkExists = liftFun4 Base.mkExists
 
 ---------------------------------------------------------------------
 -- Accessors
+
+-- | Return the kind of the given AST.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
+getAstKind :: MonadZ3 z3 => AST -> z3 ASTKind
+getAstKind = liftFun1 Base.getAstKind
 
 -- | Return the size of the given bit-vector sort.
 --
