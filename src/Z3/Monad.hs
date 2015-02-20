@@ -329,9 +329,6 @@ evalZ3 :: Z3 a -> IO a
 evalZ3 = evalZ3With Nothing stdOpts
 
 -- | Create a new Z3 environment.
---
--- Until we move to Z3 API 4.0 you need to manually freed this
--- environment using 'delEnv'.
 newEnv :: Maybe Logic -> Opts -> IO Z3Env
 newEnv mbLogic opts =
   Base.withConfig $ \cfg -> do
@@ -340,9 +337,12 @@ newEnv mbLogic opts =
     mbSolver <- T.mapM (Base.mkSolverForLogic ctx) mbLogic
     return $ Z3Env mbSolver ctx
 
--- | Free a Z3 environment.
+-- | It does nothing. In the past, it was used to free a Z3 environment.
+--
+-- After having switched to Z3 API 4.0 environments are automatically
+-- freed, no need for 'delEnv' anymore.
 delEnv :: Z3Env -> IO ()
-delEnv = Base.delContext . envContext
+delEnv _ = return ()
 
 -- | Eval a Z3 script with a given environment.
 --
