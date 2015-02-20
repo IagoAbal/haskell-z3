@@ -1,0 +1,10 @@
+dist
+\.cabal-sandbox
+cabal\.sandbox\.config
+
+.*\.swp$
+.*\.hs~$
+.*\.hsc~$
+.*\.cabal~$
+.*\.md~$
+.*\.orig$
