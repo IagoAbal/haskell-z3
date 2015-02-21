@@ -57,7 +57,6 @@ module Z3.Base (
   , Params
   , Solver
   , ASTKind(..)
-  , ASTVector(..)
 
   -- ** Satisfiability result
   , Result(..)
@@ -377,10 +376,6 @@ data ASTKind
     | Z3_SORT_AST
     | Z3_FUNC_DECL_AST
     | Z3_UNKNOWN_AST
-    
--- | A vector of AST nodes.    
-newtype ASTVector = ASTVector { unVector :: [AST] }
-    deriving (Eq, Ord, Show)    
 
 ---------------------------------------------------------------------
 -- Configuration
@@ -1657,7 +1652,7 @@ solverCheckAndGetModel ctx solver =
      return (res, mbModel)
      
 -- | Retrieve the unsat core for the last @solverCheckAssumptions@; the unsat core is a subset of the assumptions
-solverGetUnsatCore :: Context -> Solver -> IO ASTVector
+solverGetUnsatCore :: Context -> Solver -> IO [AST]
 solverGetUnsatCore = liftFun1 z3_solver_get_unsat_core
 
 solverGetReasonUnknown :: Context -> Solver -> IO String
@@ -1916,14 +1911,14 @@ instance Marshal AST (Ptr Z3_ast) where
     where ctxPtr = unContext ctx
   h2c a f = withForeignPtr (unAST a) f
   
-instance Marshal ASTVector (Ptr Z3_ast_vector) where
+instance Marshal [AST] (Ptr Z3_ast_vector) where
   c2h ctx vecPtr = do
     n <- z3_ast_vector_size ctxPtr vecPtr
     if n == 0 -- Need an explicit check, since n is unsigned so n - 1 might overflow
-      then return $ ASTVector []
-      else ASTVector <$> mapM (\i -> z3_ast_vector_get ctxPtr vecPtr i >>= c2h ctx) [0 .. (n - 1)]
+      then return $ []
+      else mapM (\i -> z3_ast_vector_get ctxPtr vecPtr i >>= c2h ctx) [0 .. (n - 1)]
     where ctxPtr = unContext ctx
-  h2c _ _ = error "Marshal ASTVector (Ptr Z3_ast_vector) => h2c not implemented"
+  h2c _ _ = error "Marshal [AST] (Ptr Z3_ast_vector) => h2c not implemented"
 
 instance Marshal Sort (Ptr Z3_sort) where
   c2h _ = return . Sort

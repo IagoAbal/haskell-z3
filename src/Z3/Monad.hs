@@ -45,7 +45,6 @@ module Z3.Monad
   , FuncModel(..)
   , Base.Solver
   , ASTKind(..)
-  , ASTVector(..)
 
   -- ** Satisfiability result
   , Result(..)
@@ -240,7 +239,6 @@ import Z3.Base
   , ASTPrintMode(..)
   , Version(..)
   , ASTKind(..)
-  , ASTVector(..)
   )
 import qualified Z3.Base as Base
 
@@ -1174,7 +1172,7 @@ withModel f = do
  return (r, mb_e)
  
 -- | Retrieve the unsat core for the last @checkAssumptions@; the unsat core is a subset of the assumptions.
-getUnsatCore :: MonadZ3 z3 => z3 ASTVector
+getUnsatCore :: MonadZ3 z3 => z3 [AST]
 getUnsatCore = liftSolver0 Base.solverGetUnsatCore
                            (error "getUnsatCore requires solver")
 
