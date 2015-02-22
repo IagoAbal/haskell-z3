@@ -1154,6 +1154,7 @@ toAstKind k
   | k == z3_sort_ast          = Z3_SORT_AST
   | k == z3_func_decl_ast     = Z3_FUNC_DECL_AST
   | k == z3_unknown_ast       = Z3_UNKNOWN_AST
+  | otherwise                 = error "Z3.Base.toAstKind: unknown `Z3_ast_kind'"
 
 -- | Return the size of the given bit-vector sort.
 getBvSortSize :: Context -> Sort -> IO Int
