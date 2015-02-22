@@ -335,11 +335,11 @@ newtype Model = Model { unModel :: Ptr Z3_model }
     deriving Eq
 
 -- | An interpretation of a function in a model.
-newtype FuncInterp = FuncInterp { unFuncInterp :: Ptr Z3_func_interp }
+newtype FuncInterp = FuncInterp { unFuncInterp :: ForeignPtr Z3_func_interp }
     deriving Eq
 
 -- | Representation of the value of a 'Z3_func_interp' at a particular point.
-newtype FuncEntry = FuncEntry { unFuncEntry :: Ptr Z3_func_entry }
+newtype FuncEntry = FuncEntry { unFuncEntry :: ForeignPtr Z3_func_entry }
     deriving Eq
 
 -- | A Z3 parameter set.
@@ -1897,12 +1897,18 @@ instance Marshal FuncDecl (Ptr Z3_func_decl) where
   h2c a f = f (unFuncDecl a)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
-  c2h _ = return . FuncEntry
-  h2c e f = f (unFuncEntry e)
+  c2h ctx fnePtr = do
+    z3_func_entry_inc_ref ctxPtr fnePtr
+    FuncEntry <$> newForeignPtr fnePtr (z3_func_entry_dec_ref ctxPtr fnePtr)
+    where ctxPtr = unContext ctx
+  h2c fne = withForeignPtr (unFuncEntry fne)
 
 instance Marshal FuncInterp (Ptr Z3_func_interp) where
-  c2h _ = return . FuncInterp
-  h2c a f = f (unFuncInterp a)
+  c2h ctx fniPtr = do
+    z3_func_interp_inc_ref ctxPtr fniPtr
+    FuncInterp <$> newForeignPtr fniPtr (z3_func_interp_dec_ref ctxPtr fniPtr)
+    where ctxPtr = unContext ctx
+  h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
   c2h _ = return . Model
