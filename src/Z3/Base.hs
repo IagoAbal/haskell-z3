@@ -346,7 +346,7 @@ newtype FuncEntry = FuncEntry { unFuncEntry :: ForeignPtr Z3_func_entry }
 --
 -- Starting at Z3 4.0, parameter sets are used to configure many components
 -- such as: simplifiers, tactics, solvers, etc.
-newtype Params = Params { unParams :: Ptr Z3_params }
+newtype Params = Params { unParams :: ForeignPtr Z3_params }
     deriving Eq
 
 -- | A Z3 solver engine.
@@ -1874,8 +1874,11 @@ instance Marshal App (Ptr Z3_app) where
   h2c a f = f (unApp a)
 
 instance Marshal Params (Ptr Z3_params) where
-  c2h _ = return . Params
-  h2c p f = f (unParams p)
+  c2h ctx prmPtr = do
+    z3_params_inc_ref ctxPtr prmPtr
+    Params <$> newForeignPtr prmPtr (z3_params_dec_ref ctxPtr prmPtr)
+    where ctxPtr = unContext ctx
+  h2c prm = withForeignPtr (unParams prm)
 
 instance Marshal Symbol (Ptr Z3_symbol) where
   c2h _ = return . Symbol
