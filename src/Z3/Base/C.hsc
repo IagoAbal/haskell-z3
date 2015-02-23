@@ -695,6 +695,14 @@ foreign import ccall unsafe "Z3_ast_vector_size"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3a90216036017ce16db63fb3aa5f6047>
 foreign import ccall unsafe "Z3_ast_vector_get"
     z3_ast_vector_get :: Ptr Z3_context -> Ptr Z3_ast_vector -> CUInt -> IO (Ptr Z3_ast)
+    
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaea0024e05e6f82434ff31e6ec6fab432>
+foreign import ccall unsafe "Z3_ast_vector_inc_ref"
+    z3_ast_vector_inc_ref :: Ptr Z3_context -> Ptr Z3_ast_vector -> IO ()
+    
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab0e22d719f55f93fb8788fa4534cc342>
+foreign import ccall unsafe "Z3_ast_vector_dec_ref"
+    z3_ast_vector_dec_ref :: Ptr Z3_context -> Ptr Z3_ast_vector -> IO ()
 
 ---------------------------------------------------------------------
 -- * Models
