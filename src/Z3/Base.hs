@@ -337,25 +337,25 @@ newtype Model = Model { unModel :: Ptr Z3_model }
     deriving Eq
 
 -- | An interpretation of a function in a model.
-newtype FuncInterp = FuncInterp { unFuncInterp :: Ptr Z3_func_interp }
+newtype FuncInterp = FuncInterp { unFuncInterp :: ForeignPtr Z3_func_interp }
     deriving Eq
 
 -- | Representation of the value of a 'Z3_func_interp' at a particular point.
-newtype FuncEntry = FuncEntry { unFuncEntry :: Ptr Z3_func_entry }
+newtype FuncEntry = FuncEntry { unFuncEntry :: ForeignPtr Z3_func_entry }
     deriving Eq
 
 -- | A Z3 parameter set.
 --
 -- Starting at Z3 4.0, parameter sets are used to configure many components
 -- such as: simplifiers, tactics, solvers, etc.
-newtype Params = Params { unParams :: Ptr Z3_params }
+newtype Params = Params { unParams :: ForeignPtr Z3_params }
     deriving Eq
 
 -- | A Z3 solver engine.
 --
 -- A(n) (incremental) solver, possibly specialized by a particular tactic
 -- or logic.
-newtype Solver = Solver { _unSolver :: ForeignPtr Z3_solver }
+newtype Solver = Solver { unSolver :: ForeignPtr Z3_solver }
     deriving Eq
 
 -- | Result of a satisfiability check.
@@ -366,11 +366,11 @@ data Result
     | Unsat
     | Undef
     deriving (Eq, Ord, Read, Show)
-    
+
 -- | Different kinds of Z3 AST nodes.
 data ASTKind
     = Z3_NUMERAL_AST
-    | Z3_APP_AST 	
+    | Z3_APP_AST
     | Z3_VAR_AST
     | Z3_QUANTIFIER_AST
     | Z3_SORT_AST
@@ -1155,7 +1155,8 @@ toAstKind k
   | k == z3_quantifier_ast    = Z3_QUANTIFIER_AST
   | k == z3_sort_ast          = Z3_SORT_AST
   | k == z3_func_decl_ast     = Z3_FUNC_DECL_AST
-  | k == z3_unknown_ast       = Z3_UNKNOWN_AST  
+  | k == z3_unknown_ast       = Z3_UNKNOWN_AST
+  | otherwise                 = error "Z3.Base.toAstKind: unknown `Z3_ast_kind'"
 
 -- | Return the size of the given bit-vector sort.
 getBvSortSize :: Context -> Sort -> IO Int
@@ -1581,12 +1582,6 @@ instance Show Logic where
   show UFLRA     = "UFLRA"
   show UFNIA     = "UFNIA"
 
-mkSolverForeign :: Context -> Ptr Z3_solver -> IO Solver
-mkSolverForeign c ptr =
-  do z3_solver_inc_ref cPtr ptr
-     Solver <$> newForeignPtr ptr (z3_solver_dec_ref cPtr ptr)
-  where cPtr = unContext c
-
 mkSolver :: Context -> IO Solver
 mkSolver = liftFun0 z3_mk_solver
 
@@ -1597,7 +1592,7 @@ mkSolverForLogic :: Context -> Logic -> IO Solver
 mkSolverForLogic c logic =
   do sym <- mkStringSymbol c (show logic)
      checkError c $
-       mkSolverForeign c =<< z3_mk_solver_for_logic (unContext c) (unSymbol sym)
+       c2h c =<< z3_mk_solver_for_logic (unContext c) (unSymbol sym)
 
 solverSetParams :: Context -> Solver -> Params -> IO ()
 solverSetParams = liftFun2 z3_solver_set_params
@@ -1623,7 +1618,7 @@ solverAssertAndTrack = liftFun3 z3_solver_assert_and_track
 
 -- | Check whether the assertions in a given solver are consistent or not.
 solverCheck :: Context -> Solver -> IO Result
-solverCheck ctx solver = marshal z3_solver_check ctx $ withSolverPtr solver
+solverCheck ctx solver = marshal z3_solver_check ctx $ h2c solver
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
 solverCheckAssumptions :: Context -> Solver -> [AST] -> IO Result
@@ -1820,9 +1815,6 @@ using 'marshal'. Worst case scenario, write the marshalling code yourself.
 
 -}
 
-withSolverPtr :: Solver -> (Ptr Z3_solver -> IO a) -> IO a
-withSolverPtr (Solver fptr) = withForeignPtr fptr
-
 withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
 withIntegral x f = f (fromIntegral x)
 
@@ -1897,8 +1889,11 @@ instance Marshal App (Ptr Z3_app) where
   h2c a f = f (unApp a)
   
 instance Marshal Params (Ptr Z3_params) where
-  c2h _ = return . Params
-  h2c p f = f (unParams p)
+  c2h ctx prmPtr = do
+    z3_params_inc_ref ctxPtr prmPtr
+    Params <$> newForeignPtr prmPtr (z3_params_dec_ref ctxPtr prmPtr)
+    where ctxPtr = unContext ctx
+  h2c prm = withForeignPtr (unParams prm)
 
 instance Marshal Symbol (Ptr Z3_symbol) where
   c2h _ = return . Symbol
@@ -1932,12 +1927,18 @@ instance Marshal FuncDecl (Ptr Z3_func_decl) where
   h2c a f = f (unFuncDecl a)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
-  c2h _ = return . FuncEntry
-  h2c e f = f (unFuncEntry e)
+  c2h ctx fnePtr = do
+    z3_func_entry_inc_ref ctxPtr fnePtr
+    FuncEntry <$> newForeignPtr fnePtr (z3_func_entry_dec_ref ctxPtr fnePtr)
+    where ctxPtr = unContext ctx
+  h2c fne = withForeignPtr (unFuncEntry fne)
 
 instance Marshal FuncInterp (Ptr Z3_func_interp) where
-  c2h _ = return . FuncInterp
-  h2c a f = f (unFuncInterp a)
+  c2h ctx fniPtr = do
+    z3_func_interp_inc_ref ctxPtr fniPtr
+    FuncInterp <$> newForeignPtr fniPtr (z3_func_interp_dec_ref ctxPtr fniPtr)
+    where ctxPtr = unContext ctx
+  h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
   c2h _ = return . Model
@@ -1948,8 +1949,12 @@ instance Marshal Pattern (Ptr Z3_pattern) where
   h2c a f = f (unPattern a)
 
 instance Marshal Solver (Ptr Z3_solver) where
-  c2h = mkSolverForeign
-  h2c = withSolverPtr
+  c2h ctx slvPtr = do
+    z3_solver_inc_ref ctxPtr slvPtr
+    Solver <$> newForeignPtr slvPtr (z3_solver_dec_ref ctxPtr slvPtr)
+    where ctxPtr = unContext ctx
+  h2c slv = withForeignPtr (unSolver slv)
+
 
 marshal :: Marshal rh rc => (Ptr Z3_context -> t) ->
               Context -> (t -> IO rc) -> IO rh
