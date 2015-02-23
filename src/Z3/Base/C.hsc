@@ -115,13 +115,13 @@ type Z3_error_code = CInt
   , z3_dec_ref_error     = Z3_DEC_REF_ERROR
   , z3_exception         = Z3_EXCEPTION
   }
-    
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga015148ad21a032e79a496629651dedb8>
 type Z3_ast_kind = CInt
 z3_numeral_ast :: Z3_ast_kind
 z3_numeral_ast = #const Z3_NUMERAL_AST
 z3_app_ast :: Z3_ast_kind
-z3_app_ast = #const Z3_APP_AST 	
+z3_app_ast = #const Z3_APP_AST
 z3_var_ast :: Z3_ast_kind
 z3_var_ast = #const Z3_VAR_AST
 z3_quantifier_ast :: Z3_ast_kind
@@ -132,7 +132,7 @@ z3_func_decl_ast :: Z3_ast_kind
 z3_func_decl_ast = #const Z3_FUNC_DECL_AST
 z3_unknown_ast :: Z3_ast_kind
 z3_unknown_ast = #const Z3_UNKNOWN_AST
-  
+
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -661,7 +661,7 @@ foreign import ccall unsafe "Z3_mk_exists_const"
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
 foreign import ccall unsafe "Z3_get_ast_kind"
-    z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind	
+    z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 foreign import ccall unsafe "Z3_get_bv_sort_size"
@@ -734,6 +734,18 @@ foreign import ccall unsafe "Z3_model_get_func_interp"
                              -> Ptr Z3_func_decl
                              -> IO (Ptr Z3_func_interp)
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga80218e1d50bdc4dac5ba18bd13a8ddfb>
+foreign import ccall unsafe "Z3_func_interp_inc_ref"
+    z3_func_interp_inc_ref :: Ptr Z3_context
+                           -> Ptr Z3_func_interp
+                           -> IO ()
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabe3aefc84db4fc3ce5349e958f1ec34b>
+foreign import ccall unsafe "Z3_func_interp_dec_ref"
+    z3_func_interp_dec_ref :: Ptr Z3_context
+                           -> Ptr Z3_func_interp
+                           -> IO ()
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bab9ae1444940e7593729beec279844>
 foreign import ccall unsafe "Z3_func_interp_get_num_entries"
     z3_func_interp_get_num_entries :: Ptr Z3_context
@@ -758,6 +770,18 @@ foreign import ccall unsafe "Z3_func_interp_get_arity"
     z3_func_interp_get_arity :: Ptr Z3_context
                              -> Ptr Z3_func_interp
                              -> IO CUInt
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga82cd36e7b02c432436950d5c2301245e>
+foreign import ccall unsafe "Z3_func_entry_inc_ref"
+    z3_func_entry_inc_ref :: Ptr Z3_context
+                            -> Ptr Z3_func_entry
+                            -> IO ()
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9a9a2a75d7fc3d842839662e53365903>
+foreign import ccall unsafe "Z3_func_entry_dec_ref"
+    z3_func_entry_dec_ref :: Ptr Z3_context
+                            -> Ptr Z3_func_entry
+                            -> IO ()
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga9fd65e2ab039aa8e40608c2ecf7084da>
 foreign import ccall unsafe "Z3_func_entry_get_value"
