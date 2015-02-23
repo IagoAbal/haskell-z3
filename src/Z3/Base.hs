@@ -1913,10 +1913,13 @@ instance Marshal AST (Ptr Z3_ast) where
   
 instance Marshal [AST] (Ptr Z3_ast_vector) where
   c2h ctx vecPtr = do
+    z3_ast_vector_inc_ref ctxPtr vecPtr
     n <- z3_ast_vector_size ctxPtr vecPtr
-    if n == 0 -- Need an explicit check, since n is unsigned so n - 1 might overflow
-      then return $ []
-      else mapM (\i -> z3_ast_vector_get ctxPtr vecPtr i >>= c2h ctx) [0 .. (n - 1)]
+    res <- if n == 0 -- Need an explicit check, since n is unsigned so n - 1 might overflow
+              then return []
+              else mapM (\i -> z3_ast_vector_get ctxPtr vecPtr i >>= c2h ctx) [0 .. (n - 1)]
+    z3_ast_vector_dec_ref ctxPtr vecPtr
+    return res
     where ctxPtr = unContext ctx
   h2c _ _ = error "Marshal [AST] (Ptr Z3_ast_vector) => h2c not implemented"
 
