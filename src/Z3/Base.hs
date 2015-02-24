@@ -216,13 +216,8 @@ module Z3.Base (
   , showModel
 
   -- * Constraints
-  , assertCnstr
   , check
-  , checkAndGetModel
-  , getModel
   , delModel
-  , push
-  , pop
 
   -- * Parameters
   , mkParams
@@ -1352,42 +1347,9 @@ showModel = modelToString
 ---------------------------------------------------------------------
 -- Constraints
 
--- | Create a backtracking point.
-push :: Context -> IO ()
-push = liftFun0 z3_push
-
--- | Backtrack /n/ backtracking points.
-pop :: Context -> Int -> IO ()
-pop = liftFun1 z3_pop
-
 -- TODO Constraints: Z3_get_num_scopes
 
 -- TODO Constraints: Z3_persist_ast
-
--- | Assert a constraing into the logical context.
-assertCnstr :: Context -> AST -> IO ()
-assertCnstr = liftFun1 z3_assert_cnstr
-
--- | Check whether the given logical context is consistent or not.
-getModel :: Context -> IO (Result, Maybe Model)
-getModel c =
-  alloca $ \mptr ->
-    checkError c (z3_check_and_get_model (unContext c) mptr) >>= \lb ->
-      (toResult lb,) <$> peekModel mptr
-  where peekModel :: Ptr (Ptr Z3_model) -> IO (Maybe Model)
-        peekModel p | p == nullPtr = return Nothing
-                    | otherwise    = mkModel <$> peek p
-        mkModel :: Ptr Z3_model -> Maybe Model
-        mkModel = fmap Model . ptrToMaybe
-{-# DEPRECATED getModel "Use checkAndGetModel instead." #-}
-
--- | Check whether the given logical context is consistent or not.
---
--- If the logical context is not unsatisfiable  and model construction is
--- enabled (via 'mkConfig'), then a model is returned. The caller is
--- responsible for deleting the model using the function 'delModel'.
-checkAndGetModel :: Context -> IO (Result, Maybe Model)
-checkAndGetModel = getModel
 
 -- | Delete a model object.
 delModel :: Context -> Model -> IO ()
@@ -1645,7 +1607,7 @@ solverCheckAndGetModel ctx solver =
                   Unsat -> return Nothing
                   _     -> Just <$> solverGetModel ctx solver
      return (res, mbModel)
-     
+
 -- | Retrieve the unsat core for the last @solverCheckAssumptions@; the unsat core is a subset of the assumptions
 solverGetUnsatCore :: Context -> Solver -> IO [AST]
 solverGetUnsatCore = liftFun1 z3_solver_get_unsat_core
@@ -1887,7 +1849,7 @@ instance Marshal String CString where
 instance Marshal App (Ptr Z3_app) where
   c2h _ = return . App
   h2c a f = f (unApp a)
-  
+
 instance Marshal Params (Ptr Z3_params) where
   c2h ctx prmPtr = do
     z3_params_inc_ref ctxPtr prmPtr
@@ -1905,7 +1867,7 @@ instance Marshal AST (Ptr Z3_ast) where
     AST <$> newForeignPtr astPtr (z3_dec_ref ctxPtr astPtr)
     where ctxPtr = unContext ctx
   h2c a f = withForeignPtr (unAST a) f
-  
+
 instance Marshal [AST] (Ptr Z3_ast_vector) where
   c2h ctx vecPtr = do
     z3_ast_vector_inc_ref ctxPtr vecPtr
