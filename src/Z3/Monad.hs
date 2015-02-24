@@ -255,7 +255,7 @@ import qualified Data.Traversable as T
 -- The Z3 monad-class
 
 class (Monad m, MonadIO m) => MonadZ3 m where
-  getSolver  :: m (Maybe Base.Solver)
+  getSolver  :: m Base.Solver
   getContext :: m Base.Context
 
 -------------------------------------------------
@@ -286,19 +286,17 @@ liftFun6 f x1 x2 x3 x4 x5 x6 =
 
 liftSolver0 :: MonadZ3 z3 =>
        (Base.Context -> Base.Solver -> IO b)
-    -> (Base.Context -> IO b)
     -> z3 b
-liftSolver0 f_s f_no_s =
+liftSolver0 f_s =
   do ctx <- getContext
-     liftIO . maybe (f_no_s ctx) (f_s ctx) =<< getSolver
+     liftIO . f_s ctx =<< getSolver
 
 liftSolver1 :: MonadZ3 z3 =>
        (Base.Context -> Base.Solver -> a -> IO b)
-    -> (Base.Context -> a -> IO b)
     -> a -> z3 b
-liftSolver1 f_s f_no_s a =
+liftSolver1 f_s a =
   do ctx <- getContext
-     liftIO . maybe (f_no_s ctx a) (\s -> f_s ctx s a) =<< getSolver
+     liftIO . (\s -> f_s ctx s a) =<< getSolver
 
 -------------------------------------------------
 -- A simple Z3 monad.
@@ -309,7 +307,7 @@ newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
 -- | Z3 environment.
 data Z3Env
   = Z3Env {
-      envSolver  :: Maybe Base.Solver
+      envSolver  :: Base.Solver
     , envContext :: Base.Context
     }
 
@@ -332,8 +330,8 @@ newEnv mbLogic opts =
   Base.withConfig $ \cfg -> do
     setOpts cfg opts
     ctx <- Base.mkContext cfg
-    mbSolver <- T.mapM (Base.mkSolverForLogic ctx) mbLogic
-    return $ Z3Env mbSolver ctx
+    solver <- maybe (Base.mkSolver ctx) (Base.mkSolverForLogic ctx) mbLogic
+    return $ Z3Env solver ctx
 
 -- | It does nothing. In the past, it was used to free a Z3 environment.
 --
@@ -1119,11 +1117,11 @@ showModel = modelToString
 
 -- | Create a backtracking point.
 push :: MonadZ3 z3 => z3 ()
-push = liftSolver0 Base.solverPush Base.push
+push = liftSolver0 Base.solverPush
 
 -- | Backtrack /n/ backtracking points.
 pop :: MonadZ3 z3 => Int -> z3 ()
-pop = liftSolver1 Base.solverPop Base.pop
+pop = liftSolver1 Base.solverPop
 
 -- | Run a query and restore the initial logical context.
 --
@@ -1138,24 +1136,22 @@ local q = do
 -- | Backtrack all the way.
 reset :: MonadZ3 z3 => z3 ()
 reset = liftSolver0 Base.solverReset
-                    (error "reset requires solver")
 
 -- | Get number of backtracking points.
 getNumScopes :: MonadZ3 z3 => z3 Int
 getNumScopes = liftSolver0 Base.solverGetNumScopes
-                           (error "getNumScopes requires solver")
 
 -- | Assert a constraing into the logical context.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
 assertCnstr :: MonadZ3 z3 => AST -> z3 ()
-assertCnstr = liftSolver1 Base.solverAssertCnstr Base.assertCnstr
+assertCnstr = liftSolver1 Base.solverAssertCnstr
 
 -- | Get model.
 --
 -- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
 getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
-getModel = liftSolver0 Base.solverCheckAndGetModel Base.getModel
+getModel = liftSolver0 Base.solverCheckAndGetModel
 
 -- | Delete a model object.
 --
@@ -1170,20 +1166,18 @@ withModel f = do
  mb_e <- T.traverse f mb_m
  void $ T.traverse delModel mb_m
  return (r, mb_e)
- 
+
 -- | Retrieve the unsat core for the last @checkAssumptions@; the unsat core is a subset of the assumptions.
 getUnsatCore :: MonadZ3 z3 => z3 [AST]
 getUnsatCore = liftSolver0 Base.solverGetUnsatCore
-                           (error "getUnsatCore requires solver")
 
 -- | Check whether the given logical context is consistent or not.
 check :: MonadZ3 z3 => z3 Result
-check = liftSolver0 Base.solverCheck Base.check
+check = liftSolver0 Base.solverCheck
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
 checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 checkAssumptions = liftSolver1 Base.solverCheckAssumptions
-                               (error "checkAssumptions requires solver")
 
 ---------------------------------------------------------------------
 -- String Conversion
@@ -1211,7 +1205,6 @@ funcDeclToString = liftFun1 Base.funcDeclToString
 -- | Convert the solver to a string.
 solverToString :: MonadZ3 z3 => z3 String
 solverToString = liftSolver0 Base.solverToString
-                           (error "solverToString requires solver")
 
 -- | Convert the given benchmark into SMT-LIB formatted string.
 --
