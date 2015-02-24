@@ -695,11 +695,11 @@ foreign import ccall unsafe "Z3_ast_vector_size"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga3a90216036017ce16db63fb3aa5f6047>
 foreign import ccall unsafe "Z3_ast_vector_get"
     z3_ast_vector_get :: Ptr Z3_context -> Ptr Z3_ast_vector -> CUInt -> IO (Ptr Z3_ast)
-    
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaea0024e05e6f82434ff31e6ec6fab432>
 foreign import ccall unsafe "Z3_ast_vector_inc_ref"
     z3_ast_vector_inc_ref :: Ptr Z3_context -> Ptr Z3_ast_vector -> IO ()
-    
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab0e22d719f55f93fb8788fa4534cc342>
 foreign import ccall unsafe "Z3_ast_vector_dec_ref"
     z3_ast_vector_dec_ref :: Ptr Z3_context -> Ptr Z3_ast_vector -> IO ()
@@ -805,24 +805,8 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 ---------------------------------------------------------------------
 -- * Constraints
 
--- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad651ad68c7a060cbb5616349233cb10f>
-foreign import ccall unsafe "Z3_push"
-    z3_push :: Ptr Z3_context -> IO ()
-
--- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab2b3a542006c86c8d86dc37872f88b61>
-foreign import ccall unsafe "Z3_pop"
-    z3_pop :: Ptr Z3_context -> CUInt -> IO ()
-
 -- TODO Constraints: Z3_get_num_scopes
 -- TODO Constraints: Z3_persist_ast
-
--- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
-foreign import ccall unsafe "Z3_assert_cnstr"
-    z3_assert_cnstr :: Ptr Z3_context -> Ptr Z3_ast ->  IO ()
-
--- | Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
-foreign import ccall unsafe "Z3_check_and_get_model"
-    z3_check_and_get_model :: Ptr Z3_context -> Ptr (Ptr Z3_model) -> IO Z3_lbool
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
 foreign import ccall unsafe "Z3_check"
@@ -941,15 +925,15 @@ foreign import ccall unsafe "Z3_solver_assert_and_track"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga000e369de7b71caa4ee701089709c526>
 foreign import ccall unsafe "Z3_solver_check"
     z3_solver_check :: Ptr Z3_context -> Ptr Z3_solver -> IO Z3_lbool
-    
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga45b40829aaa382bbf427a744911452f9>
 foreign import ccall unsafe "Z3_solver_check_assumptions"
-    z3_solver_check_assumptions :: Ptr Z3_context -> Ptr Z3_solver -> CUInt -> Ptr (Ptr Z3_ast) -> IO Z3_lbool        
+    z3_solver_check_assumptions :: Ptr Z3_context -> Ptr Z3_solver -> CUInt -> Ptr (Ptr Z3_ast) -> IO Z3_lbool
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf14a54d904a7e45eecc00c5fb8a9d5c9>
 foreign import ccall unsafe "Z3_solver_get_model"
     z3_solver_get_model :: Ptr Z3_context -> Ptr Z3_solver -> IO (Ptr Z3_model)
-        
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb4f8ed6a09873f5aeefe9cc01010864>
 foreign import ccall unsafe "Z3_solver_get_unsat_core"
     z3_solver_get_unsat_core :: Ptr Z3_context -> Ptr Z3_solver -> IO (Ptr Z3_ast_vector)
