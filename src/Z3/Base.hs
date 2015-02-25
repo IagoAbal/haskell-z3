@@ -311,21 +311,21 @@ newtype AST = AST { unAST :: ForeignPtr Z3_ast }
     deriving (Eq, Ord, Show, Typeable)
 
 -- | A kind of AST representing /types/.
-newtype Sort = Sort { unSort :: Ptr Z3_sort }
-    deriving (Eq, Ord, Show, Storable)
+newtype Sort = Sort { unSort :: ForeignPtr Z3_sort }
+    deriving (Eq, Ord, Show)
 
 -- | A kind of AST representing function symbols.
-newtype FuncDecl = FuncDecl { unFuncDecl :: Ptr Z3_func_decl }
-    deriving (Eq, Ord, Show, Storable, Typeable)
+newtype FuncDecl = FuncDecl { unFuncDecl :: ForeignPtr Z3_func_decl }
+    deriving (Eq, Ord, Show, Typeable)
 
 -- | A kind of AST representing constant and function declarations.
-newtype App = App { unApp :: Ptr Z3_app }
-    deriving (Eq, Ord, Show, Storable)
+newtype App = App { unApp :: ForeignPtr Z3_app }
+    deriving (Eq, Ord, Show)
 
 -- | A kind of AST representing pattern and multi-patterns to
 -- guide quantifier instantiation.
-newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
-    deriving (Eq, Ord, Show, Storable)
+newtype Pattern = Pattern { unPattern :: ForeignPtr Z3_pattern }
+    deriving (Eq, Ord, Show)
 
 -- | A model for the constraints asserted into the logical context.
 newtype Model = Model { unModel :: ForeignPtr Z3_model }
@@ -506,12 +506,15 @@ mkTupleSort c sym symSorts = checkError c $
   marshalArray sorts $ \ sortsPtr ->
   alloca $ \ outConstrPtr ->
   allocaArray n $ \ outProjsPtr -> do
-    sort <- z3_mk_tuple_sort (unContext c) symPtr
+    srtPtr <- z3_mk_tuple_sort (unContext c) symPtr
                             (fromIntegral n) symsPtr sortsPtr
                             outConstrPtr outProjsPtr
     outConstr <- peek outConstrPtr
     outProjs  <- peekArray n outProjsPtr
-    return (Sort sort, FuncDecl outConstr, map FuncDecl outProjs)
+    sort <- c2h c srtPtr
+    constrFd <- c2h c outConstr
+    projsFds <- mapM (c2h c) outProjs
+    return (sort, constrFd, projsFds)
   where (syms, sorts) = unzip symSorts
 
 -- TODO Sorts: from Z3_mk_enumeration_sort on
@@ -1848,8 +1851,12 @@ instance Marshal String CString where
   h2c   = withCString
 
 instance Marshal App (Ptr Z3_app) where
-  c2h _ = return . App
-  h2c a f = f (unApp a)
+  c2h ctx appPtr = do
+    astPtr <- z3_app_to_ast ctxPtr appPtr
+    z3_inc_ref ctxPtr astPtr
+    App <$> newForeignPtr appPtr (z3_dec_ref ctxPtr astPtr)
+    where ctxPtr = unContext ctx
+  h2c app = withForeignPtr (unApp app)
 
 instance Marshal Params (Ptr Z3_params) where
   c2h ctx prmPtr = do
@@ -1882,12 +1889,20 @@ instance Marshal [AST] (Ptr Z3_ast_vector) where
   h2c _ _ = error "Marshal [AST] (Ptr Z3_ast_vector) => h2c not implemented"
 
 instance Marshal Sort (Ptr Z3_sort) where
-  c2h _ = return . Sort
-  h2c a f = f (unSort a)
+  c2h ctx srtPtr = do
+    astPtr <- z3_sort_to_ast ctxPtr srtPtr
+    z3_inc_ref ctxPtr astPtr
+    Sort <$> newForeignPtr srtPtr (z3_dec_ref ctxPtr astPtr)
+    where ctxPtr = unContext ctx
+  h2c srt = withForeignPtr (unSort srt)
 
 instance Marshal FuncDecl (Ptr Z3_func_decl) where
-  c2h _ = return . FuncDecl
-  h2c a f = f (unFuncDecl a)
+  c2h ctx fndPtr = do
+    astPtr <- z3_func_decl_to_ast ctxPtr fndPtr
+    z3_inc_ref ctxPtr astPtr
+    FuncDecl <$> newForeignPtr fndPtr (z3_dec_ref ctxPtr astPtr)
+    where ctxPtr = unContext ctx
+  h2c fnd = withForeignPtr (unFuncDecl fnd)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
   c2h ctx fnePtr = do
@@ -1911,8 +1926,12 @@ instance Marshal Model (Ptr Z3_model) where
   h2c m = withForeignPtr (unModel m)
 
 instance Marshal Pattern (Ptr Z3_pattern) where
-  c2h _ = return . Pattern
-  h2c a f = f (unPattern a)
+  c2h ctx patPtr = do
+    astPtr <- z3_pattern_to_ast ctxPtr patPtr
+    z3_inc_ref ctxPtr astPtr
+    Pattern <$> newForeignPtr patPtr (z3_dec_ref ctxPtr astPtr)
+    where ctxPtr = unContext ctx
+  h2c pat = withForeignPtr (unPattern pat)
 
 instance Marshal Solver (Ptr Z3_solver) where
   c2h ctx slvPtr = do
