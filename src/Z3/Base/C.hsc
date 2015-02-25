@@ -707,6 +707,18 @@ foreign import ccall unsafe "Z3_ast_vector_dec_ref"
 ---------------------------------------------------------------------
 -- * Models
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac06a904e7ac6209d8019c606412d3cec>
+foreign import ccall unsafe "Z3_model_inc_ref"
+    z3_model_inc_ref :: Ptr Z3_context
+                     -> Ptr Z3_model
+                     -> IO ()
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacc2df0767d4a94d7216d3db49c41547f>
+foreign import ccall unsafe "Z3_model_dec_ref"
+    z3_model_dec_ref :: Ptr Z3_context
+                     -> Ptr Z3_model
+                     -> IO ()
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga47d3655283564918c85bda0b423b7f67>
 foreign import ccall unsafe "Z3_eval"
     z3_eval :: Ptr Z3_context
