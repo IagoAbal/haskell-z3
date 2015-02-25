@@ -328,7 +328,7 @@ newtype Pattern = Pattern { unPattern :: Ptr Z3_pattern }
     deriving (Eq, Ord, Show, Storable)
 
 -- | A model for the constraints asserted into the logical context.
-newtype Model = Model { unModel :: Ptr Z3_model }
+newtype Model = Model { unModel :: ForeignPtr Z3_model }
     deriving Eq
 
 -- | An interpretation of a function in a model.
@@ -1220,7 +1220,8 @@ eval :: Context
 eval ctx m a =
   alloca $ \aptr2 ->
     h2c a $ \astPtr ->
-    checkError ctx $ z3_eval ctxPtr (unModel m) astPtr aptr2 >>= peekAST aptr2 . toBool
+    h2c m $ \mPtr ->
+    checkError ctx $ z3_eval ctxPtr mPtr astPtr aptr2 >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
@@ -1903,8 +1904,11 @@ instance Marshal FuncInterp (Ptr Z3_func_interp) where
   h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
-  c2h _ = return . Model
-  h2c m f = f (unModel m)
+  c2h ctx mPtr = do
+    z3_model_inc_ref ctxPtr mPtr
+    Model <$> newForeignPtr mPtr (z3_model_dec_ref ctxPtr mPtr)
+    where ctxPtr = unContext ctx
+  h2c m = withForeignPtr (unModel m)
 
 instance Marshal Pattern (Ptr Z3_pattern) where
   c2h _ = return . Pattern
