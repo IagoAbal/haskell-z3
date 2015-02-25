@@ -183,6 +183,10 @@ foreign import ccall unsafe "Z3_mk_string_symbol"
 ---------------------------------------------------------------------
 -- * Sorts
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga57c27f2c4e9eccf17072a84c6cecb1db>
+foreign import ccall unsafe "Z3_sort_to_ast"
+    z3_sort_to_ast :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+
 -- TODO Sorts: Z3_is_eq_sort
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
@@ -659,6 +663,10 @@ foreign import ccall unsafe "Z3_mk_exists_const"
 ---------------------------------------------------------------------
 -- * Accessors
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadc82da786f3b558de8ded05bf6478902>
+foreign import ccall unsafe "Z3_func_decl_to_ast"
+    z3_func_decl_to_ast :: Ptr Z3_context -> Ptr Z3_func_decl -> IO (Ptr Z3_ast)
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
 foreign import ccall unsafe "Z3_get_ast_kind"
     z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind
@@ -666,6 +674,10 @@ foreign import ccall unsafe "Z3_get_ast_kind"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 foreign import ccall unsafe "Z3_get_bv_sort_size"
     z3_get_bv_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae259256eb0f2c10e48fc6227760b7fda>
+foreign import ccall unsafe "Z3_app_to_ast"
+    z3_app_to_ast :: Ptr Z3_context -> Ptr Z3_app -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0a4dac7e9397ff067136354cd33cb933>
 foreign import ccall unsafe "Z3_get_sort"
@@ -682,6 +694,10 @@ foreign import ccall unsafe "Z3_get_numeral_string"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
 foreign import ccall unsafe "Z3_to_app"
   z3_to_app :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_app)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafe4334258b639fa1f8754375b9b56fd7>
+foreign import ccall unsafe "Z3_pattern_to_ast"
+  z3_pattern_to_ast :: Ptr Z3_context -> Ptr Z3_pattern -> IO (Ptr Z3_ast)
 
 -- TODO Modifiers
 
