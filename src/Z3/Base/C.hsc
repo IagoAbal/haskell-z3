@@ -50,6 +50,8 @@ data Z3_app
 
 data Z3_pattern
 
+data Z3_constructor
+
 data Z3_model
 
 data Z3_func_interp
@@ -224,8 +226,31 @@ foreign import ccall unsafe "Z3_mk_tuple_sort"
                      -> Ptr (Ptr Z3_func_decl)
                      -> IO (Ptr Z3_sort)
 
--- TODO Sorts: from Z3_mk_array_sort on
+-- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
+foreign import ccall unsafe "Z3_mk_constructor"
+    z3_mk_constructor :: Ptr Z3_context
+                      -> Ptr Z3_symbol
+                      -> Ptr Z3_symbol
+                      -> CUInt
+                      -> Ptr (Ptr Z3_symbol)
+                      -> Ptr (Ptr Z3_sort)
+                      -> Ptr CUInt
+                      -> IO (Ptr Z3_constructor)
 
+-- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga63816efdbce93734c72f395b6a6a9e35>
+foreign import ccall unsafe "Z3_del_constructor"
+    z3_del_constructor :: Ptr Z3_context -> Ptr Z3_constructor -> IO ()
+
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab6809d53327d807da9158abdf75df387>
+foreign import ccall unsafe "Z3_mk_datatype"
+    z3_mk_datatype :: Ptr Z3_context
+                   -> Ptr Z3_symbol
+                   -> CUInt
+                   -> Ptr (Ptr Z3_constructor)
+                   -> IO (Ptr Z3_sort)
+
+-- TODO Sorts: from Z3_mk_array_sort on
 
 ---------------------------------------------------------------------
 -- * Constants and Applications
@@ -251,8 +276,18 @@ foreign import ccall unsafe "Z3_mk_app"
 foreign import ccall unsafe "Z3_mk_const"
     z3_mk_const :: Ptr Z3_context -> Ptr Z3_symbol -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
--- TODO Constants and Applications: Z3_mk_fresh_func_decl
--- TODO Constants and Applications: Z3_mk_fresh_const
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga99cbd3e87cdd759a3d0ea43b4884ed32>
+foreign import ccall unsafe "Z3_mk_fresh_const"
+    z3_mk_fresh_const :: Ptr Z3_context -> Z3_string -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1f60c7eb41c5603e55a188a14dc929ec>
+foreign import ccall unsafe "Z3_mk_fresh_func_decl"
+    z3_mk_fresh_func_decl :: Ptr z3_context
+                          -> Z3_string
+                          -> CUInt
+                          -> Ptr (Ptr Z3_sort)
+                          -> Ptr Z3_sort
+                          -> IO (Ptr Z3_func_decl)
 
 ---------------------------------------------------------------------
 -- * Propositional Logic and Equality
@@ -670,6 +705,42 @@ foreign import ccall unsafe "Z3_func_decl_to_ast"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
 foreign import ccall unsafe "Z3_get_ast_kind"
     z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae8ad520b79b46c323863bacffa0e12c0>
+foreign import ccall unsafe "Z3_get_app_num_args"
+    z3_get_app_num_args :: Ptr Z3_context -> Ptr Z3_app -> IO CUInt
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga49a576b11f9f6ca4a94670e538a84c6b>
+foreign import ccall unsafe "Z3_get_app_arg"
+    z3_get_app_arg :: Ptr Z3_context -> Ptr Z3_app -> CUInt -> IO (Ptr Z3_ast)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4ffab51c30484a32edc65194573cfd28>
+foreign import ccall unsafe "Z3_get_app_decl"
+    z3_get_app_decl :: Ptr Z3_context -> Ptr Z3_app -> IO (Ptr Z3_func_decl)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae9ab82612fd84f5ce7991ade7d7ad920>
+foreign import ccall unsafe "Z3_get_datatype_sort_num_constructors"
+    z3_get_datatype_sort_num_constructors :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa5630cbd0f28d2bda21dc5376fe86a9b>
+foreign import ccall unsafe "Z3_get_datatype_sort_constructor"
+    z3_get_datatype_sort_constructor :: Ptr Z3_context -> Ptr Z3_sort -> CUInt -> IO (Ptr Z3_func_decl)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gacf79f46d05b3ed69684d47eaf242319c>
+foreign import ccall unsafe "Z3_get_datatype_sort_recognizer"
+    z3_get_datatype_sort_recognizer :: Ptr Z3_context -> Ptr Z3_sort -> CUInt -> IO (Ptr Z3_func_decl)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab0ade72138d0479409f47cef21972eb2>
+foreign import ccall unsafe "Z3_get_datatype_sort_constructor_accessor"
+    z3_get_datatype_sort_constructor_accessor :: Ptr Z3_context -> Ptr Z3_sort -> CUInt -> CUInt -> IO (Ptr Z3_func_decl)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga741b1bf11cb92aa2ec9ef2fef73ff129>
+foreign import ccall unsafe "Z3_get_decl_name"
+    z3_get_decl_name :: Ptr Z3_context -> Ptr Z3_func_decl -> IO (Ptr Z3_symbol)
+
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
+foreign import ccall unsafe "Z3_get_symbol_string"
+    z3_get_symbol_string :: Ptr Z3_context -> Ptr Z3_symbol -> IO Z3_string
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 foreign import ccall unsafe "Z3_get_bv_sort_size"

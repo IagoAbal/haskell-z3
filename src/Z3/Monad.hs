@@ -38,6 +38,7 @@ module Z3.Monad
   , FuncDecl
   , App
   , Pattern
+  , Constructor
   , Model
   , Base.Context
   , FuncInterp
@@ -65,11 +66,16 @@ module Z3.Monad
   , mkBvSort
   , mkArraySort
   , mkTupleSort
+  , mkConstructor
+  , delConstructor
+  , mkDatatype
 
   -- * Constants and Applications
   , mkFuncDecl
   , mkApp
   , mkConst
+  , mkFreshConst
+  , mkFreshFuncDecl
   , mkTrue
   , mkFalse
   , mkEq
@@ -167,6 +173,10 @@ module Z3.Monad
   , mkExistsConst
 
   -- * Accessors
+  , getDatatypeSortConstructors
+  , getDatatypeSortRecognizers
+  , getDeclName
+  , getSymbolString
   , getAstKind
   , getBvSortSize
   , getBool
@@ -230,6 +240,7 @@ import Z3.Base
   , FuncDecl
   , App
   , Pattern
+  , Constructor
   , Model
   , FuncInterp
   , FuncEntry
@@ -430,6 +441,34 @@ mkTupleSort :: MonadZ3 z3
                                                -- constructor and projections.
 mkTupleSort = liftFun2 Base.mkTupleSort
 
+-- | Create a contructor
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
+mkConstructor :: MonadZ3 z3
+              => Symbol                       -- ^ Name of the sonstructor
+              -> Symbol                       -- ^ Name of recognizer function
+              -> [(Symbol, Maybe Sort, Int)]  -- ^ Name, sort option, and sortRefs
+              -> z3 Constructor
+mkConstructor = liftFun3 Base.mkConstructor
+
+-- | Reclaim memory allocated to constructor
+--
+-- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga63816efdbce93734c72f395b6a6a9e35>
+delConstructor :: MonadZ3 z3
+               => Constructor
+               -> z3 ()
+delConstructor = liftFun1 Base.delConstructor
+
+-- | Create datatype, such as lists, trees, records, enumerations or unions of
+--   records. The datatype may be recursive. Return the datatype sort.
+--
+-- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab6809d53327d807da9158abdf75df387>
+mkDatatype :: MonadZ3 z3
+           => Symbol
+           -> [Constructor]
+           -> z3 Sort
+mkDatatype = liftFun2 Base.mkDatatype
+
 ---------------------------------------------------------------------
 -- Constants and Applications
 
@@ -448,6 +487,18 @@ mkApp = liftFun2 Base.mkApp
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
 mkConst :: MonadZ3 z3 => Symbol -> Sort -> z3 AST
 mkConst = liftFun2 Base.mkConst
+
+-- | Declare and create a constant.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga093c9703393f33ae282ec5e8729354ef>
+mkFreshConst :: MonadZ3 z3 => String -> Sort -> z3 AST
+mkFreshConst = liftFun2 Base.mkFreshConst
+
+-- | Declare a fresh constant or function.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1f60c7eb41c5603e55a188a14dc929ec>
+mkFreshFuncDecl :: MonadZ3 z3 => String -> [Sort] -> Sort -> z3 FuncDecl
+mkFreshFuncDecl = liftFun3 Base.mkFreshFuncDecl
 
 -- | Create an AST node representing /true/.
 --
@@ -986,6 +1037,32 @@ mkExists = liftFun4 Base.mkExists
 
 ---------------------------------------------------------------------
 -- Accessors
+
+
+-- | Get list of constructors for datatype.
+getDatatypeSortConstructors :: MonadZ3 z3
+                            => Sort           -- ^ Datatype sort.
+                            -> z3 [FuncDecl]  -- ^ Constructor declarations.
+getDatatypeSortConstructors = liftFun1 Base.getDatatypeSortConstructors
+
+-- | Get list of recognizers for datatype.
+
+getDatatypeSortRecognizers :: MonadZ3 z3
+                           => Sort           -- ^ Datatype sort.
+                           -> z3 [FuncDecl]  -- ^ Constructor recognizers.
+getDatatypeSortRecognizers = liftFun1 Base.getDatatypeSortRecognizers
+
+-- | Return the constant declaration name as a symbol.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga741b1bf11cb92aa2ec9ef2fef73ff129>
+getDeclName :: MonadZ3 z3 => FuncDecl -> z3 Symbol
+getDeclName = liftFun1 Base.getDeclName
+
+-- | Return the symbol name.
+-- 
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
+getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
+getSymbolString = liftFun1 Base.getSymbolString
 
 -- | Return the kind of the given AST.
 --
