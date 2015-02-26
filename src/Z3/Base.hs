@@ -51,6 +51,7 @@ module Z3.Base (
   , FuncDecl
   , App
   , Pattern
+  , Constructor
   , Model
   , FuncInterp
   , FuncEntry
@@ -86,11 +87,17 @@ module Z3.Base (
   , mkBvSort
   , mkArraySort
   , mkTupleSort
+  , mkConstructor
+  , delConstructor
+  , mkDatatype
+
 
   -- * Constants and Applications
   , mkFuncDecl
   , mkApp
   , mkConst
+  , mkFreshConst
+  , mkFreshFuncDecl
   , mkTrue
   , mkFalse
   , mkEq
@@ -188,6 +195,10 @@ module Z3.Base (
   , mkExistsConst
 
   -- * Accessors
+  , getDatatypeSortConstructors
+  , getDatatypeSortRecognizers
+  , getDeclName
+  , getSymbolString
   , getAstKind
   , getBvSortSize
   , getSort
@@ -325,6 +336,10 @@ newtype App = App { unApp :: ForeignPtr Z3_app }
 -- | A kind of AST representing pattern and multi-patterns to
 -- guide quantifier instantiation.
 newtype Pattern = Pattern { unPattern :: ForeignPtr Z3_pattern }
+    deriving (Eq, Ord, Show)
+
+-- | A type contructor for a (recursive) datatype.
+newtype Constructor = Constructor { unConstructor :: Ptr Z3_constructor }
     deriving (Eq, Ord, Show)
 
 -- | A model for the constraints asserted into the logical context.
@@ -517,6 +532,47 @@ mkTupleSort c sym symSorts = checkError c $
     return (sort, constrFd, projsFds)
   where (syms, sorts) = unzip symSorts
 
+-- | Create a contructor
+mkConstructor :: Context                      -- ^ Context
+              -> Symbol                       -- ^ Name of the constructor
+              -> Symbol                       -- ^ Name of recognizer function
+              -> [(Symbol, Maybe Sort, Int)]  -- ^ Name, sort option, and sortRefs
+              -> IO Constructor
+mkConstructor c sym recog symSortsRefs = checkError c $
+  let (syms, maybeSorts, refs) = unzip3 symSortsRefs
+  in do
+     sorts <- mapM maybeUnSort maybeSorts
+     (h2c sym $ \symPtr ->
+      h2c recog $ \recogPtr ->
+      marshalArrayLen syms $ \ n symsPtr ->
+      marshalArray sorts $ \ sortsPtr ->
+      marshalArray (map fromIntegral refs) $ \ refsPtr -> do
+        constructor <- checkError c $ z3_mk_constructor
+                         (unContext c) symPtr recogPtr n
+                         symsPtr sortsPtr refsPtr
+        return $ Constructor constructor)
+  where
+    maybeUnSort (Just sort) = return sort
+    maybeUnSort Nothing = Sort <$> newForeignPtr_ nullPtr
+
+-- | Reclaim memory allocated to constructor
+delConstructor :: Context
+               -> Constructor
+               -> IO ()
+delConstructor c cons = checkError c $ z3_del_constructor (unContext c)
+                                                          (unConstructor cons)
+
+-- | Create datatype, such as lists, trees, records, enumerations or unions of
+--   records. The datatype may be recursive. Return the datatype sort.
+mkDatatype :: Context
+           -> Symbol
+           -> [Constructor]
+           -> IO Sort
+mkDatatype c sym consList = checkError c $
+  withArrayLen (map unConstructor consList) $ \ n consPtr -> checkError c $ do
+    sortPtr <- z3_mk_datatype (unContext c) (unSymbol sym) (fromIntegral n) consPtr
+    c2h c sortPtr
+
 -- TODO Sorts: from Z3_mk_enumeration_sort on
 
 ---------------------------------------------------------------------
@@ -549,8 +605,21 @@ mkApp ctx fd args = marshal z3_mk_app ctx $ \f ->
 mkConst :: Context -> Symbol -> Sort -> IO AST
 mkConst = liftFun2 z3_mk_const
 
--- TODO Constants and Applications: Z3_mk_fresh_func_decl
--- TODO Constants and Applications: Z3_mk_fresh_const
+-- | Declare and create a fresh constant.
+mkFreshConst :: Context -- ^ Logical context.
+             -> String  -- ^ Prefix.
+             -> Sort    -- ^ Sort of the constant.
+             -> IO AST
+mkFreshConst = liftFun2 z3_mk_fresh_const
+
+-- | Declare a fresh constant or function.
+mkFreshFuncDecl :: Context -> String -> [Sort] -> Sort -> IO FuncDecl
+mkFreshFuncDecl ctx str dom rng =
+  withCString str $ \cstr ->
+    marshal z3_mk_fresh_func_decl ctx $ \f ->
+    marshalArrayLen dom $ \domNum domArr ->
+    h2c rng $ \ptrRange ->
+      f cstr domNum domArr ptrRange
 
 -- | Create an AST node representing /true/.
 mkTrue :: Context -> IO AST
@@ -1140,6 +1209,39 @@ mkExistsConst = marshalMkQConst z3_mk_exists_const
 
 ---------------------------------------------------------------------
 -- Accessors
+
+-- | Get list of constructors for datatype.
+getDatatypeSortConstructors :: Context
+                            -> Sort           -- ^ Datatype sort.
+                            -> IO [FuncDecl]  -- ^ Constructor declarations.
+getDatatypeSortConstructors c dtSort = checkError c $ h2c dtSort $ \dtSortPtr -> do
+  numCons <- z3_get_datatype_sort_num_constructors (unContext c) dtSortPtr
+  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+  where
+    getConstructor dtSortPtr idx = do
+      funcDeclPtr <- z3_get_datatype_sort_constructor (unContext c) dtSortPtr idx
+      c2h c funcDeclPtr
+
+-- | Get list of recognizers for datatype.
+getDatatypeSortRecognizers :: Context
+                           -> Sort           -- ^ Datatype sort.
+                           -> IO [FuncDecl]  -- ^ Constructor recognizers.
+getDatatypeSortRecognizers c dtSort = checkError c $ h2c dtSort $ \dtSortPtr -> do
+  numCons <- z3_get_datatype_sort_num_constructors (unContext c) dtSortPtr
+  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+  where
+    getConstructor dtSortPtr idx = do
+      funcDeclPtr <- z3_get_datatype_sort_recognizer (unContext c) dtSortPtr idx
+      c2h c funcDeclPtr
+
+-- | Return the constant declaration name as a symbol.
+getDeclName :: Context -> FuncDecl -> IO Symbol
+getDeclName c decl = checkError c $ h2c decl $ \declPtr ->
+  Symbol <$> z3_get_decl_name (unContext c) declPtr
+
+-- | Return the symbol name.
+getSymbolString :: Context -> Symbol -> IO String
+getSymbolString = liftFun1 z3_get_symbol_string
 
 -- | Return the kind of the given AST.
 getAstKind :: Context -> AST -> IO ASTKind
