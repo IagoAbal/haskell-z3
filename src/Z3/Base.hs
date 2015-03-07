@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards              #-}
-{-# LANGUAGE TupleSections              #-}
 
 {- TODO: Now that Context is a ForeignPtr we may consider that checkError and
  - c2h should take a Ptr Z3_context as a parameter, instead of a Context.

@@ -68,7 +68,6 @@ Library
                          EmptyDataDecls
                          GeneralizedNewtypeDeriving
                          PatternGuards
-                         TupleSections
 
     includes:            z3.h
 
