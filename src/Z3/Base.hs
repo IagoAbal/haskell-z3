@@ -544,7 +544,7 @@ mkConstructor c sym recog symSortsRefs =
       h2c recog $ \recogPtr ->
       marshalArrayLen syms $ \ n symsPtr ->
       marshalArray sorts $ \ sortsPtr ->
-      marshalArray (map fromIntegral refs) $ \ refsPtr -> do
+      marshalArray (map fromIntegral refs :: [Integer]) $ \ refsPtr -> do
         constructor <- checkError c $ z3_mk_constructor
                          cPtr symPtr recogPtr n
                          symsPtr sortsPtr refsPtr
