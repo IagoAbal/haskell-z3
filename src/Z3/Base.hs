@@ -225,7 +225,6 @@ module Z3.Base (
   , showModel
 
   -- * Constraints
-  , check
   , delModel
 
   -- * Parameters
@@ -1458,12 +1457,6 @@ showModel = modelToString
 -- | Delete a model object.
 delModel :: Context -> Model -> IO ()
 delModel = liftFun1 z3_del_model
-
--- | Check whether the given logical context is consistent or not.
-check :: Context -> IO Result
-check ctx = withContextError ctx $ \ctxPtr ->
-  toResult <$> z3_check ctxPtr
-  -- TODO: deprecated check
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities

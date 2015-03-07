@@ -906,11 +906,6 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 
 -- TODO Constraints: Z3_get_num_scopes
 -- TODO Constraints: Z3_persist_ast
-
--- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga72055cfbae81bd174abed32a83e50b03>
-foreign import ccall unsafe "Z3_check"
-    z3_check :: Ptr Z3_context ->  IO Z3_lbool
-
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
 
