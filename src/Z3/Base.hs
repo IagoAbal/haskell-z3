@@ -3,10 +3,14 @@
 {-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE TupleSections              #-}
 
+{- TODO: Now that Context is a ForeignPtr we may consider that checkError and
+ - c2h should take a Ptr Z3_context as a parameter, instead of a Context.
+ -}
+
 -- |
 -- Module    : Z3.Base
--- Copyright : (c) Iago Abal, 2012-2014
---             (c) David Castro, 2012-2013
+-- Copyright : (c) Iago Abal, 2012-2015
+--             (c) David Castro, 2012-2015
 -- License   : BSD3
 -- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
@@ -70,7 +74,6 @@ module Z3.Base (
 
   -- * Context
   , mkContext
-  , delContext
   , withContext
   , contextToString
   , showContext
@@ -306,7 +309,7 @@ newtype Config = Config { unConfig :: Ptr Z3_config }
     deriving Eq
 
 -- | A Z3 /logical context/.
-newtype Context = Context { unContext :: Ptr Z3_context }
+newtype Context = Context { unContext :: ForeignPtr Z3_context }
     deriving Eq
 
 -- | A Z3 /symbol/.
@@ -420,15 +423,7 @@ mkContext :: Config -> IO Context
 mkContext cfg = do
   ctxPtr <- z3_mk_context_rc (unConfig cfg)
   z3_set_error_handler ctxPtr nullFunPtr
-  return $ Context ctxPtr
-
--- | Delete the given logical context.
-delContext :: Context -> IO ()
-delContext = z3_del_context . unContext
-
--- | Run a computation using a temporally created context.
-withContext :: Config -> (Context -> IO a) -> IO a
-withContext cfg = bracket (mkContext cfg) delContext
+  Context <$> newForeignPtr ctxPtr (z3_del_context ctxPtr)
 
 -- | Convert the given logical context into a string.
 contextToString :: Context -> IO String
@@ -516,12 +511,13 @@ mkTupleSort :: Context                         -- ^ Context
                                                -- declarations for the
                                                -- constructor and projections.
 mkTupleSort c sym symSorts = checkError c $
+  withContext c $ \cPtr ->
   h2c sym $ \symPtr ->
   marshalArrayLen syms $ \ n symsPtr ->
   marshalArray sorts $ \ sortsPtr ->
   alloca $ \ outConstrPtr ->
   allocaArray n $ \ outProjsPtr -> do
-    srtPtr <- z3_mk_tuple_sort (unContext c) symPtr
+    srtPtr <- z3_mk_tuple_sort cPtr symPtr
                             (fromIntegral n) symsPtr sortsPtr
                             outConstrPtr outProjsPtr
     outConstr <- peek outConstrPtr
@@ -538,7 +534,9 @@ mkConstructor :: Context                      -- ^ Context
               -> Symbol                       -- ^ Name of recognizer function
               -> [(Symbol, Maybe Sort, Int)]  -- ^ Name, sort option, and sortRefs
               -> IO Constructor
-mkConstructor c sym recog symSortsRefs = checkError c $
+mkConstructor c sym recog symSortsRefs =
+  withContext c $ \cPtr ->
+  checkError c $
   let (syms, maybeSorts, refs) = unzip3 symSortsRefs
   in do
      sorts <- mapM maybeUnSort maybeSorts
@@ -548,7 +546,7 @@ mkConstructor c sym recog symSortsRefs = checkError c $
       marshalArray sorts $ \ sortsPtr ->
       marshalArray (map fromIntegral refs) $ \ refsPtr -> do
         constructor <- checkError c $ z3_mk_constructor
-                         (unContext c) symPtr recogPtr n
+                         cPtr symPtr recogPtr n
                          symsPtr sortsPtr refsPtr
         return $ Constructor constructor)
   where
@@ -559,8 +557,8 @@ mkConstructor c sym recog symSortsRefs = checkError c $
 delConstructor :: Context
                -> Constructor
                -> IO ()
-delConstructor c cons = checkError c $ z3_del_constructor (unContext c)
-                                                          (unConstructor cons)
+delConstructor c cons = withContext c $ \cPtr ->
+  checkError c $ z3_del_constructor cPtr (unConstructor cons)
 
 -- | Create datatype, such as lists, trees, records, enumerations or unions of
 --   records. The datatype may be recursive. Return the datatype sort.
@@ -568,9 +566,9 @@ mkDatatype :: Context
            -> Symbol
            -> [Constructor]
            -> IO Sort
-mkDatatype c sym consList = checkError c $
+mkDatatype c sym consList = withContext c $ \cPtr -> checkError c $
   withArrayLen (map unConstructor consList) $ \ n consPtr -> checkError c $ do
-    sortPtr <- z3_mk_datatype (unContext c) (unSymbol sym) (fromIntegral n) consPtr
+    sortPtr <- z3_mk_datatype cPtr (unSymbol sym) (fromIntegral n) consPtr
     c2h c sortPtr
 
 -- TODO Sorts: from Z3_mk_enumeration_sort on
@@ -1057,7 +1055,8 @@ mkReal c n = mkRealSort c >>= mkNumeral c n_str
 
 {-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
 mkRealZ3 :: Context -> Ratio Int32 -> IO AST
-mkRealZ3 c r = checkError c $ c2h c =<< z3_mk_real (unContext c) n d
+mkRealZ3 c r = withContext c $ \cPtr ->
+  checkError c $ c2h c =<< z3_mk_real cPtr n d
   where n = (fromIntegral $ numerator r)   :: CInt
         d = (fromIntegral $ denominator r) :: CInt
 
@@ -1214,30 +1213,35 @@ mkExistsConst = marshalMkQConst z3_mk_exists_const
 getDatatypeSortConstructors :: Context
                             -> Sort           -- ^ Datatype sort.
                             -> IO [FuncDecl]  -- ^ Constructor declarations.
-getDatatypeSortConstructors c dtSort = checkError c $ h2c dtSort $ \dtSortPtr -> do
-  numCons <- z3_get_datatype_sort_num_constructors (unContext c) dtSortPtr
-  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+getDatatypeSortConstructors c dtSort =
+  withContext c $ \cPtr ->
+  checkError c $ h2c dtSort $ \dtSortPtr -> do
+  numCons <- z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+  T.mapM (getConstructor cPtr dtSortPtr) [0..(numCons-1)]
   where
-    getConstructor dtSortPtr idx = do
-      funcDeclPtr <- z3_get_datatype_sort_constructor (unContext c) dtSortPtr idx
+    getConstructor cPtr dtSortPtr idx = do
+      funcDeclPtr <- z3_get_datatype_sort_constructor cPtr dtSortPtr idx
       c2h c funcDeclPtr
 
 -- | Get list of recognizers for datatype.
 getDatatypeSortRecognizers :: Context
                            -> Sort           -- ^ Datatype sort.
                            -> IO [FuncDecl]  -- ^ Constructor recognizers.
-getDatatypeSortRecognizers c dtSort = checkError c $ h2c dtSort $ \dtSortPtr -> do
-  numCons <- z3_get_datatype_sort_num_constructors (unContext c) dtSortPtr
-  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+getDatatypeSortRecognizers c dtSort =
+  withContext c $ \cPtr ->
+  checkError c $ h2c dtSort $ \dtSortPtr -> do
+  numCons <- z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+  T.mapM (getConstructor cPtr dtSortPtr) [0..(numCons-1)]
   where
-    getConstructor dtSortPtr idx = do
-      funcDeclPtr <- z3_get_datatype_sort_recognizer (unContext c) dtSortPtr idx
+    getConstructor cPtr dtSortPtr idx = do
+      funcDeclPtr <- z3_get_datatype_sort_recognizer cPtr dtSortPtr idx
       c2h c funcDeclPtr
 
 -- | Return the constant declaration name as a symbol.
 getDeclName :: Context -> FuncDecl -> IO Symbol
-getDeclName c decl = checkError c $ h2c decl $ \declPtr ->
-  Symbol <$> z3_get_decl_name (unContext c) declPtr
+getDeclName c decl = withContext c $ \cPtr ->
+  checkError c $ h2c decl $ \declPtr ->
+    Symbol <$> z3_get_decl_name cPtr declPtr
 
 -- | Return the symbol name.
 getSymbolString :: Context -> Symbol -> IO String
@@ -1277,8 +1281,9 @@ castLBool lb
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
 getBool :: Context -> AST -> IO (Maybe Bool)
-getBool c a = checkError c $ h2c a $ \astPtr ->
-  castLBool <$> z3_get_bool_value (unContext c) astPtr
+getBool c a = withContext c $ \cPtr ->
+  checkError c $ h2c a $ \astPtr ->
+    castLBool <$> z3_get_bool_value cPtr astPtr
 
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: Context -> AST -> IO String
@@ -1323,6 +1328,7 @@ eval :: Context
         -> AST    -- ^ Expression to evaluate /t/.
         -> IO (Maybe AST)
 eval ctx m a =
+  withContext ctx $ \ctxPtr ->
   alloca $ \aptr2 ->
     h2c a $ \astPtr ->
     h2c m $ \mPtr ->
@@ -1330,8 +1336,6 @@ eval ctx m a =
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
-
-        ctxPtr = unContext ctx
 
 -- | Evaluate a /collection/ of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
@@ -1463,7 +1467,9 @@ delModel = liftFun1 z3_del_model
 
 -- | Check whether the given logical context is consistent or not.
 check :: Context -> IO Result
-check ctx = checkError ctx $ toResult <$> z3_check (unContext ctx)
+check ctx = withContext ctx $ \ctxPtr ->
+  checkError ctx $ toResult <$> z3_check ctxPtr
+  -- TODO: deprecated check
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
@@ -1472,16 +1478,6 @@ check ctx = checkError ctx $ toResult <$> z3_check (unContext ctx)
 
 ---------------------------------------------------------------------
 -- Parameters
-
-{-# WARNING mkParams
-          , paramsSetBool
-          , paramsSetUInt
-          , paramsSetDouble
-          , paramsSetSymbol
-          , paramsToString
-          "New Z3 API support is still incomplete and fragile: \
-          \you may experience segmentation faults!"
-  #-}
 
 mkParams :: Context -> IO Params
 mkParams = liftFun0 z3_mk_params
@@ -1504,30 +1500,9 @@ paramsToString = liftFun1 z3_params_to_string
 ---------------------------------------------------------------------
 -- Solvers
 
-{-# WARNING Logic
-          , mkSolver
-          , mkSimpleSolver
-          , mkSolverForLogic
-          , solverSetParams
-          , solverPush
-          , solverPop
-          , solverReset
-          , solverGetNumScopes
-          , solverAssertCnstr
-          , solverAssertAndTrack
-          , solverCheck
-          , solverCheckAndGetModel
-          , solverGetReasonUnknown
-          "New Z3 API support is still incomplete and fragile: \
-          \you may experience segmentation faults!"
-  #-}
-
 -- | Solvers available in Z3.
 --
 -- These are described at <http://smtlib.cs.uiowa.edu/logics.html>
---
--- /WARNING/: Support for solvers is fragile, you may experience segmentation
--- faults!
 data Logic
   = AUFLIA
     -- ^ Closed formulas over the theory of linear integer arithmetic
@@ -1657,10 +1632,10 @@ mkSimpleSolver :: Context -> IO Solver
 mkSimpleSolver = liftFun0 z3_mk_simple_solver
 
 mkSolverForLogic :: Context -> Logic -> IO Solver
-mkSolverForLogic c logic =
+mkSolverForLogic c logic = withContext c $ \cPtr ->
   do sym <- mkStringSymbol c (show logic)
      checkError c $
-       c2h c =<< z3_mk_solver_for_logic (unContext c) (unSymbol sym)
+       c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
 
 solverSetParams :: Context -> Solver -> Params -> IO ()
 solverSetParams = liftFun2 z3_solver_set_params
@@ -1748,14 +1723,16 @@ data ASTPrintMode
 
 -- | Set the pretty-printing mode for converting ASTs to strings.
 setASTPrintMode :: Context -> ASTPrintMode -> IO ()
-setASTPrintMode ctx Z3_PRINT_SMTLIB_FULL =
-  checkError ctx $ z3_set_ast_print_mode (unContext ctx) z3_print_smtlib_full
-setASTPrintMode ctx Z3_PRINT_LOW_LEVEL =
-  checkError ctx $ z3_set_ast_print_mode (unContext ctx) z3_print_low_level
-setASTPrintMode ctx Z3_PRINT_SMTLIB_COMPLIANT =
-  checkError ctx $ z3_set_ast_print_mode (unContext ctx) z3_print_smtlib_compliant
-setASTPrintMode ctx Z3_PRINT_SMTLIB2_COMPLIANT =
-  checkError ctx $ z3_set_ast_print_mode (unContext ctx) z3_print_smtlib2_compliant
+setASTPrintMode ctx mode = withContext ctx $ \ctxPtr -> checkError ctx $
+  case mode of
+       Z3_PRINT_SMTLIB_FULL ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib_full
+       Z3_PRINT_LOW_LEVEL ->
+         z3_set_ast_print_mode ctxPtr z3_print_low_level
+       Z3_PRINT_SMTLIB_COMPLIANT ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib_compliant
+       Z3_PRINT_SMTLIB2_COMPLIANT ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib2_compliant
 
 -- | Convert an AST to a string.
 astToString :: Context -> AST -> IO String
@@ -1836,9 +1813,11 @@ z3Error cd = throw . Z3Error cd
 
 -- | Throw an exception if a Z3 error happened
 checkError :: Context -> IO a -> IO a
-checkError c m = m <* (z3_get_error_code (unContext c) >>= throwZ3Exn)
-  where throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
-        getErrStr i  = peekCString =<< z3_get_error_msg_ex (unContext c) i
+checkError c m = withContext c $ \cPtr -> do
+  let getErrStr i  = peekCString =<< z3_get_error_msg_ex cPtr i
+      throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
+  m <* (z3_get_error_code cPtr >>= throwZ3Exn)
+
 
 ---------------------------------------------------------------------
 -- Miscellaneous
@@ -1885,6 +1864,9 @@ using 'marshal'. Worst case scenario, write the marshalling code yourself.
 
 withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
 withIntegral x f = f (fromIntegral x)
+
+withContext :: Context -> (Ptr Z3_context -> IO r) -> IO r
+withContext c = withForeignPtr (unContext c)
 
 marshalArray :: (Marshal h c, Storable c) => [h] -> (Ptr c -> IO a) -> IO a
 marshalArray hs f = hs2cs hs $ \cs -> withArray cs f
@@ -1953,18 +1935,16 @@ instance Marshal String CString where
   h2c   = withCString
 
 instance Marshal App (Ptr Z3_app) where
-  c2h ctx appPtr = do
+  c2h ctx appPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_app_to_ast ctxPtr appPtr
     z3_inc_ref ctxPtr astPtr
     App <$> newForeignPtr appPtr (z3_dec_ref ctxPtr astPtr)
-    where ctxPtr = unContext ctx
   h2c app = withForeignPtr (unApp app)
 
 instance Marshal Params (Ptr Z3_params) where
-  c2h ctx prmPtr = do
+  c2h ctx prmPtr = withContext ctx $ \ctxPtr -> do
     z3_params_inc_ref ctxPtr prmPtr
     Params <$> newForeignPtr prmPtr (z3_params_dec_ref ctxPtr prmPtr)
-    where ctxPtr = unContext ctx
   h2c prm = withForeignPtr (unParams prm)
 
 instance Marshal Symbol (Ptr Z3_symbol) where
@@ -1972,14 +1952,13 @@ instance Marshal Symbol (Ptr Z3_symbol) where
   h2c s f = f (unSymbol s)
 
 instance Marshal AST (Ptr Z3_ast) where
-  c2h ctx astPtr = do
+  c2h ctx astPtr = withContext ctx $ \ctxPtr -> do
     z3_inc_ref ctxPtr astPtr
     AST <$> newForeignPtr astPtr (z3_dec_ref ctxPtr astPtr)
-    where ctxPtr = unContext ctx
   h2c a f = withForeignPtr (unAST a) f
 
 instance Marshal [AST] (Ptr Z3_ast_vector) where
-  c2h ctx vecPtr = do
+  c2h ctx vecPtr = withContext ctx $ \ctxPtr -> do
     z3_ast_vector_inc_ref ctxPtr vecPtr
     n <- z3_ast_vector_size ctxPtr vecPtr
     res <- if n == 0 -- Need an explicit check, since n is unsigned so n - 1 might overflow
@@ -1987,91 +1966,87 @@ instance Marshal [AST] (Ptr Z3_ast_vector) where
               else mapM (\i -> z3_ast_vector_get ctxPtr vecPtr i >>= c2h ctx) [0 .. (n - 1)]
     z3_ast_vector_dec_ref ctxPtr vecPtr
     return res
-    where ctxPtr = unContext ctx
   h2c _ _ = error "Marshal [AST] (Ptr Z3_ast_vector) => h2c not implemented"
 
 instance Marshal Sort (Ptr Z3_sort) where
-  c2h ctx srtPtr = do
+  c2h ctx srtPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_sort_to_ast ctxPtr srtPtr
     z3_inc_ref ctxPtr astPtr
     Sort <$> newForeignPtr srtPtr (z3_dec_ref ctxPtr astPtr)
-    where ctxPtr = unContext ctx
   h2c srt = withForeignPtr (unSort srt)
 
 instance Marshal FuncDecl (Ptr Z3_func_decl) where
-  c2h ctx fndPtr = do
+  c2h ctx fndPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_func_decl_to_ast ctxPtr fndPtr
     z3_inc_ref ctxPtr astPtr
     FuncDecl <$> newForeignPtr fndPtr (z3_dec_ref ctxPtr astPtr)
-    where ctxPtr = unContext ctx
   h2c fnd = withForeignPtr (unFuncDecl fnd)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
-  c2h ctx fnePtr = do
+  c2h ctx fnePtr = withContext ctx $ \ctxPtr -> do
     z3_func_entry_inc_ref ctxPtr fnePtr
     FuncEntry <$> newForeignPtr fnePtr (z3_func_entry_dec_ref ctxPtr fnePtr)
-    where ctxPtr = unContext ctx
   h2c fne = withForeignPtr (unFuncEntry fne)
 
 instance Marshal FuncInterp (Ptr Z3_func_interp) where
-  c2h ctx fniPtr = do
+  c2h ctx fniPtr = withContext ctx $ \ctxPtr -> do
     z3_func_interp_inc_ref ctxPtr fniPtr
     FuncInterp <$> newForeignPtr fniPtr (z3_func_interp_dec_ref ctxPtr fniPtr)
-    where ctxPtr = unContext ctx
   h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
-  c2h ctx mPtr = do
+  c2h ctx mPtr = withContext ctx $ \ctxPtr -> do
     z3_model_inc_ref ctxPtr mPtr
     Model <$> newForeignPtr mPtr (z3_model_dec_ref ctxPtr mPtr)
-    where ctxPtr = unContext ctx
   h2c m = withForeignPtr (unModel m)
 
 instance Marshal Pattern (Ptr Z3_pattern) where
-  c2h ctx patPtr = do
+  c2h ctx patPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_pattern_to_ast ctxPtr patPtr
     z3_inc_ref ctxPtr astPtr
     Pattern <$> newForeignPtr patPtr (z3_dec_ref ctxPtr astPtr)
-    where ctxPtr = unContext ctx
   h2c pat = withForeignPtr (unPattern pat)
 
 instance Marshal Solver (Ptr Z3_solver) where
-  c2h ctx slvPtr = do
+  c2h ctx slvPtr = withContext ctx $ \ctxPtr -> do
     z3_solver_inc_ref ctxPtr slvPtr
     Solver <$> newForeignPtr slvPtr (z3_solver_dec_ref ctxPtr slvPtr)
-    where ctxPtr = unContext ctx
   h2c slv = withForeignPtr (unSolver slv)
 
 
 marshal :: Marshal rh rc => (Ptr Z3_context -> t) ->
               Context -> (t -> IO rc) -> IO rh
-marshal f c cont = checkError c $ cont (f (unContext c)) >>= c2h c
+marshal f c cont = checkError c $ withContext c $ \cPtr ->
+  cont (f cPtr) >>= c2h c
 
 liftFun0 :: Marshal rh rc => (Ptr Z3_context -> IO rc) ->
               Context -> IO rh
-liftFun0 f c = checkError c $ c2h c =<< f (unContext c)
+liftFun0 f c = checkError c $ withContext c $ \cPtr ->
+  c2h c =<< f cPtr
 {-# INLINE liftFun0 #-}
 
 liftFun1 :: (Marshal ah ac, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> IO rc) ->
               Context -> ah -> IO rh
-liftFun1 f c x = checkError c $ h2c x $ \a ->
-  c2h c =<< f (unContext c) a
+liftFun1 f c x = checkError c $ withContext c $ \cPtr ->
+  h2c x $ \a ->
+    c2h c =<< f cPtr a
 {-# INLINE liftFun1 #-}
 
 liftFun2 :: (Marshal ah ac, Marshal bh bc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> IO rc) ->
               Context -> ah -> bh -> IO rh
-liftFun2 f c x y = checkError c $ h2c x $ \a -> h2c y $ \b ->
-  c2h c =<< f (unContext c) a b
+liftFun2 f c x y = checkError c $ withContext c $ \cPtr ->
+  h2c x $ \a -> h2c y $ \b ->
+    c2h c =<< f cPtr a b
 {-# INLINE liftFun2 #-}
 
 liftFun3 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> cc -> IO rc) ->
               Context -> ah -> bh -> ch -> IO rh
-liftFun3 f c x y z = checkError c $
+liftFun3 f c x y z = checkError c $ withContext c $ \cPtr ->
   h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
-    c2h c =<< f (unContext c) x1 y1 z1
+    c2h c =<< f cPtr x1 y1 z1
 {-# INLINE liftFun3 #-}
 
 ---------------------------------------------------------------------
