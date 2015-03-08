@@ -1854,6 +1854,9 @@ withIntegral x f = f (fromIntegral x)
 withContext :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContext c = withForeignPtr (unContext c)
 
+withContext1 :: (Ptr Z3_context -> a -> IO r) -> Context -> a -> IO r
+withContext1 f c x = withContext c (`f` x)
+
 withContextError :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContextError c f = withContext c $ \cPtr -> checkError cPtr (f cPtr)
 
@@ -1927,13 +1930,13 @@ instance Marshal App (Ptr Z3_app) where
   c2h ctx appPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_app_to_ast ctxPtr appPtr
     z3_inc_ref ctxPtr astPtr
-    App <$> newForeignPtr appPtr (z3_dec_ref ctxPtr astPtr)
+    App <$> newForeignPtr appPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c app = withForeignPtr (unApp app)
 
 instance Marshal Params (Ptr Z3_params) where
   c2h ctx prmPtr = withContext ctx $ \ctxPtr -> do
     z3_params_inc_ref ctxPtr prmPtr
-    Params <$> newForeignPtr prmPtr (z3_params_dec_ref ctxPtr prmPtr)
+    Params <$> newForeignPtr prmPtr (withContext1 z3_params_dec_ref ctx prmPtr)
   h2c prm = withForeignPtr (unParams prm)
 
 instance Marshal Symbol (Ptr Z3_symbol) where
@@ -1943,7 +1946,7 @@ instance Marshal Symbol (Ptr Z3_symbol) where
 instance Marshal AST (Ptr Z3_ast) where
   c2h ctx astPtr = withContext ctx $ \ctxPtr -> do
     z3_inc_ref ctxPtr astPtr
-    AST <$> newForeignPtr astPtr (z3_dec_ref ctxPtr astPtr)
+    AST <$> newForeignPtr astPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c a f = withForeignPtr (unAST a) f
 
 instance Marshal [AST] (Ptr Z3_ast_vector) where
@@ -1961,45 +1964,47 @@ instance Marshal Sort (Ptr Z3_sort) where
   c2h ctx srtPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_sort_to_ast ctxPtr srtPtr
     z3_inc_ref ctxPtr astPtr
-    Sort <$> newForeignPtr srtPtr (z3_dec_ref ctxPtr astPtr)
+    Sort <$> newForeignPtr srtPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c srt = withForeignPtr (unSort srt)
 
 instance Marshal FuncDecl (Ptr Z3_func_decl) where
   c2h ctx fndPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_func_decl_to_ast ctxPtr fndPtr
     z3_inc_ref ctxPtr astPtr
-    FuncDecl <$> newForeignPtr fndPtr (z3_dec_ref ctxPtr astPtr)
+    FuncDecl <$> newForeignPtr fndPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c fnd = withForeignPtr (unFuncDecl fnd)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
   c2h ctx fnePtr = withContext ctx $ \ctxPtr -> do
     z3_func_entry_inc_ref ctxPtr fnePtr
-    FuncEntry <$> newForeignPtr fnePtr (z3_func_entry_dec_ref ctxPtr fnePtr)
+    FuncEntry <$> newForeignPtr fnePtr
+        (withContext1 z3_func_entry_dec_ref ctx fnePtr)
   h2c fne = withForeignPtr (unFuncEntry fne)
 
 instance Marshal FuncInterp (Ptr Z3_func_interp) where
   c2h ctx fniPtr = withContext ctx $ \ctxPtr -> do
     z3_func_interp_inc_ref ctxPtr fniPtr
-    FuncInterp <$> newForeignPtr fniPtr (z3_func_interp_dec_ref ctxPtr fniPtr)
+    FuncInterp <$> newForeignPtr fniPtr
+        (withContext1 z3_func_interp_dec_ref ctx fniPtr)
   h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
   c2h ctx mPtr = withContext ctx $ \ctxPtr -> do
     z3_model_inc_ref ctxPtr mPtr
-    Model <$> newForeignPtr mPtr (z3_model_dec_ref ctxPtr mPtr)
+    Model <$> newForeignPtr mPtr (withContext1 z3_model_dec_ref ctx mPtr)
   h2c m = withForeignPtr (unModel m)
 
 instance Marshal Pattern (Ptr Z3_pattern) where
   c2h ctx patPtr = withContext ctx $ \ctxPtr -> do
     astPtr <- z3_pattern_to_ast ctxPtr patPtr
     z3_inc_ref ctxPtr astPtr
-    Pattern <$> newForeignPtr patPtr (z3_dec_ref ctxPtr astPtr)
+    Pattern <$> newForeignPtr patPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c pat = withForeignPtr (unPattern pat)
 
 instance Marshal Solver (Ptr Z3_solver) where
   c2h ctx slvPtr = withContext ctx $ \ctxPtr -> do
     z3_solver_inc_ref ctxPtr slvPtr
-    Solver <$> newForeignPtr slvPtr (z3_solver_dec_ref ctxPtr slvPtr)
+    Solver <$> newForeignPtr slvPtr (withContext1 z3_solver_dec_ref ctx slvPtr)
   h2c slv = withForeignPtr (unSolver slv)
 
 
