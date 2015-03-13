@@ -236,10 +236,6 @@ module Z3.Base (
   , paramsToString
 
   -- * Solvers
-  -- /EXPERIMENTAL/ support for solvers,
-  -- very fragile and likely to cause crashes!!!
-  --
-  -- Yet, there are people using it, so you may want to give it a try.
   , Logic(..)
   , mkSolver
   , mkSimpleSolver
