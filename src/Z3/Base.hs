@@ -225,7 +225,6 @@ module Z3.Base (
   , showModel
 
   -- * Constraints
-  , delModel
 
   -- * Parameters
   , mkParams
@@ -1449,10 +1448,6 @@ showModel = modelToString
 -- TODO Constraints: Z3_get_num_scopes
 
 -- TODO Constraints: Z3_persist_ast
-
--- | Delete a model object.
-delModel :: Context -> Model -> IO ()
-delModel = liftFun1 z3_del_model
 
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities

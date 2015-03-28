@@ -207,7 +207,6 @@ module Z3.Monad
   , check
   , checkAssumptions
   , getModel
-  , delModel
   , withModel
   , getUnsatCore
   , push
@@ -255,7 +254,6 @@ import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
 import qualified Control.Exception as E
-import Control.Monad ( void )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Control.Monad.Fix ( MonadFix )
@@ -1230,18 +1228,11 @@ assertCnstr = liftSolver1 Base.solverAssertCnstr
 getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
 getModel = liftSolver0 Base.solverCheckAndGetModel
 
--- | Delete a model object.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0cc98d3ce68047f873e119bccaabdbee>
-delModel :: MonadZ3 z3 => Model -> z3 ()
-delModel = liftFun1 Base.delModel
-
 withModel :: (Applicative z3, MonadZ3 z3) =>
                 (Base.Model -> z3 a) -> z3 (Result, Maybe a)
 withModel f = do
  (r,mb_m) <- getModel
  mb_e <- T.traverse f mb_m
- void $ T.traverse delModel mb_m
  return (r, mb_e)
 
 -- | Retrieve the unsat core for the last @checkAssumptions@; the unsat core is a subset of the assumptions.
