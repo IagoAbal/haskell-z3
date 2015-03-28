@@ -9,10 +9,10 @@
 
 -- |
 -- Module    : Z3.Monad
--- Copyright : (c) Iago Abal, 2013
---             (c) David Castro, 2013
+-- Copyright : (c) Iago Abal, 2013-2015
+--             (c) David Castro, 2013-2015
 -- License   : BSD3
--- Maintainer: Iago Abal <iago.abal@gmail.com>,
+-- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
 --
 -- A simple monadic wrapper for 'Z3.Base'.
