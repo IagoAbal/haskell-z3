@@ -70,8 +70,6 @@ module Z3.Base (
   -- * Context
   , mkContext
   , withContext
-  , contextToString
-  , showContext
 
   -- * Symbols
   , mkIntSymbol
@@ -414,14 +412,7 @@ mkContext cfg = do
   z3_set_error_handler ctxPtr nullFunPtr
   Context <$> newForeignPtr ctxPtr (z3_del_context ctxPtr)
 
--- | Convert the given logical context into a string.
-contextToString :: Context -> IO String
-contextToString = liftFun0 z3_context_to_string
 
--- | Alias for 'contextToString'.
-showContext :: Context -> IO String
-showContext = contextToString
-{-# DEPRECATED showContext "Use contextToString instead." #-}
 
 ---------------------------------------------------------------------
 -- Symbols
