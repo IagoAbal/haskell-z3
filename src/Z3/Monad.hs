@@ -50,10 +50,6 @@ module Z3.Monad
   -- ** Satisfiability result
   , Result(..)
 
-  -- * Context
-  , contextToString
-  , showContext
-
   -- * Symbols
   , mkIntSymbol
   , mkStringSymbol
@@ -361,17 +357,6 @@ evalZ3WithEnv :: Z3 a
               -> Z3Env
               -> IO a
 evalZ3WithEnv (Z3 s) = runReaderT s
-
----------------------------------------------------------------------
--- Contexts
-
--- | Convert Z3's logical context into a string.
-contextToString :: MonadZ3 z3 => z3 String
-contextToString = liftScalar Base.contextToString
-
--- | Alias for 'contextToString'.
-showContext :: MonadZ3 z3 => z3 String
-showContext = contextToString
 
 ---------------------------------------------------------------------
 -- Symbols
