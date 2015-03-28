@@ -61,15 +61,23 @@ module Z3.Base (
   -- ** Satisfiability result
   , Result(..)
 
-  -- * Configuration
+  -- * Create configuration
   , mkConfig
   , delConfig
   , withConfig
   , setParamValue
 
-  -- * Context
+  -- * Create context
   , mkContext
   , withContext
+
+  -- * Parameters
+  , mkParams
+  , paramsSetBool
+  , paramsSetUInt
+  , paramsSetDouble
+  , paramsSetSymbol
+  , paramsToString
 
   -- * Symbols
   , mkIntSymbol
@@ -87,13 +95,14 @@ module Z3.Base (
   , delConstructor
   , mkDatatype
 
-
   -- * Constants and Applications
   , mkFuncDecl
   , mkApp
   , mkConst
-  , mkFreshConst
   , mkFreshFuncDecl
+  , mkFreshConst
+
+  -- * Propositional Logic and Equality
   , mkTrue
   , mkFalse
   , mkEq
@@ -105,6 +114,8 @@ module Z3.Base (
   , mkAnd
   , mkOr
   , mkDistinct
+
+  -- * Arithmetic: Integers and Reals
   , mkAdd
   , mkMul
   , mkSub
@@ -179,8 +190,8 @@ module Z3.Base (
 
   -- * Numerals
   , mkNumeral
-  , mkInt
   , mkReal
+  , mkInt
 
   -- * Quantifiers
   , mkPattern
@@ -191,14 +202,14 @@ module Z3.Base (
   , mkExistsConst
 
   -- * Accessors
+  , getSymbolString
+  , getBvSortSize
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDeclName
-  , getSymbolString
-  , getAstKind
-  , getBvSortSize
   , getSort
   , getBool
+  , getAstKind
   , getInt
   , getReal
   , toApp
@@ -222,15 +233,22 @@ module Z3.Base (
   , modelToString
   , showModel
 
-  -- * Constraints
+  -- * String Conversion
+  , ASTPrintMode(..)
+  , setASTPrintMode
+  , astToString
+  , patternToString
+  , sortToString
+  , funcDeclToString
+  , benchmarkToSMTLibString
 
-  -- * Parameters
-  , mkParams
-  , paramsSetBool
-  , paramsSetUInt
-  , paramsSetDouble
-  , paramsSetSymbol
-  , paramsToString
+  -- * Error Handling
+  , Z3Error(..)
+  , Z3ErrorCode(..)
+
+  -- * Miscellaneous
+  , Version(..)
+  , getVersion
 
   -- * Solvers
   , Logic(..)
@@ -251,23 +269,6 @@ module Z3.Base (
   , solverGetUnsatCore
   , solverGetReasonUnknown
   , solverToString
-
-  -- * String Conversion
-  , ASTPrintMode(..)
-  , setASTPrintMode
-  , astToString
-  , patternToString
-  , sortToString
-  , funcDeclToString
-  , benchmarkToSMTLibString
-
-  -- * Miscellaneous
-  , Version(..)
-  , getVersion
-
-  -- * Error Handling
-  , Z3Error(..)
-  , Z3ErrorCode(..)
   ) where
 
 import Z3.Base.C
@@ -380,6 +381,13 @@ data ASTKind
 ---------------------------------------------------------------------
 -- Configuration
 
+-- TODO: Z3_global_param_set
+-- TODO: Z3_global_param_reset_all
+-- TODO: Z3_global_param_get
+
+---------------------------------------------------------------------
+-- Create configuration
+
 -- | Create a configuration.
 mkConfig :: IO Config
 mkConfig = Config <$> z3_mk_config
@@ -403,7 +411,7 @@ setParamValue cfg s1 s2 =
       z3_set_param_value (unConfig cfg) cs1 cs2
 
 ---------------------------------------------------------------------
--- Context
+-- Create context
 
 -- | Create a context using the given configuration.
 mkContext :: Config -> IO Context
@@ -412,7 +420,47 @@ mkContext cfg = do
   z3_set_error_handler ctxPtr nullFunPtr
   Context <$> newForeignPtr ctxPtr (z3_del_context ctxPtr)
 
+-- TODO: Z3_update_param_value
+-- TODO: Z3_interrupt
 
+---------------------------------------------------------------------
+-- Parameters
+
+-- | Create a Z3 (empty) parameter set.
+--
+-- Starting at Z3 4.0, parameter sets are used to configure many components
+-- such as: simplifiers, tactics, solvers, etc.
+mkParams :: Context -> IO Params
+mkParams = liftFun0 z3_mk_params
+
+-- | Add a Boolean parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
+paramsSetBool = liftFun3 z3_params_set_bool
+
+-- | Add a unsigned parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
+paramsSetUInt = liftFun3 z3_params_set_uint
+
+-- | Add a double parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetDouble :: Context -> Params -> Symbol -> Double -> IO ()
+paramsSetDouble = liftFun3 z3_params_set_double
+
+-- | Add a symbol parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetSymbol :: Context -> Params -> Symbol -> Symbol -> IO ()
+paramsSetSymbol = liftFun3 z3_params_set_symbol
+
+-- | Convert a parameter set into a string.
+--
+-- This function is mainly used for printing the contents of a parameter set.
+paramsToString :: Context -> Params -> IO String
+paramsToString = liftFun1 z3_params_to_string
+
+-- TODO: Z3_params_validate
+
+---------------------------------------------------------------------
+-- Parameter Descriptions
+
+-- TODO
 
 ---------------------------------------------------------------------
 -- Symbols
@@ -423,14 +471,11 @@ mkContext cfg = do
 mkIntSymbol :: Integral int => Context -> int -> IO Symbol
 mkIntSymbol c i
   | 0 <= i && i <= 2^(30::Int)-1
-  = marshal z3_mk_int_symbol c $ h2c i
+  = liftFun1 z3_mk_int_symbol c i
   | otherwise
   = error "Z3.Base.mkIntSymbol: invalid range"
 
-{-# SPECIALIZE mkIntSymbol :: Context -> Int -> IO Symbol #-}
-{-# SPECIALIZE mkIntSymbol :: Context -> Integer -> IO Symbol #-}
-
--- | Create a Z3 symbol using a string.
+-- | Create a Z3 symbol using a 'String'.
 mkStringSymbol :: Context -> String -> IO Symbol
 mkStringSymbol = liftFun1 z3_mk_string_symbol
 
@@ -449,14 +494,14 @@ mkUninterpretedSort = liftFun1 z3_mk_uninterpreted_sort
 mkBoolSort :: Context -> IO Sort
 mkBoolSort = liftFun0 z3_mk_bool_sort
 
--- | Create an /integer/ type.
+-- | Create the /integer/ type.
 --
 -- This is the type of arbitrary precision integers.
 -- A machine integer can be represented using bit-vectors, see 'mkBvSort'.
 mkIntSort :: Context -> IO Sort
 mkIntSort = liftFun0 z3_mk_int_sort
 
--- | Create a /real/ type.
+-- | Create the /real/ type.
 --
 -- This type is not a floating point number.
 -- Z3 does not have support for floating point numbers yet.
@@ -468,8 +513,10 @@ mkRealSort = liftFun0 z3_mk_real_sort
 -- This type can also be seen as a machine integer.
 --
 -- @mkBvSort c sz@ /requires/ @sz >= 0@
-mkBvSort :: Context -> Int -> IO Sort
-mkBvSort = liftFun1 z3_mk_bv_sort
+mkBvSort :: Integral int => Context -> int -> IO Sort
+mkBvSort c i
+  | i >= 0    = liftFun1 z3_mk_bv_sort c i
+  | otherwise = error "Z3.Base.mkBvSort: negative size"
 
 -- TODO: Z3_mk_finite_domain_sort
 
@@ -507,6 +554,9 @@ mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
     return (sort, constrFd, projsFds)
   where (syms, sorts) = unzip symSorts
 
+-- TODO: Z3_mk_enumeration_sort
+-- TODO: Z3_mk_list_sort
+
 -- | Create a contructor
 mkConstructor :: Context                      -- ^ Context
               -> Symbol                       -- ^ Name of the constructor
@@ -531,6 +581,7 @@ mkConstructor c sym recog symSortsRefs =
     maybeUnSort (Just sort) = return sort
     maybeUnSort Nothing = Sort <$> newForeignPtr_ nullPtr
 
+-- TODO: This should be part of a ForeignPtr
 -- | Reclaim memory allocated to constructor
 delConstructor :: Context
                -> Constructor
@@ -538,8 +589,11 @@ delConstructor :: Context
 delConstructor c cons = withContextError c $ \cPtr ->
   z3_del_constructor cPtr (unConstructor cons)
 
--- | Create datatype, such as lists, trees, records, enumerations or unions of
---   records. The datatype may be recursive. Return the datatype sort.
+-- | Create datatype, such as lists, trees, records,
+-- enumerations or unions of records.
+--
+-- The datatype may be recursive.
+-- Returns the datatype sort.
 mkDatatype :: Context
            -> Symbol
            -> [Constructor]
@@ -549,7 +603,7 @@ mkDatatype c sym consList = withContextError c $ \cPtr ->
     sortPtr <- z3_mk_datatype cPtr (unSymbol sym) (fromIntegral n) consPtr
     c2h c sortPtr
 
--- TODO Sorts: from Z3_mk_enumeration_sort on
+-- TODO: from Z3_mk_constructor_list on
 
 ---------------------------------------------------------------------
 -- Constants and Applications
@@ -581,13 +635,6 @@ mkApp ctx fd args = marshal z3_mk_app ctx $ \f ->
 mkConst :: Context -> Symbol -> Sort -> IO AST
 mkConst = liftFun2 z3_mk_const
 
--- | Declare and create a fresh constant.
-mkFreshConst :: Context -- ^ Logical context.
-             -> String  -- ^ Prefix.
-             -> Sort    -- ^ Sort of the constant.
-             -> IO AST
-mkFreshConst = liftFun2 z3_mk_fresh_const
-
 -- | Declare a fresh constant or function.
 mkFreshFuncDecl :: Context -> String -> [Sort] -> Sort -> IO FuncDecl
 mkFreshFuncDecl ctx str dom rng =
@@ -596,6 +643,16 @@ mkFreshFuncDecl ctx str dom rng =
     marshalArrayLen dom $ \domNum domArr ->
     h2c rng $ \ptrRange ->
       f cstr domNum domArr ptrRange
+
+-- | Declare and create a fresh constant.
+mkFreshConst :: Context -- ^ Logical context.
+             -> String  -- ^ Prefix.
+             -> Sort    -- ^ Sort of the constant.
+             -> IO AST
+mkFreshConst = liftFun2 z3_mk_fresh_const
+
+---------------------------------------------------------------------
+-- Propositional Logic and Equality
 
 -- | Create an AST node representing /true/.
 mkTrue :: Context -> IO AST
@@ -645,6 +702,9 @@ mkAnd = liftAstN "Z3.Base.mkAnd: empty list of expressions" z3_mk_and
 mkOr :: Context -> [AST] -> IO AST
 mkOr = liftAstN "Z3.Base.mkOr: empty list of expressions" z3_mk_or
 
+---------------------------------------------------------------------
+-- Arithmetic: Integers and Reals
+
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
 mkAdd :: Context -> [AST] -> IO AST
 mkAdd = liftAstN "Z3.Base.mkAdd: empty list of expressions" z3_mk_add
@@ -672,6 +732,8 @@ mkMod = liftFun2 z3_mk_mod
 -- | Create an AST node representing arg1 rem arg2.
 mkRem :: Context -> AST -> AST -> IO AST
 mkRem = liftFun2 z3_mk_rem
+
+-- TODO: Z3_mk_power
 
 -- | Create less than.
 mkLt :: Context -> AST -> AST -> IO AST
@@ -970,10 +1032,15 @@ mkArrayDefault :: Context
                 -> IO AST
 mkArrayDefault = liftFun1 z3_mk_array_default
 
+---------------------------------------------------------------------
+-- Sets
+
 -- TODO: Sets
 
 ---------------------------------------------------------------------
 -- Numerals
+
+-- TODO: Re-think
 
 -- | Create a numeral of a given sort.
 mkNumeral :: Context -> String -> Sort -> IO AST
@@ -1138,6 +1205,9 @@ mkForall = marshalMkQ z3_mk_forall
 mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkExists = marshalMkQ z3_mk_exists
 
+-- TODO: Z3_mk_quantifier
+-- TODO: Z3_mk_quantifier_ex
+
 type MkZ3QuantifierConst = Ptr Z3_context
                            -> CUInt
                            -> CUInt
@@ -1184,9 +1254,47 @@ mkExistsConst :: Context
               -> IO AST
 mkExistsConst = marshalMkQConst z3_mk_exists_const
 
+-- TODO: Z3_mk_quantifier_const
+-- TODO: Z3_mk_quantifier_const_ex
+
 ---------------------------------------------------------------------
 -- Accessors
 
+-- TODO: Z3_get_symbol_kind
+
+-- TODO: Z3_get_symbol_int
+
+-- | Return the symbol name.
+getSymbolString :: Context -> Symbol -> IO String
+getSymbolString = liftFun1 z3_get_symbol_string
+
+-- TODO: Z3_get_sort_name
+
+-- TODO: Z3_get_sort_id
+
+-- TODO: Z3_sort_to_ast
+
+-- TODO: Z3_is_eq_sort
+
+-- TODO: Z3_get_sort_kind
+
+-- | Return the size of the given bit-vector sort.
+getBvSortSize :: Context -> Sort -> IO Int
+getBvSortSize = liftFun1 z3_get_bv_sort_size
+
+-- TODO: Z3_get_finite_domain_sort_size
+
+-- TODO: Z3_get_array_sort_size
+
+-- TODO: Z3_get_array_sort_range
+
+-- TODO: Z3_get_tuple_sort_mk_decl
+
+-- TODO: Z3_get_tuple_sort_num_fields
+
+-- TODO: Z3_get_tuple_sort_field_decl
+
+-- TODO: Needs proper review
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: Context
                             -> Sort           -- ^ Datatype sort.
@@ -1201,6 +1309,7 @@ getDatatypeSortConstructors c dtSort =
       funcDeclPtr <- z3_get_datatype_sort_constructor cPtr dtSortPtr idx
       c2h c funcDeclPtr
 
+-- TODO: Needs proper review
 -- | Get list of recognizers for datatype.
 getDatatypeSortRecognizers :: Context
                            -> Sort           -- ^ Datatype sort.
@@ -1211,9 +1320,22 @@ getDatatypeSortRecognizers c dtSort =
   numCons <- z3_get_datatype_sort_num_constructors cPtr dtSortPtr
   T.mapM (getConstructor cPtr dtSortPtr) [0..(numCons-1)]
   where
+    -- TODO: Maybe this should be renamed to getRecognizer :-)
     getConstructor cPtr dtSortPtr idx = do
       funcDeclPtr <- z3_get_datatype_sort_recognizer cPtr dtSortPtr idx
       c2h c funcDeclPtr
+
+-- TODO: Z3_get_datatype_sort_constructor_accessor
+
+-- TODO: Z3_get_relation_arity
+
+-- TODO: Z3_get_relation_column
+
+-- TODO: Z3_func_decl_to_ast
+
+-- TODO: Z3_is_eq_func_decl
+
+-- TODO: Z3_get_func_decl_id
 
 -- | Return the constant declaration name as a symbol.
 getDeclName :: Context -> FuncDecl -> IO Symbol
@@ -1221,56 +1343,102 @@ getDeclName c decl = withContextError c $ \cPtr ->
   h2c decl $ \declPtr ->
     Symbol <$> z3_get_decl_name cPtr declPtr
 
--- | Return the symbol name.
-getSymbolString :: Context -> Symbol -> IO String
-getSymbolString = liftFun1 z3_get_symbol_string
+-- TODO: Z3_get_decl_kind
 
--- | Return the kind of the given AST.
-getAstKind :: Context -> AST -> IO ASTKind
-getAstKind ctx ast = toAstKind <$> liftFun1 z3_get_ast_kind ctx ast
+-- TODO: Z3_get_domain_size
 
-toAstKind :: Z3_ast_kind -> ASTKind
-toAstKind k
-  | k == z3_numeral_ast       = Z3_NUMERAL_AST
-  | k == z3_app_ast           = Z3_APP_AST
-  | k == z3_var_ast           = Z3_VAR_AST
-  | k == z3_quantifier_ast    = Z3_QUANTIFIER_AST
-  | k == z3_sort_ast          = Z3_SORT_AST
-  | k == z3_func_decl_ast     = Z3_FUNC_DECL_AST
-  | k == z3_unknown_ast       = Z3_UNKNOWN_AST
-  | otherwise                 = error "Z3.Base.toAstKind: unknown `Z3_ast_kind'"
+-- TODO: Z3_get_range
 
--- | Return the size of the given bit-vector sort.
-getBvSortSize :: Context -> Sort -> IO Int
-getBvSortSize = liftFun1 z3_get_bv_sort_size
+-- TODO: Z3_get_decl_num_parameters
+
+-- TODO: Z3_get_decl_parameter_kind
+
+-- TODO: Z3_get_decl_int_parameter
+
+-- TODO: Z3_get_decl_double_parameter
+
+-- TODO: Z3_get_decl_symbol_parameter
+
+-- TODO: Z3_get_decl_sort_parameter
+
+-- TODO: Z3_get_decl_ast_parameter
+
+-- TODO: Z3_get_decl_func_decl_parameter
+
+-- TODO: Z3_get_decl_rational_parameter
+
+-- TODO: Z3_app_to_ast
+
+-- TODO: Z3_get_app_decl
+
+-- TODO: Z3_get_app_num_args
+
+-- TODO: Z3_get_app_arg
+
+-- TODO: Z3_is_eq_ast
+
+-- TODO: Z3_get_ast_id
+
+-- TODO: Z3_get_ast_hash
 
 -- | Return the sort of an AST node.
 getSort :: Context -> AST -> IO Sort
 getSort = liftFun1 z3_get_sort
 
--- | Cast a 'Z3_lbool' from Z3.Base.C to @Bool@.
-castLBool :: Z3_lbool -> Maybe Bool
-castLBool lb
-    | lb == z3_l_true  = Just True
-    | lb == z3_l_false = Just False
-    | lb == z3_l_undef = Nothing
-    | otherwise        = error "Z3.Base.castLBool: illegal `Z3_lbool' value"
+-- TODO: Z3_is_well_sorted
 
+-- TODO: fix doc
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
 getBool :: Context -> AST -> IO (Maybe Bool)
 getBool c a = withContextError c $ \cPtr ->
   h2c a $ \astPtr ->
     castLBool <$> z3_get_bool_value cPtr astPtr
+  where castLBool :: Z3_lbool -> Maybe Bool
+        castLBool lb
+          | lb == z3_l_true  = Just True
+          | lb == z3_l_false = Just False
+          | lb == z3_l_undef = Nothing
+          | otherwise        =
+              error "Z3.Base.castLBool: illegal `Z3_lbool' value"
+
+-- | Return the kind of the given AST.
+getAstKind :: Context -> AST -> IO ASTKind
+getAstKind ctx ast = toAstKind <$> liftFun1 z3_get_ast_kind ctx ast
+  where toAstKind :: Z3_ast_kind -> ASTKind
+        toAstKind k
+          | k == z3_numeral_ast       = Z3_NUMERAL_AST
+          | k == z3_app_ast           = Z3_APP_AST
+          | k == z3_var_ast           = Z3_VAR_AST
+          | k == z3_quantifier_ast    = Z3_QUANTIFIER_AST
+          | k == z3_sort_ast          = Z3_SORT_AST
+          | k == z3_func_decl_ast     = Z3_FUNC_DECL_AST
+          | k == z3_unknown_ast       = Z3_UNKNOWN_AST
+          | otherwise                 =
+              error "Z3.Base.getAstKind: unknown `Z3_ast_kind'"
+
+-- TODO: Z3_is_app
+
+-- TODO: Z3_is_numeral_ast
+
+-- TODO: Z3_is_algebraic_number
+
+-- | Convert an ast into an APP_AST. This is just type casting.
+toApp :: Context -> AST -> IO App
+toApp = liftFun1 z3_to_app
+
+-- TODO: Z3_to_func_decl
 
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: Context -> AST -> IO String
 getNumeralString = liftFun1 z3_get_numeral_string
 
+-- TODO: replace by a 'FromAST' class
 -- | Return 'Z3Int' value
 getInt :: Context -> AST -> IO Integer
 getInt c a = read <$> getNumeralString c a
 
+-- TODO: replace by 'FromAST' class
 -- | Return 'Z3Real' value
 getReal :: Context -> AST -> IO Rational
 getReal c a = parse <$> getNumeralString c a
@@ -1284,15 +1452,75 @@ getReal c a = parse <$> getNumeralString c a
         parseDen ('/':sj) = read sj
         parseDen _        = error "Z3.Base.getReal: no parse"
 
+-- TODO: Z3_get_numeral_decimal_string
 
--- | Convert an ast into an APP_AST. This is just type casting.
-toApp :: Context -> AST -> IO App
-toApp = liftFun1 z3_to_app
+-- TODO: Z3_get_numerator
+
+-- TODO: Z3_get_denominator
+
+-- TODO: Z3_get_numeral_small
+
+-- TODO: Z3_get_numeral_int
+
+-- TODO: Z3_get_numeral_int
+
+-- TODO: Z3_get_numeral_uint
+
+-- TODO: Z3_get_numeral_uint64
+
+-- TODO: Z3_get_numeral_int64
+
+-- TODO: Z3_get_numeral_rational_int64
+
+-- TODO: Z3_get_algebraic_number_lower
+
+-- TODO: Z3_get_algebraic_number_upper
+
+-- TODO: Z3_pattern_to_ast
+
+-- TODO: Z3_get_pattern_num_terms
+
+-- TODO: Z3_get_pattern
+
+-- TODO: Z3_get_index_value
+
+-- TODO: Z3_is_quantifier_forall
+
+-- TODO: Z3_get_quantifier_weight
+
+-- TODO: Z3_get_quantifier_num_patterns
+
+-- TODO: Z3_get_quantifier_pattern_ast
+
+-- TODO: Z3_get_quantifier_num_no_patterns
+
+-- TODO: Z3_get_quantifier_no_pattern_ast
+
+-- TODO: Z3_get_quantifier_num_bound
+
+-- TODO: Z3_get_quantifier_bound_name
+
+-- TODO: Z3_get_quantifier_bound_sort
+
+-- TODO: Z3_get_quantifier_body
+
+-- TODO: Z3_simplify
+
+-- TODO: Z3_simplify_ex
+
+-- TODO: Z3_simplify_get_help
+
+-- TODO: Z3_simplify_get_param_descrs
+
+---------------------------------------------------------------------
+-- Modifiers
 
 -- TODO Modifiers
 
 ---------------------------------------------------------------------
 -- Models
+
+-- Alias modelEval == eval
 
 -- | Evaluate an AST node in the given model.
 --
@@ -1319,6 +1547,10 @@ eval ctx m a =
 -- | Evaluate a /collection/ of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
 evalT c m = fmap T.sequence . T.mapM (eval c m)
+
+-- TODO: Z3_model_get_const_interp
+
+-- TODO: Z3_model_has_interp
 
 -- | The interpretation of a function.
 data FuncModel = FuncModel
@@ -1434,37 +1666,186 @@ showModel = modelToString
 {-# DEPRECATED showModel "Use modelToString instead." #-}
 
 ---------------------------------------------------------------------
--- Constraints
+-- Interaction logging
 
--- TODO Constraints: Z3_get_num_scopes
-
--- TODO Constraints: Z3_persist_ast
-
--- TODO Constraints: Z3_check_assumptions
--- TODO Constraints: Z3_get_implied_equalities
-
--- TODO From section 'Constraints' on.
+-- TODO
 
 ---------------------------------------------------------------------
--- Parameters
+-- String Conversion
 
-mkParams :: Context -> IO Params
-mkParams = liftFun0 z3_mk_params
+-- | Pretty-printing mode for converting ASTs to strings.  The mode
+-- can be one of the following:
+--
+-- * Z3_PRINT_SMTLIB_FULL: Print AST nodes in SMTLIB verbose format.
+--
+-- * Z3_PRINT_LOW_LEVEL: Print AST nodes using a low-level format.
+--
+-- * Z3_PRINT_SMTLIB_COMPLIANT: Print AST nodes in SMTLIB 1.x
+-- compliant format.
+--
+-- * Z3_PRINT_SMTLIB2_COMPLIANT: Print AST nodes in SMTLIB 2.x
+-- compliant format.
+data ASTPrintMode
+  = Z3_PRINT_SMTLIB_FULL
+  | Z3_PRINT_LOW_LEVEL
+  | Z3_PRINT_SMTLIB_COMPLIANT
+  | Z3_PRINT_SMTLIB2_COMPLIANT
 
-paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
-paramsSetBool = liftFun3 z3_params_set_bool
+-- | Set the pretty-printing mode for converting ASTs to strings.
+setASTPrintMode :: Context -> ASTPrintMode -> IO ()
+setASTPrintMode ctx mode = withContextError ctx $ \ctxPtr ->
+  case mode of
+       Z3_PRINT_SMTLIB_FULL ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib_full
+       Z3_PRINT_LOW_LEVEL ->
+         z3_set_ast_print_mode ctxPtr z3_print_low_level
+       Z3_PRINT_SMTLIB_COMPLIANT ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib_compliant
+       Z3_PRINT_SMTLIB2_COMPLIANT ->
+         z3_set_ast_print_mode ctxPtr z3_print_smtlib2_compliant
 
-paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
-paramsSetUInt = liftFun3 z3_params_set_uint
+-- | Convert an AST to a string.
+astToString :: Context -> AST -> IO String
+astToString = liftFun1 z3_ast_to_string
 
-paramsSetDouble :: Context -> Params -> Symbol -> Double -> IO ()
-paramsSetDouble = liftFun3 z3_params_set_double
+-- | Convert a pattern to a string.
+patternToString :: Context -> Pattern -> IO String
+patternToString = liftFun1 z3_pattern_to_string
 
-paramsSetSymbol :: Context -> Params -> Symbol -> Symbol -> IO ()
-paramsSetSymbol = liftFun3 z3_params_set_symbol
+-- | Convert a sort to a string.
+sortToString :: Context -> Sort -> IO String
+sortToString = liftFun1 z3_sort_to_string
 
-paramsToString :: Context -> Params -> IO String
-paramsToString = liftFun1 z3_params_to_string
+-- | Convert a FuncDecl to a string.
+funcDeclToString :: Context -> FuncDecl -> IO String
+funcDeclToString = liftFun1 z3_func_decl_to_string
+
+-- | Convert the given benchmark into SMT-LIB formatted string.
+--
+-- The output format can be configured via 'setASTPrintMode'.
+benchmarkToSMTLibString :: Context
+                            -> String   -- ^ name
+                            -> String   -- ^ logic
+                            -> String   -- ^ status
+                            -> String   -- ^ attributes
+                            -> [AST]    -- ^ assumptions
+                            -> AST      -- ^ formula
+                            -> IO String
+benchmarkToSMTLibString ctx name logic status attr assump form =
+  marshal z3_benchmark_to_smtlib_string ctx $ \f ->
+    withCString name $ \namePtr ->
+    withCString logic $ \logicPtr ->
+    withCString status $ \statusPtr ->
+    withCString attr $ \attrPtr ->
+    marshalArrayLen assump $ \assumpNum assumpArr ->
+    h2c form $ \formPtr ->
+      f namePtr logicPtr statusPtr attrPtr assumpNum assumpArr formPtr
+
+---------------------------------------------------------------------
+-- Parser interface
+
+-- TODO
+
+---------------------------------------------------------------------
+-- Error handling
+
+-- | Z3 exceptions.
+data Z3Error = Z3Error
+    { errCode :: Z3ErrorCode
+    , errMsg  :: String
+    }
+  deriving Typeable
+
+instance Show Z3Error where
+  show (Z3Error _ s) = s
+
+data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
+  | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
+  | InvalidUsage   | DecRefError | Z3Exception
+  deriving (Show, Typeable)
+
+toZ3Error :: Z3_error_code -> Z3ErrorCode
+toZ3Error e
+  | e == z3_sort_error        = SortError
+  | e == z3_iob               = IOB
+  | e == z3_invalid_arg       = InvalidArg
+  | e == z3_parser_error      = ParserError
+  | e == z3_no_parser         = NoParser
+  | e == z3_invalid_pattern   = InvalidPattern
+  | e == z3_memout_fail       = MemoutFail
+  | e == z3_file_access_error = FileAccessError
+  | e == z3_internal_fatal    = InternalFatal
+  | e == z3_invalid_usage     = InvalidUsage
+  | e == z3_dec_ref_error     = DecRefError
+  | e == z3_exception         = Z3Exception
+  | otherwise                 = error "Z3.Base.toZ3Error: illegal `Z3_error_code' value"
+
+instance Exception Z3Error
+
+-- | Throws a z3 error
+z3Error :: Z3ErrorCode -> String -> IO ()
+z3Error cd = throw . Z3Error cd
+
+-- | Throw an exception if a Z3 error happened
+checkError :: Ptr Z3_context -> IO a -> IO a
+checkError cPtr m = do
+  m <* (z3_get_error_code cPtr >>= throwZ3Exn)
+  where getErrStr i  = peekCString =<< z3_get_error_msg_ex cPtr i
+        throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
+
+---------------------------------------------------------------------
+-- Miscellaneous
+
+data Version
+  = Version {
+      z3Major    :: !Int
+    , z3Minor    :: !Int
+    , z3Build    :: !Int
+    , z3Revision :: !Int
+    }
+  deriving (Eq,Ord)
+
+instance Show Version where
+  show (Version major minor build _) =
+    show major ++ "." ++ show minor ++ "." ++ show build
+
+-- | Return Z3 version number information.
+getVersion :: IO Version
+getVersion =
+  alloca $ \ptrMinor ->
+  alloca $ \ptrMajor ->
+  alloca $ \ptrBuild ->
+  alloca $ \ptrRevision -> do
+    z3_get_version ptrMinor ptrMajor ptrBuild ptrRevision
+    minor    <- fromIntegral <$> peek ptrMinor
+    major    <- fromIntegral <$> peek ptrMajor
+    build    <- fromIntegral <$> peek ptrBuild
+    revision <- fromIntegral <$> peek ptrRevision
+    return $ Version minor major build revision
+
+---------------------------------------------------------------------
+-- Externalm Theory Plugins
+
+-- TODO
+
+---------------------------------------------------------------------
+-- Fixedpoint facilities
+
+-- TODO
+
+-- AST vectors ?
+
+-- AST maps ?
+
+---------------------------------------------------------------------
+-- Goals
+
+-- TODO
+
+---------------------------------------------------------------------
+-- Tactics and Probes
+
+-- TODO
 
 ---------------------------------------------------------------------
 -- Solvers
@@ -1667,155 +2048,6 @@ solverGetReasonUnknown = liftFun1 z3_solver_get_reason_unknown
 -- | Convert the given solver into a string.
 solverToString :: Context -> Solver -> IO String
 solverToString = liftFun1 z3_solver_to_string
-
----------------------------------------------------------------------
--- String Conversion
-
--- | Pretty-printing mode for converting ASTs to strings.  The mode
--- can be one of the following:
---
--- * Z3_PRINT_SMTLIB_FULL: Print AST nodes in SMTLIB verbose format.
---
--- * Z3_PRINT_LOW_LEVEL: Print AST nodes using a low-level format.
---
--- * Z3_PRINT_SMTLIB_COMPLIANT: Print AST nodes in SMTLIB 1.x
--- compliant format.
---
--- * Z3_PRINT_SMTLIB2_COMPLIANT: Print AST nodes in SMTLIB 2.x
--- compliant format.
-data ASTPrintMode
-  = Z3_PRINT_SMTLIB_FULL
-  | Z3_PRINT_LOW_LEVEL
-  | Z3_PRINT_SMTLIB_COMPLIANT
-  | Z3_PRINT_SMTLIB2_COMPLIANT
-
--- | Set the pretty-printing mode for converting ASTs to strings.
-setASTPrintMode :: Context -> ASTPrintMode -> IO ()
-setASTPrintMode ctx mode = withContextError ctx $ \ctxPtr ->
-  case mode of
-       Z3_PRINT_SMTLIB_FULL ->
-         z3_set_ast_print_mode ctxPtr z3_print_smtlib_full
-       Z3_PRINT_LOW_LEVEL ->
-         z3_set_ast_print_mode ctxPtr z3_print_low_level
-       Z3_PRINT_SMTLIB_COMPLIANT ->
-         z3_set_ast_print_mode ctxPtr z3_print_smtlib_compliant
-       Z3_PRINT_SMTLIB2_COMPLIANT ->
-         z3_set_ast_print_mode ctxPtr z3_print_smtlib2_compliant
-
--- | Convert an AST to a string.
-astToString :: Context -> AST -> IO String
-astToString = liftFun1 z3_ast_to_string
-
--- | Convert a pattern to a string.
-patternToString :: Context -> Pattern -> IO String
-patternToString = liftFun1 z3_pattern_to_string
-
--- | Convert a sort to a string.
-sortToString :: Context -> Sort -> IO String
-sortToString = liftFun1 z3_sort_to_string
-
--- | Convert a FuncDecl to a string.
-funcDeclToString :: Context -> FuncDecl -> IO String
-funcDeclToString = liftFun1 z3_func_decl_to_string
-
--- | Convert the given benchmark into SMT-LIB formatted string.
---
--- The output format can be configured via 'setASTPrintMode'.
-benchmarkToSMTLibString :: Context
-                            -> String   -- ^ name
-                            -> String   -- ^ logic
-                            -> String   -- ^ status
-                            -> String   -- ^ attributes
-                            -> [AST]    -- ^ assumptions
-                            -> AST      -- ^ formula
-                            -> IO String
-benchmarkToSMTLibString ctx name logic status attr assump form =
-  marshal z3_benchmark_to_smtlib_string ctx $ \f ->
-    withCString name $ \namePtr ->
-    withCString logic $ \logicPtr ->
-    withCString status $ \statusPtr ->
-    withCString attr $ \attrPtr ->
-    marshalArrayLen assump $ \assumpNum assumpArr ->
-    h2c form $ \formPtr ->
-      f namePtr logicPtr statusPtr attrPtr assumpNum assumpArr formPtr
-
----------------------------------------------------------------------
--- Error handling
-
--- | Z3 exceptions.
-data Z3Error = Z3Error
-    { errCode :: Z3ErrorCode
-    , errMsg  :: String
-    }
-  deriving Typeable
-
-instance Show Z3Error where
-  show (Z3Error _ s) = s
-
-data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
-  | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
-  | InvalidUsage   | DecRefError | Z3Exception
-  deriving (Show, Typeable)
-
-toZ3Error :: Z3_error_code -> Z3ErrorCode
-toZ3Error e
-  | e == z3_sort_error        = SortError
-  | e == z3_iob               = IOB
-  | e == z3_invalid_arg       = InvalidArg
-  | e == z3_parser_error      = ParserError
-  | e == z3_no_parser         = NoParser
-  | e == z3_invalid_pattern   = InvalidPattern
-  | e == z3_memout_fail       = MemoutFail
-  | e == z3_file_access_error = FileAccessError
-  | e == z3_internal_fatal    = InternalFatal
-  | e == z3_invalid_usage     = InvalidUsage
-  | e == z3_dec_ref_error     = DecRefError
-  | e == z3_exception         = Z3Exception
-  | otherwise                 = error "Z3.Base.toZ3Error: illegal `Z3_error_code' value"
-
-instance Exception Z3Error
-
--- | Throws a z3 error
-z3Error :: Z3ErrorCode -> String -> IO ()
-z3Error cd = throw . Z3Error cd
-
--- | Throw an exception if a Z3 error happened
-checkError :: Ptr Z3_context -> IO a -> IO a
-checkError cPtr m = do
-  m <* (z3_get_error_code cPtr >>= throwZ3Exn)
-  where getErrStr i  = peekCString =<< z3_get_error_msg_ex cPtr i
-        throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
-
-
----------------------------------------------------------------------
--- Miscellaneous
-
-data Version
-  = Version {
-      z3Major    :: !Int
-    , z3Minor    :: !Int
-    , z3Build    :: !Int
-    , z3Revision :: !Int
-    }
-  deriving (Eq,Ord)
-
-instance Show Version where
-  show (Version major minor build _) =
-    show major ++ "." ++ show minor ++ "." ++ show build
-
--- | Return Z3 version number information.
-getVersion :: IO Version
-getVersion =
-  alloca $ \ptrMinor ->
-  alloca $ \ptrMajor ->
-  alloca $ \ptrBuild ->
-  alloca $ \ptrRevision -> do
-    z3_get_version ptrMinor ptrMajor ptrBuild ptrRevision
-    minor    <- fromIntegral <$> peek ptrMinor
-    major    <- fromIntegral <$> peek ptrMajor
-    build    <- fromIntegral <$> peek ptrBuild
-    revision <- fromIntegral <$> peek ptrRevision
-    return $ Version minor major build revision
 
 ---------------------------------------------------------------------
 -- Marshalling
