@@ -70,6 +70,7 @@ module Z3.Monad
   , mkFreshFuncDecl
   , mkTrue
   , mkFalse
+  , mkBool
   , mkEq
   , mkNot
   , mkIte
@@ -490,6 +491,11 @@ mkTrue = liftScalar Base.mkTrue
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5952ac17671117a02001fed6575c778d>
 mkFalse :: MonadZ3 z3 => z3 AST
 mkFalse = liftScalar Base.mkFalse
+
+-- | Create an AST node representing the given boolean.
+mkBool :: MonadZ3 z3 => Bool -> z3 AST
+mkBool False = mkFalse
+mkBool True  = mkTrue
 
 -- | Create an AST node representing /l = r/.
 --
