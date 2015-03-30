@@ -255,7 +255,7 @@ import qualified Data.Traversable as T
 ---------------------------------------------------------------------
 -- The Z3 monad-class
 
-class (Monad m, MonadIO m) => MonadZ3 m where
+class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
   getSolver  :: m Base.Solver
   getContext :: m Base.Context
 
