@@ -32,7 +32,7 @@ Maintainer:          Iago Abal <mail@iagoabal.eu>,
 Copyright:           2012-2014, Iago Abal, David Castro
 Category:            Math, SMT, Theorem Provers, Formal Methods
 Build-type:          Simple
-Cabal-version:       >= 1.6
+Cabal-version:       >= 1.8
 
 source-repository head
   type:     mercurial
@@ -77,3 +77,20 @@ Library
         extra-libraries:     z3
     else
         extra-libraries:     gomp z3 gomp
+
+Test-suite spec
+
+    Type:               exitcode-stdio-1.0
+
+    Ghc-options:        -Wall
+
+    Extensions:         ScopedTypeVariables
+
+    Hs-source-dirs:     test
+
+    Main-is:            Spec.hs
+
+    Build-depends:      base >= 4.5,
+                        z3 >= 0.4,
+                        hspec >= 2.1,
+                        QuickCheck >= 2.5.1
