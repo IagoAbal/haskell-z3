@@ -1,10 +1,6 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
-  -- This is just to avoid warnings because we import fragile new Z3 API stuff
-  -- from Z3.Base
-
 -- TODO: Error handling
 
 -- |
@@ -1029,7 +1025,6 @@ getDatatypeSortConstructors :: MonadZ3 z3
 getDatatypeSortConstructors = liftFun1 Base.getDatatypeSortConstructors
 
 -- | Get list of recognizers for datatype.
-
 getDatatypeSortRecognizers :: MonadZ3 z3
                            => Sort           -- ^ Datatype sort.
                            -> z3 [FuncDecl]  -- ^ Constructor recognizers.
@@ -1042,7 +1037,7 @@ getDeclName :: MonadZ3 z3 => FuncDecl -> z3 Symbol
 getDeclName = liftFun1 Base.getDeclName
 
 -- | Return the symbol name.
--- 
+--
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
 getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
 getSymbolString = liftFun1 Base.getSymbolString
@@ -1176,6 +1171,8 @@ showModel = modelToString
 -- Constraints
 
 -- | Create a backtracking point.
+--
+-- For @push; m; pop 1@ see 'local'.
 push :: MonadZ3 z3 => z3 ()
 push = liftSolver0 Base.solverPush
 
