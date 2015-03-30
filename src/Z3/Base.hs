@@ -114,6 +114,8 @@ module Z3.Base (
   , mkAnd
   , mkOr
   , mkDistinct
+  -- ** Helpers
+  , mkBool
 
   -- * Arithmetic: Integers and Reals
   , mkAdd
@@ -701,6 +703,14 @@ mkAnd = liftAstN "Z3.Base.mkAnd: empty list of expressions" z3_mk_and
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
 mkOr :: Context -> [AST] -> IO AST
 mkOr = liftAstN "Z3.Base.mkOr: empty list of expressions" z3_mk_or
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Create an AST node representing the given boolean.
+mkBool :: Context -> Bool -> IO AST
+mkBool ctx False = mkFalse ctx
+mkBool ctx True  = mkTrue  ctx
 
 ---------------------------------------------------------------------
 -- Arithmetic: Integers and Reals
