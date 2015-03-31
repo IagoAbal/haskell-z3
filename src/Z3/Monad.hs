@@ -168,6 +168,14 @@ module Z3.Monad
   , mkNumeral
   , mkInt
   , mkReal
+  , mkUnsignedInt
+  , mkInt64
+  , mkUnsignedInt64
+  -- ** Helpers
+  , mkIntegral
+  , mkRealNum
+  , mkIntNum
+  , mkBvNum
 
   -- * Quantifiers
   , mkPattern
@@ -285,6 +293,8 @@ import qualified Control.Exception as E
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Control.Monad.Fix ( MonadFix )
+import Data.Int ( Int64 )
+import Data.Word ( Word, Word64 )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 
@@ -1063,7 +1073,7 @@ mkArrayDefault :: MonadZ3 z3 => AST -> z3 AST
 mkArrayDefault = liftFun1 Base.mkArrayDefault
 
 ---------------------------------------------------------------------
--- Numerals
+-- * Numerals
 
 -- | Create a numeral of a given sort.
 --
@@ -1071,19 +1081,66 @@ mkArrayDefault = liftFun1 Base.mkArrayDefault
 mkNumeral :: MonadZ3 z3 => String -> Sort -> z3 AST
 mkNumeral = liftFun2 Base.mkNumeral
 
--------------------------------------------------
--- Numerals / Integers
-
--- | Create a numeral of sort /int/.
-mkInt :: (MonadZ3 z3, Integral a) => a -> z3 AST
-mkInt = liftFun1 Base.mkInt
-
--------------------------------------------------
--- Numerals / Reals
-
 -- | Create a numeral of sort /real/.
-mkReal :: (MonadZ3 z3, Real r) => r -> z3 AST
-mkReal = liftFun1 Base.mkReal
+mkReal :: MonadZ3 z3 => Int -> Int -> z3 AST
+mkReal = liftFun2 Base.mkReal
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkInt :: MonadZ3 z3 => Int -> Sort -> z3 AST
+mkInt = liftFun2 Base.mkInt
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine unsigned integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkUnsignedInt :: MonadZ3 z3 => Word -> Sort -> z3 AST
+mkUnsignedInt = liftFun2 Base.mkUnsignedInt
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine 64-bit integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkInt64 :: MonadZ3 z3 => Int64 -> Sort -> z3 AST
+mkInt64 = liftFun2 Base.mkInt64
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine unsigned 64-bit integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkUnsignedInt64 :: MonadZ3 z3 => Word64 -> Sort -> z3 AST
+mkUnsignedInt64 = liftFun2 Base.mkUnsignedInt64
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+mkIntegral :: (MonadZ3 z3, Integral a) => a -> Sort -> z3 AST
+mkIntegral = liftFun2 Base.mkIntegral
+
+-- | Create a numeral of sort /real/ from a 'Real'.
+mkRealNum :: (MonadZ3 z3, Real r) => r -> z3 AST
+mkRealNum = liftFun1 Base.mkRealNum
+
+-- | Create a numeral of sort /int/ from an 'Integral'.
+mkIntNum :: (MonadZ3 z3, Integral a) => a -> z3 AST
+mkIntNum = liftFun1 Base.mkIntNum
+
+-- | Create a numeral of sort /Bit-vector/ from an 'Integral'.
+mkBvNum :: (MonadZ3 z3, Integral i) => Int    -- ^ bit-width
+                                    -> i      -- ^ integer value
+                                    -> z3 AST
+mkBvNum = liftFun2 Base.mkBvNum
 
 ---------------------------------------------------------------------
 -- Quantifiers

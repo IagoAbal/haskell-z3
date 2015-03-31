@@ -187,6 +187,14 @@ module Z3.Base (
   , mkNumeral
   , mkReal
   , mkInt
+  , mkUnsignedInt
+  , mkInt64
+  , mkUnsignedInt64
+  -- ** Helpers
+  , mkIntegral
+  , mkRealNum
+  , mkIntNum
+  , mkBvNum
 
   -- * Quantifiers
   , mkPattern
@@ -276,7 +284,7 @@ import Control.Applicative ( (<$>), (<*) )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( when )
 import Data.Int
-import Data.Ratio ( Ratio, numerator, denominator, (%) )
+import Data.Ratio ( numerator, denominator, (%) )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 import Data.Typeable ( Typeable )
@@ -1055,88 +1063,81 @@ mkArrayDefault = liftFun1 z3_mk_array_default
 -- TODO: Sets
 
 ---------------------------------------------------------------------
--- Numerals
-
--- TODO: Re-think
+-- * Numerals
 
 -- | Create a numeral of a given sort.
 mkNumeral :: Context -> String -> Sort -> IO AST
 mkNumeral = liftFun2 z3_mk_numeral
 
--------------------------------------------------
--- Numerals / Integers
+-- | Create a real from a fraction.
+mkReal :: Context -> Int   -- ^ numerator
+                  -> Int   -- ^ denominator (/= 0)
+                  -> IO AST
+mkReal ctx num den
+  | den /= 0  = liftFun2 z3_mk_real ctx num den
+  | otherwise = error "Z3.Base.mkReal: zero denominator"
 
--- | Create a numeral of sort /int/.
-mkInt :: Integral a => Context -> a -> IO AST
-mkInt c n = mkIntSort c >>= mkNumeral c n_str
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkInt :: Context -> Int -> Sort -> IO AST
+mkInt = liftFun2 z3_mk_int
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine unsigned integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkUnsignedInt :: Context -> Word -> Sort -> IO AST
+mkUnsignedInt = liftFun2 z3_mk_unsigned_int
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine 64-bit integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkInt64 :: Context -> Int64 -> Sort -> IO AST
+mkInt64 = liftFun2 z3_mk_int64
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+--
+-- This function can be use to create numerals that fit in a
+-- /machine unsigned 64-bit integer/.
+-- It is slightly faster than 'mkNumeral' since it is not necessary
+-- to parse a string.
+mkUnsignedInt64 :: Context -> Word64 -> Sort -> IO AST
+mkUnsignedInt64 = liftFun2 z3_mk_unsigned_int64
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Create a numeral of an int, bit-vector, or finite-domain sort.
+mkIntegral :: Integral a => Context -> a -> Sort -> IO AST
+mkIntegral c n s = mkNumeral c n_str s
   where n_str = show $ toInteger n
 
-{-# INLINE mkIntZ3 #-}
-mkIntZ3 :: Context -> Int32 -> Sort -> IO AST
-mkIntZ3 c n s = marshal z3_mk_int c $ h2c s . withIntegral n
-
-{-# INLINE mkUnsignedIntZ3 #-}
-mkUnsignedIntZ3 :: Context -> Word32 -> Sort -> IO AST
-mkUnsignedIntZ3 c n s = marshal z3_mk_unsigned_int c $
-  h2c s . withIntegral n
-
-{-# INLINE mkInt64Z3 #-}
-mkInt64Z3 :: Context -> Int64 -> Sort -> IO AST
-mkInt64Z3 = liftFun2 z3_mk_int64
-
-{-# INLINE mkUnsignedInt64Z3 #-}
-mkUnsignedInt64Z3 :: Context -> Word64 -> Sort -> IO AST
-mkUnsignedInt64Z3 = liftFun2 z3_mk_unsigned_int64
-
-{-# RULES "mkInt/mkInt_IntZ3" mkInt = mkInt_IntZ3 #-}
-mkInt_IntZ3 :: Context -> Int32 -> IO AST
-mkInt_IntZ3 c n = mkIntSort c >>= mkIntZ3 c n
-
-{-# RULES "mkInt/mkInt_UnsignedIntZ3" mkInt = mkInt_UnsignedIntZ3 #-}
-mkInt_UnsignedIntZ3 :: Context -> Word32 -> IO AST
-mkInt_UnsignedIntZ3 c n = mkIntSort c >>= mkUnsignedIntZ3 c n
-
-{-# RULES "mkInt/mkInt_Int64Z3" mkInt = mkInt_Int64Z3 #-}
-mkInt_Int64Z3 :: Context -> Int64 -> IO AST
-mkInt_Int64Z3 c n = mkIntSort c >>= mkInt64Z3 c n
-
-{-# RULES "mkInt/mkInt_UnsignedInt64Z3" mkInt = mkInt_UnsignedInt64Z3 #-}
-mkInt_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
-mkInt_UnsignedInt64Z3 c n = mkIntSort c >>= mkUnsignedInt64Z3 c n
-
--------------------------------------------------
--- Numerals / Reals
-
--- | Create a numeral of sort /real/.
-mkReal :: Real r => Context -> r -> IO AST
-mkReal c n = mkRealSort c >>= mkNumeral c n_str
-  where r = toRational n
-        r_n = toInteger $ numerator r
-        r_d = toInteger $ denominator r
+-- | Create a numeral of sort /real/ from a 'Real'.
+mkRealNum :: Real r => Context -> r -> IO AST
+mkRealNum c n = mkNumeral c n_str =<< mkRealSort c
+  where r     = toRational n
+        r_n   = toInteger $ numerator r
+        r_d   = toInteger $ denominator r
         n_str = show r_n ++ " / " ++ show r_d
 
-{-# RULES "mkReal/mkRealZ3" mkReal = mkRealZ3 #-}
-mkRealZ3 :: Context -> Ratio Int32 -> IO AST
-mkRealZ3 c r = withContextError c $ \cPtr ->
-  c2h c =<< z3_mk_real cPtr n d
-  where n = (fromIntegral $ numerator r)   :: CInt
-        d = (fromIntegral $ denominator r) :: CInt
+-- | Create a numeral of sort /int/ from an 'Integral'.
+mkIntNum :: Integral a => Context -> a -> IO AST
+mkIntNum ctx n = mkIntegral ctx n =<< mkIntSort ctx
 
-{-# RULES "mkReal/mkReal_IntZ3" mkReal = mkReal_IntZ3 #-}
-mkReal_IntZ3 :: Context -> Int32 -> IO AST
-mkReal_IntZ3 c n = mkRealSort c >>= mkIntZ3 c n
-
-{-# RULES "mkReal/mkReal_UnsignedIntZ3" mkReal = mkReal_UnsignedIntZ3 #-}
-mkReal_UnsignedIntZ3 :: Context -> Word32 -> IO AST
-mkReal_UnsignedIntZ3 c n = mkRealSort c >>= mkUnsignedIntZ3 c n
-
-{-# RULES "mkReal/mkReal_Int64Z3" mkReal = mkReal_Int64Z3 #-}
-mkReal_Int64Z3 :: Context -> Int64 -> IO AST
-mkReal_Int64Z3 c n = mkRealSort c >>= mkInt64Z3 c n
-
-{-# RULES "mkReal/mkReal_UnsignedInt64Z3" mkReal = mkReal_UnsignedInt64Z3 #-}
-mkReal_UnsignedInt64Z3 :: Context -> Word64 -> IO AST
-mkReal_UnsignedInt64Z3 c n = mkRealSort c >>= mkUnsignedInt64Z3 c n
+-- | Create a numeral of sort /Bit-vector/ from an 'Integral'.
+mkBvNum :: Integral i => Context -> Int    -- ^ bit-width
+                                 -> i      -- ^ integer value
+                                 -> IO AST
+mkBvNum ctx s n = mkIntegral ctx n =<< mkBvSort ctx s
 
 ---------------------------------------------------------------------
 -- Quantifiers
@@ -2088,8 +2089,8 @@ using 'marshal'. Worst case scenario, write the marshalling code yourself.
 
 -}
 
-withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
-withIntegral x f = f (fromIntegral x)
+-- withIntegral :: (Integral a, Integral b) => a -> (b -> r) -> r
+-- withIntegral x f = f (fromIntegral x)
 
 withContext :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContext c = withForeignPtr (unContext c)
