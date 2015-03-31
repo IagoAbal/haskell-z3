@@ -15,13 +15,6 @@
 -- There is (mostly) a one-to-one correspondence with Z3 C API, thus see
 -- <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html>
 -- for further details.
---
--- Note that these bindings still focus on the old Z3 3.x API, and will not
--- handle reference counting for you if you decide to use Z3 4.x API functions.
--- Mixing both API is known to cause some segmentation faults!
---
--- Supporting Z3 4.x API (and removing support for 3.x) is planned for
--- the 0.4 version of these bindings.
 
 {- HACKING
 
@@ -57,15 +50,15 @@ module Z3.Base (
   , Params
   , Solver
   , ASTKind(..)
-
   -- ** Satisfiability result
   , Result(..)
 
   -- * Create configuration
   , mkConfig
   , delConfig
-  , withConfig
   , setParamValue
+  -- ** Helpers
+  , withConfig
 
   -- * Create context
   , mkContext
@@ -92,7 +85,7 @@ module Z3.Base (
   , mkArraySort
   , mkTupleSort
   , mkConstructor
-  , delConstructor
+  , delConstructor -- TODO: Remove
   , mkDatatype
 
   -- * Constants and Applications
@@ -212,15 +205,14 @@ module Z3.Base (
   , getSort
   , getBool
   , getAstKind
+  , toApp
+  , getNumeralString
+  -- ** Helpers
   , getInt
   , getReal
-  , toApp
 
   -- * Models
-  , FuncModel (..)
   , eval
-  , evalT
-  , evalFunc
   , evalArray
   , getFuncInterp
   , isAsArray
@@ -234,6 +226,10 @@ module Z3.Base (
   , funcEntryGetArg
   , modelToString
   , showModel
+  -- ** Helpers
+  , evalT
+  , FuncModel (..)
+  , evalFunc
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -267,10 +263,11 @@ module Z3.Base (
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
-  , solverCheckAndGetModel
   , solverGetUnsatCore
   , solverGetReasonUnknown
   , solverToString
+  -- ** Helpers
+  , solverCheckAndGetModel
   ) where
 
 import Z3.Base.C
@@ -292,7 +289,7 @@ import Foreign.C
 import Foreign.Concurrent
 
 ---------------------------------------------------------------------
--- Types
+-- * Types
 
 -- | A Z3 /configuration object/.
 newtype Config = Config { unConfig :: Ptr Z3_config }
@@ -381,29 +378,26 @@ data ASTKind
     | Z3_UNKNOWN_AST
 
 ---------------------------------------------------------------------
--- Configuration
+-- * Configuration
 
 -- TODO: Z3_global_param_set
 -- TODO: Z3_global_param_reset_all
 -- TODO: Z3_global_param_get
 
 ---------------------------------------------------------------------
--- Create configuration
+-- * Create configuration
 
 -- | Create a configuration.
+--
+-- See 'withConfig'.
 mkConfig :: IO Config
 mkConfig = Config <$> z3_mk_config
 
 -- | Delete a configuration.
+--
+-- See 'withConfig'.
 delConfig :: Config -> IO ()
 delConfig = z3_del_config . unConfig
-
--- | Run a computation using a temporally created configuration.
---
--- Note that the configuration object can be thrown away once
--- it has been used to create the Z3 'Context'.
-withConfig :: (Config -> IO a) -> IO a
-withConfig = bracket mkConfig delConfig
 
 -- | Set a configuration parameter.
 setParamValue :: Config -> String -> String -> IO ()
@@ -412,10 +406,23 @@ setParamValue cfg s1 s2 =
     withCString s2  $ \cs2 ->
       z3_set_param_value (unConfig cfg) cs1 cs2
 
+-------------------------------------------------
+-- ** Helpers
+
+-- | Run a computation using a temporally created configuration.
+--
+-- Note that the configuration object can be thrown away once
+-- it has been used to create the Z3 'Context'.
+withConfig :: (Config -> IO a) -> IO a
+withConfig = bracket mkConfig delConfig
+
 ---------------------------------------------------------------------
 -- Create context
 
 -- | Create a context using the given configuration.
+--
+-- /Z3_del_context/ is called by Haskell's garbage collector before
+-- freeing the 'Context' object.
 mkContext :: Config -> IO Context
 mkContext cfg = do
   ctxPtr <- z3_mk_context_rc (unConfig cfg)
@@ -1443,25 +1450,6 @@ toApp = liftFun1 z3_to_app
 getNumeralString :: Context -> AST -> IO String
 getNumeralString = liftFun1 z3_get_numeral_string
 
--- TODO: replace by a 'FromAST' class
--- | Return 'Z3Int' value
-getInt :: Context -> AST -> IO Integer
-getInt c a = read <$> getNumeralString c a
-
--- TODO: replace by 'FromAST' class
--- | Return 'Z3Real' value
-getReal :: Context -> AST -> IO Rational
-getReal c a = parse <$> getNumeralString c a
-  where parse :: String -> Rational
-        parse s
-          | [(i, sj)] <- reads s = i % parseDen (dropWhile (== ' ') sj)
-          | otherwise            = error "Z3.Base.getReal: no parse"
-
-        parseDen :: String -> Integer
-        parseDen ""       = 1
-        parseDen ('/':sj) = read sj
-        parseDen _        = error "Z3.Base.getReal: no parse"
-
 -- TODO: Z3_get_numeral_decimal_string
 
 -- TODO: Z3_get_numerator
@@ -1522,6 +1510,26 @@ getReal c a = parse <$> getNumeralString c a
 
 -- TODO: Z3_simplify_get_param_descrs
 
+-------------------------------------------------
+-- ** Helpers
+
+-- | Read an 'Integer' value from an 'AST'
+getInt :: Context -> AST -> IO Integer
+getInt c a = read <$> getNumeralString c a
+
+-- | Read a 'Rational' value from an 'AST'
+getReal :: Context -> AST -> IO Rational
+getReal c a = parse <$> getNumeralString c a
+  where parse :: String -> Rational
+        parse s
+          | [(i, sj)] <- reads s = i % parseDen (dropWhile (== ' ') sj)
+          | otherwise            = error "Z3.Base.getReal: no parse"
+
+        parseDen :: String -> Integer
+        parseDen ""       = 1
+        parseDen ('/':sj) = read sj
+        parseDen _        = error "Z3.Base.getReal: no parse"
+
 ---------------------------------------------------------------------
 -- Modifiers
 
@@ -1530,7 +1538,7 @@ getReal c a = parse <$> getNumeralString c a
 ---------------------------------------------------------------------
 -- Models
 
--- Alias modelEval == eval
+-- TODO: Alias modelEval == eval
 
 -- | Evaluate an AST node in the given model.
 --
@@ -1554,32 +1562,9 @@ eval ctx m a =
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
 
--- | Evaluate a /collection/ of AST nodes in the given model.
-evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
-evalT c m = fmap T.sequence . T.mapM (eval c m)
-
 -- TODO: Z3_model_get_const_interp
 
 -- TODO: Z3_model_has_interp
-
--- | The interpretation of a function.
-data FuncModel = FuncModel
-    { interpMap :: [([AST], AST)]
-      -- ^ Mapping from arguments to values.
-    , interpElse :: AST
-      -- ^ Default value.
-    }
-
--- | Evaluate a function declaration to a list of argument/value pairs.
-evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe FuncModel)
-evalFunc ctx m fDecl =
-    do interpMb <- getFuncInterp ctx m fDecl
-       case interpMb of
-         Nothing -> return Nothing
-         Just interp ->
-             do funcMap  <- getMapFromInterp ctx interp
-                elsePart <- funcInterpGetElse ctx interp
-                return (Just $ FuncModel funcMap elsePart)
 
 -- | Evaluate an array as a function, if possible.
 evalArray :: Context -> Model -> AST -> IO (Maybe FuncModel)
@@ -1674,6 +1659,32 @@ modelToString = liftFun1 z3_model_to_string
 showModel :: Context -> Model -> IO String
 showModel = modelToString
 {-# DEPRECATED showModel "Use modelToString instead." #-}
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Evaluate a /collection/ of AST nodes in the given model.
+evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
+evalT c m = fmap T.sequence . T.mapM (eval c m)
+
+-- | The interpretation of a function.
+data FuncModel = FuncModel
+    { interpMap :: [([AST], AST)]
+      -- ^ Mapping from arguments to values.
+    , interpElse :: AST
+      -- ^ Default value.
+    }
+
+-- | Evaluate a function declaration to a list of argument/value pairs.
+evalFunc :: Context -> Model -> FuncDecl -> IO (Maybe FuncModel)
+evalFunc ctx m fDecl =
+    do interpMb <- getFuncInterp ctx m fDecl
+       case interpMb of
+         Nothing -> return Nothing
+         Just interp ->
+             do funcMap  <- getMapFromInterp ctx interp
+                elsePart <- funcInterpGetElse ctx interp
+                return (Just $ FuncModel funcMap elsePart)
 
 ---------------------------------------------------------------------
 -- Interaction logging
@@ -1996,6 +2007,7 @@ mkSolverForLogic c logic = withContextError c $ \cPtr ->
   do sym <- mkStringSymbol c (show logic)
      c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
 
+-- | Set the given solver using the given parameters.
 solverSetParams :: Context -> Solver -> Params -> IO ()
 solverSetParams = liftFun2 z3_solver_set_params
 
@@ -2030,7 +2042,7 @@ solverCheckAssumptions ctx solver assump =
     marshalArrayLen assump $ \assumpNum assumpArr ->
       f solverPtr assumpNum assumpArr
 
--- Retrieve the model for the last 'Z3_solver_check'.
+-- | Retrieve the model for the last 'solverCheck'.
 --
 -- The error handler is invoked if a model is not available because
 -- the commands above were not invoked for the given solver,
@@ -2040,6 +2052,21 @@ solverGetModel ctx solver = marshal z3_solver_get_model ctx $ \f ->
   h2c solver $ \solverPtr ->
     f solverPtr
 
+-- | Retrieve the unsat core for the last 'solverCheckAssumptions'; the unsat core is a subset of the assumptions
+solverGetUnsatCore :: Context -> Solver -> IO [AST]
+solverGetUnsatCore = liftFun1 z3_solver_get_unsat_core
+
+-- | Return a brief justification for an 'Unknown' result for the commands 'solverCheck' and 'solverCheckAssumptions'.
+solverGetReasonUnknown :: Context -> Solver -> IO String
+solverGetReasonUnknown = liftFun1 z3_solver_get_reason_unknown
+
+-- | Convert the given solver into a string.
+solverToString :: Context -> Solver -> IO String
+solverToString = liftFun1 z3_solver_to_string
+
+-------------------------------------------------
+-- ** Helpers
+
 solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
 solverCheckAndGetModel ctx solver =
   do res <- solverCheck ctx solver
@@ -2047,17 +2074,6 @@ solverCheckAndGetModel ctx solver =
                   Unsat -> return Nothing
                   _     -> Just <$> solverGetModel ctx solver
      return (res, mbModel)
-
--- | Retrieve the unsat core for the last @solverCheckAssumptions@; the unsat core is a subset of the assumptions
-solverGetUnsatCore :: Context -> Solver -> IO [AST]
-solverGetUnsatCore = liftFun1 z3_solver_get_unsat_core
-
-solverGetReasonUnknown :: Context -> Solver -> IO String
-solverGetReasonUnknown = liftFun1 z3_solver_get_reason_unknown
-
--- | Convert the given solver into a string.
-solverToString :: Context -> Solver -> IO String
-solverToString = liftFun1 z3_solver_to_string
 
 ---------------------------------------------------------------------
 -- Marshalling

@@ -39,12 +39,19 @@ module Z3.Monad
   , Base.Context
   , FuncInterp
   , FuncEntry
-  , FuncModel(..)
-  , Base.Solver
+  , Params
+  , Solver
   , ASTKind(..)
-
   -- ** Satisfiability result
   , Result(..)
+
+  -- * Parameters
+  , mkParams
+  , paramsSetBool
+  , paramsSetUInt
+  , paramsSetDouble
+  , paramsSetSymbol
+  , paramsToString
 
   -- * Symbols
   , mkIntSymbol
@@ -68,9 +75,10 @@ module Z3.Monad
   , mkConst
   , mkFreshConst
   , mkFreshFuncDecl
+
+  -- * Propositional Logic and Equality
   , mkTrue
   , mkFalse
-  , mkBool
   , mkEq
   , mkNot
   , mkIte
@@ -80,6 +88,10 @@ module Z3.Monad
   , mkAnd
   , mkOr
   , mkDistinct
+  -- ** Helpers
+  , mkBool
+
+  -- * Arithmetic: Integers and Reals
   , mkAdd
   , mkMul
   , mkSub
@@ -166,21 +178,22 @@ module Z3.Monad
   , mkExistsConst
 
   -- * Accessors
+  , getSymbolString
+  , getBvSortSize
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDeclName
-  , getSymbolString
-  , getAstKind
-  , getBvSortSize
+  , getSort
   , getBool
+  , getAstKind
+  , toApp
+  , getNumeralString
+  -- ** Helpers
   , getInt
   , getReal
-  , toApp
 
   -- * Models
   , eval
-  , evalT
-  , evalFunc
   , evalArray
   , getFuncInterp
   , isAsArray
@@ -194,19 +207,10 @@ module Z3.Monad
   , funcEntryGetArg
   , modelToString
   , showModel
-
-  -- * Constraints
-  , assertCnstr
-  , check
-  , checkAssumptions
-  , getModel
-  , withModel
-  , getUnsatCore
-  , push
-  , pop
-  , local
-  , reset
-  , getNumScopes
+  -- ** Helpers
+  , evalT
+  , FuncModel(..)
+  , evalFunc
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -215,12 +219,41 @@ module Z3.Monad
   , patternToString
   , sortToString
   , funcDeclToString
-  , solverToString
   , benchmarkToSMTLibString
+
+  -- TODO: Error handling ?
 
   -- * Miscellaneous
   , Version(..)
   , getVersion
+
+  -- * Solvers
+  , solverSetParams
+  , solverPush
+  , solverPop
+  , solverReset
+  , solverGetNumScopes
+  , solverAssertCnstr
+  , solverAssertAndTrack
+  , solverCheck
+  , solverCheckAssumptions
+  , solverGetModel
+  , solverGetUnsatCore
+  , solverGetReasonUnknown
+  , solverToString
+  -- ** Helpers
+  , assert
+  , check
+  , checkAssumptions
+  , solverCheckAndGetModel
+  , getModel
+  , withModel
+  , getUnsatCore
+  , push
+  , pop
+  , local
+  , reset
+  , getNumScopes
   )
   where
 
@@ -241,6 +274,8 @@ import Z3.Base
   , Logic(..)
   , ASTPrintMode(..)
   , Version(..)
+  , Params
+  , Solver
   , ASTKind(..)
   )
 import qualified Z3.Base as Base
@@ -263,6 +298,7 @@ class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
 -------------------------------------------------
 -- Lifting
 
+-- TODO: Rename to liftFun0 for consistency
 liftScalar :: MonadZ3 z3 => (Base.Context -> IO b) -> z3 b
 liftScalar f = liftIO . f =<< getContext
 
@@ -300,6 +336,13 @@ liftSolver1 f_s a =
   do ctx <- getContext
      liftIO . (\s -> f_s ctx s a) =<< getSolver
 
+liftSolver2 :: MonadZ3 z3 => (Base.Context -> Base.Solver -> a -> b -> IO c)
+                             -> a -> b -> z3 c
+liftSolver2 f a b = do
+  ctx <- getContext
+  slv <- getSolver
+  liftIO $ f ctx slv a b
+
 -------------------------------------------------
 -- A simple Z3 monad.
 
@@ -335,6 +378,7 @@ newEnv mbLogic opts =
     solver <- maybe (Base.mkSolver ctx) (Base.mkSolverForLogic ctx) mbLogic
     return $ Z3Env solver ctx
 
+-- TODO: Remove delEnv
 -- | It does nothing. In the past, it was used to free a Z3 environment.
 --
 -- After having switched to Z3 API 4.0 environments are automatically
@@ -354,6 +398,40 @@ evalZ3WithEnv :: Z3 a
               -> Z3Env
               -> IO a
 evalZ3WithEnv (Z3 s) = runReaderT s
+
+---------------------------------------------------------------------
+-- * Parameters
+
+-- | Create a Z3 (empty) parameter set.
+--
+-- Starting at Z3 4.0, parameter sets are used to configure many components
+-- such as: simplifiers, tactics, solvers, etc.
+mkParams :: MonadZ3 z3 => z3 Params
+mkParams = liftScalar Base.mkParams
+
+-- | Add a Boolean parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetBool :: MonadZ3 z3 => Params -> Symbol -> Bool -> z3 ()
+paramsSetBool = liftFun3 Base.paramsSetBool
+
+-- | Add a unsigned parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetUInt :: MonadZ3 z3 => Params -> Symbol -> Int -> z3 ()
+paramsSetUInt = liftFun3 Base.paramsSetUInt
+
+-- | Add a double parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetDouble :: MonadZ3 z3 => Params -> Symbol -> Double -> z3 ()
+paramsSetDouble = liftFun3 Base.paramsSetDouble
+
+-- | Add a symbol parameter /k/ with value /v/ to the parameter set /p/.
+paramsSetSymbol :: MonadZ3 z3 => Params -> Symbol -> Symbol -> z3 ()
+paramsSetSymbol = liftFun3 Base.paramsSetSymbol
+
+-- | Convert a parameter set into a string.
+--
+-- This function is mainly used for printing the contents of a parameter set.
+paramsToString :: MonadZ3 z3 => Params -> z3 String
+paramsToString = liftFun1 Base.paramsToString
+
+-- TODO: Z3_params_validate
 
 ---------------------------------------------------------------------
 -- Symbols
@@ -480,6 +558,9 @@ mkFreshConst = liftFun2 Base.mkFreshConst
 mkFreshFuncDecl :: MonadZ3 z3 => String -> [Sort] -> Sort -> z3 FuncDecl
 mkFreshFuncDecl = liftFun3 Base.mkFreshFuncDecl
 
+---------------------------------------------------------------------
+-- Propositional Logic and Equality
+
 -- | Create an AST node representing /true/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae898e7380409bbc57b56cc5205ef1db7>
@@ -491,11 +572,6 @@ mkTrue = liftScalar Base.mkTrue
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5952ac17671117a02001fed6575c778d>
 mkFalse :: MonadZ3 z3 => z3 AST
 mkFalse = liftScalar Base.mkFalse
-
--- | Create an AST node representing the given boolean.
-mkBool :: MonadZ3 z3 => Bool -> z3 AST
-mkBool False = mkFalse
-mkBool True  = mkTrue
 
 -- | Create an AST node representing /l = r/.
 --
@@ -551,6 +627,16 @@ mkAnd = liftFun1 Base.mkAnd
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga00866d16331d505620a6c515302021f9>
 mkOr :: MonadZ3 z3 => [AST] -> z3 AST
 mkOr = liftFun1 Base.mkOr
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Create an AST node representing the given boolean.
+mkBool :: MonadZ3 z3 => Bool -> z3 AST
+mkBool = liftFun1 Base.mkBool
+
+---------------------------------------------------------------------
+-- Arithmetic: Integers and Reals
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
 --
@@ -1023,6 +1109,17 @@ mkExists = liftFun4 Base.mkExists
 ---------------------------------------------------------------------
 -- Accessors
 
+-- | Return the symbol name.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
+getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
+getSymbolString = liftFun1 Base.getSymbolString
+
+-- | Return the size of the given bit-vector sort.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
+getBvSortSize :: MonadZ3 z3 => Sort -> z3 Int
+getBvSortSize = liftFun1 Base.getBvSortSize
 
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: MonadZ3 z3
@@ -1042,11 +1139,15 @@ getDatatypeSortRecognizers = liftFun1 Base.getDatatypeSortRecognizers
 getDeclName :: MonadZ3 z3 => FuncDecl -> z3 Symbol
 getDeclName = liftFun1 Base.getDeclName
 
--- | Return the symbol name.
+-- | Return the sort of an AST node.
+getSort :: MonadZ3 z3 => AST -> z3 Sort
+getSort = liftFun1 Base.getSort
+
+-- | Returns @Just True@, @Just False@, or @Nothing@ for /undefined/.
 --
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
-getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
-getSymbolString = liftFun1 Base.getSymbolString
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
+getBool :: MonadZ3 z3 => AST -> z3 (Maybe Bool)
+getBool = liftFun1 Base.getBool
 
 -- | Return the kind of the given AST.
 --
@@ -1054,17 +1155,16 @@ getSymbolString = liftFun1 Base.getSymbolString
 getAstKind :: MonadZ3 z3 => AST -> z3 ASTKind
 getAstKind = liftFun1 Base.getAstKind
 
--- | Return the size of the given bit-vector sort.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
-getBvSortSize :: MonadZ3 z3 => Sort -> z3 Int
-getBvSortSize = liftFun1 Base.getBvSortSize
+-- | Cast AST into an App.
+toApp :: MonadZ3 z3 => AST -> z3 App
+toApp = liftFun1 Base.toApp
 
--- | Returns @Just True@, @Just False@, or @Nothing@ for /undefined/.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
-getBool :: MonadZ3 z3 => AST -> z3 (Maybe Bool)
-getBool = liftFun1 Base.getBool
+-- | Return numeral value, as a string of a numeric constant term.
+getNumeralString :: MonadZ3 z3 => AST -> z3 String
+getNumeralString = liftFun1 Base.getNumeralString
+
+-------------------------------------------------
+-- ** Helpers
 
 -- | Return the integer value
 getInt :: MonadZ3 z3 => AST -> z3 Integer
@@ -1074,24 +1174,12 @@ getInt = liftFun1 Base.getInt
 getReal :: MonadZ3 z3 => AST -> z3 Rational
 getReal = liftFun1 Base.getReal
 
--- | Cast AST into an App.
-toApp :: MonadZ3 z3 => AST -> z3 App
-toApp = liftFun1 Base.toApp
-
 ---------------------------------------------------------------------
 -- Models
 
 -- | Evaluate an AST node in the given model.
 eval :: MonadZ3 z3 => Model -> AST -> z3 (Maybe AST)
 eval = liftFun2 Base.eval
-
--- | Evaluate a collection of AST nodes in the given model.
-evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
-evalT = liftFun2 Base.evalT
-
--- | Get function as a list of argument/value pairs.
-evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncModel)
-evalFunc = liftFun2 Base.evalFunc
 
 -- | Get array as a list of argument/value pairs, if it is
 -- represented as a function (ie, using as-array).
@@ -1173,67 +1261,16 @@ modelToString = liftFun1 Base.modelToString
 showModel :: MonadZ3 z3 => Model -> z3 String
 showModel = modelToString
 
----------------------------------------------------------------------
--- Constraints
+-------------------------------------------------
+-- ** Helpers
 
--- | Create a backtracking point.
---
--- For @push; m; pop 1@ see 'local'.
-push :: MonadZ3 z3 => z3 ()
-push = liftSolver0 Base.solverPush
+-- | Evaluate a collection of AST nodes in the given model.
+evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
+evalT = liftFun2 Base.evalT
 
--- | Backtrack /n/ backtracking points.
-pop :: MonadZ3 z3 => Int -> z3 ()
-pop = liftSolver1 Base.solverPop
-
--- | Run a query and restore the initial logical context.
---
--- This is a shorthand for 'push', run the query, and 'pop'.
-local :: MonadZ3 z3 => z3 a -> z3 a
-local q = do
-  push
-  r <- q
-  pop 1
-  return r
-
--- | Backtrack all the way.
-reset :: MonadZ3 z3 => z3 ()
-reset = liftSolver0 Base.solverReset
-
--- | Get number of backtracking points.
-getNumScopes :: MonadZ3 z3 => z3 Int
-getNumScopes = liftSolver0 Base.solverGetNumScopes
-
--- | Assert a constraing into the logical context.
---
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
-assertCnstr :: MonadZ3 z3 => AST -> z3 ()
-assertCnstr = liftSolver1 Base.solverAssertCnstr
-
--- | Get model.
---
--- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
-getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
-getModel = liftSolver0 Base.solverCheckAndGetModel
-
-withModel :: (Applicative z3, MonadZ3 z3) =>
-                (Base.Model -> z3 a) -> z3 (Result, Maybe a)
-withModel f = do
- (r,mb_m) <- getModel
- mb_e <- T.traverse f mb_m
- return (r, mb_e)
-
--- | Retrieve the unsat core for the last @checkAssumptions@; the unsat core is a subset of the assumptions.
-getUnsatCore :: MonadZ3 z3 => z3 [AST]
-getUnsatCore = liftSolver0 Base.solverGetUnsatCore
-
--- | Check whether the given logical context is consistent or not.
-check :: MonadZ3 z3 => z3 Result
-check = liftSolver0 Base.solverCheck
-
--- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
-checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
-checkAssumptions = liftSolver1 Base.solverCheckAssumptions
+-- | Get function as a list of argument/value pairs.
+evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncModel)
+evalFunc = liftFun2 Base.evalFunc
 
 ---------------------------------------------------------------------
 -- String Conversion
@@ -1258,10 +1295,6 @@ sortToString = liftFun1 Base.sortToString
 funcDeclToString :: MonadZ3 z3 => FuncDecl -> z3 String
 funcDeclToString = liftFun1 Base.funcDeclToString
 
--- | Convert the solver to a string.
-solverToString :: MonadZ3 z3 => z3 String
-solverToString = liftSolver0 Base.solverToString
-
 -- | Convert the given benchmark into SMT-LIB formatted string.
 --
 -- The output format can be configured via 'setASTPrintMode'.
@@ -1281,3 +1314,157 @@ benchmarkToSMTLibString = liftFun6 Base.benchmarkToSMTLibString
 -- | Return Z3 version number information.
 getVersion :: MonadZ3 z3 => z3 Version
 getVersion = liftIO Base.getVersion
+
+---------------------------------------------------------------------
+-- * Solvers
+
+-- mkSolver :: Context -> IO Solver
+-- mkSolver = liftFun0 z3_mk_solver
+
+-- mkSimpleSolver :: Context -> IO Solver
+-- mkSimpleSolver = liftFun0 z3_mk_simple_solver
+
+-- mkSolverForLogic :: Context -> Logic -> IO Solver
+-- mkSolverForLogic c logic = withContextError c $ \cPtr ->
+--   do sym <- mkStringSymbol c (show logic)
+--      c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
+
+-- | Set the solver using the given parameters.
+solverSetParams :: MonadZ3 z3 => Params -> z3 ()
+solverSetParams = liftSolver1 Base.solverSetParams
+
+-- | Create a backtracking point.
+solverPush :: MonadZ3 z3 => z3 ()
+solverPush = liftSolver0 Base.solverPush
+
+-- | Backtrack /n/ backtracking points.
+solverPop :: MonadZ3 z3 => Int -> z3 ()
+solverPop = liftSolver1 Base.solverPop
+
+solverReset :: MonadZ3 z3 => z3 ()
+solverReset = liftSolver0 Base.solverReset
+
+-- | Number of backtracking points.
+solverGetNumScopes :: MonadZ3 z3 => z3 Int
+solverGetNumScopes = liftSolver0 Base.solverGetNumScopes
+
+-- | Assert a constraing into the logical context.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1a05ff73a564ae7256a2257048a4680a>
+solverAssertCnstr :: MonadZ3 z3 => AST -> z3 ()
+solverAssertCnstr = liftSolver1 Base.solverAssertCnstr
+
+-- | Assert a constraint a into the solver, and track it
+-- (in the unsat) core using the Boolean constant /p/.
+--
+-- This API is an alternative to Z3_solver_check_assumptions
+-- for extracting unsat cores. Both APIs can be used in the same
+-- solver. The unsat core will contain a combination of the Boolean
+-- variables provided using Z3_solver_assert_and_track and the
+-- Boolean literals provided using Z3_solver_check_assumptions.
+solverAssertAndTrack :: MonadZ3 z3 => AST -> AST -> z3 ()
+solverAssertAndTrack = liftSolver2 Base.solverAssertAndTrack
+
+-- | Check whether the assertions in a given solver are consistent or not.
+solverCheck :: MonadZ3 z3 => z3 Result
+solverCheck = liftSolver0 Base.solverCheck
+
+-- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+solverCheckAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
+solverCheckAssumptions = liftSolver1 Base.solverCheckAssumptions
+
+-- | Retrieve the model for the last 'solverCheck'.
+--
+-- The error handler is invoked if a model is not available because
+-- the commands above were not invoked for the given solver,
+-- or if the result was 'Unsat'.
+solverGetModel :: MonadZ3 z3 => z3 Model
+solverGetModel = liftSolver0 Base.solverGetModel
+
+-- | Retrieve the unsat core for the last 'solverCheckAssumptions'; the unsat core is a subset of the assumptions
+solverGetUnsatCore :: MonadZ3 z3 => z3 [AST]
+solverGetUnsatCore = liftSolver0 Base.solverGetUnsatCore
+
+-- | Return a brief justification for an 'Unknown' result for the commands 'solverCheck' and 'solverCheckAssumptions'.
+solverGetReasonUnknown :: MonadZ3 z3 => z3 String
+solverGetReasonUnknown = liftSolver0 Base.solverGetReasonUnknown
+
+-- | Convert the given solver into a string.
+solverToString :: MonadZ3 z3 => z3 String
+solverToString = liftSolver0 Base.solverToString
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Create a backtracking point.
+--
+-- For @push; m; pop 1@ see 'local'.
+push :: MonadZ3 z3 => z3 ()
+push = solverPush
+
+-- | Backtrack /n/ backtracking points.
+--
+-- Contrary to 'solverPop' this funtion checks whether /n/ is within
+-- the size of the solver scope stack.
+pop :: MonadZ3 z3 => Int -> z3 ()
+pop n = do
+  scopes <- solverGetNumScopes
+  if n <= scopes
+    then solverPop n
+    else error "Z3.Monad.safePop: too many scopes to backtrack"
+
+-- | Run a query and restore the initial logical context.
+--
+-- This is a shorthand for 'push', run the query, and 'pop'.
+local :: MonadZ3 z3 => z3 a -> z3 a
+local q = do
+  push
+  r <- q
+  pop 1
+  return r
+
+-- | Backtrack all the way.
+reset :: MonadZ3 z3 => z3 ()
+reset = solverReset
+
+-- | Get number of backtracking points.
+getNumScopes :: MonadZ3 z3 => z3 Int
+getNumScopes = liftSolver0 Base.solverGetNumScopes
+
+assert :: MonadZ3 z3 => AST -> z3 ()
+assert = solverAssertCnstr
+
+-- | Check whether the given logical context is consistent or not.
+check :: MonadZ3 z3 => z3 Result
+check = solverCheck
+
+-- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
+checkAssumptions = solverCheckAssumptions
+
+solverCheckAndGetModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
+solverCheckAndGetModel = solverCheckAndGetModel
+
+-- | Get model.
+--
+-- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
+getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
+getModel = solverCheckAndGetModel
+
+-- | Check satisfiability and, if /sat/, compute a value from the given model.
+--
+-- E.g.
+-- @
+-- withModel $ \\m ->
+--   fromJust \<$\> evalInt m x
+-- @
+withModel :: (Applicative z3, MonadZ3 z3) =>
+                (Base.Model -> z3 a) -> z3 (Result, Maybe a)
+withModel f = do
+ (r,mb_m) <- getModel
+ mb_e <- T.traverse f mb_m
+ return (r, mb_e)
+
+-- | Retrieve the unsat core for the last 'checkAssumptions'; the unsat core is a subset of the assumptions.
+getUnsatCore :: MonadZ3 z3 => z3 [AST]
+getUnsatCore = solverGetUnsatCore
