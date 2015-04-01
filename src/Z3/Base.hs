@@ -85,7 +85,6 @@ module Z3.Base (
   , mkArraySort
   , mkTupleSort
   , mkConstructor
-  , delConstructor -- TODO: Remove
   , mkDatatype
 
   -- * Constants and Applications
@@ -337,7 +336,7 @@ newtype Pattern = Pattern { unPattern :: ForeignPtr Z3_pattern }
     deriving (Eq, Ord, Show)
 
 -- | A type contructor for a (recursive) datatype.
-newtype Constructor = Constructor { unConstructor :: Ptr Z3_constructor }
+newtype Constructor = Constructor { unConstructor :: ForeignPtr Z3_constructor }
     deriving (Eq, Ord, Show)
 
 -- | A model for the constraints asserted into the logical context.
@@ -582,29 +581,15 @@ mkConstructor :: Context                      -- ^ Context
               -> IO Constructor
 mkConstructor c sym recog symSortsRefs =
   withContextError c $ \cPtr ->
-  let (syms, maybeSorts, refs) = unzip3 symSortsRefs
-  in do
-     sorts <- mapM maybeUnSort maybeSorts
-     (h2c sym $ \symPtr ->
-      h2c recog $ \recogPtr ->
-      marshalArrayLen syms $ \ n symsPtr ->
-      marshalArray sorts $ \ sortsPtr ->
-      marshalArray (map fromIntegral refs :: [Integer]) $ \ refsPtr -> do
-        constructor <- checkError cPtr $ z3_mk_constructor
-                         cPtr symPtr recogPtr n
-                         symsPtr sortsPtr refsPtr
-        return $ Constructor constructor)
-  where
-    maybeUnSort (Just sort) = return sort
-    maybeUnSort Nothing = Sort <$> newForeignPtr_ nullPtr
-
--- TODO: This should be part of a ForeignPtr
--- | Reclaim memory allocated to constructor
-delConstructor :: Context
-               -> Constructor
-               -> IO ()
-delConstructor c cons = withContextError c $ \cPtr ->
-  z3_del_constructor cPtr (unConstructor cons)
+  h2c sym $ \symPtr ->
+  h2c recog $ \recogPtr ->
+  marshalArrayLen syms $ \ n symsPtr ->
+  marshalArray maybeSorts $ \ sortsPtr ->
+  marshalArray (map toInteger refs) $ \ refsPtr -> do
+    constructor <- checkError cPtr $ z3_mk_constructor
+                       cPtr symPtr recogPtr n symsPtr sortsPtr refsPtr
+    c2h c constructor
+  where (syms, maybeSorts, refs) = unzip3 symSortsRefs
 
 -- | Create datatype, such as lists, trees, records,
 -- enumerations or unions of records.
@@ -616,8 +601,8 @@ mkDatatype :: Context
            -> [Constructor]
            -> IO Sort
 mkDatatype c sym consList = withContextError c $ \cPtr ->
-  withArrayLen (map unConstructor consList) $ \ n consPtr -> checkError cPtr $ do
-    sortPtr <- z3_mk_datatype cPtr (unSymbol sym) (fromIntegral n) consPtr
+  marshalArrayLen consList $ \ n consPtrs -> checkError cPtr $ do
+    sortPtr <- z3_mk_datatype cPtr (unSymbol sym) n consPtrs
     c2h c sortPtr
 
 -- TODO: from Z3_mk_constructor_list on
@@ -2241,6 +2226,11 @@ instance Marshal Pattern (Ptr Z3_pattern) where
     z3_inc_ref ctxPtr astPtr
     Pattern <$> newForeignPtr patPtr (withContext1 z3_dec_ref ctx astPtr)
   h2c pat = withForeignPtr (unPattern pat)
+
+instance Marshal Constructor (Ptr Z3_constructor) where
+  c2h ctx cnsPtr = Constructor <$>
+    newForeignPtr cnsPtr (withContext1 z3_del_constructor ctx cnsPtr)
+  h2c cns = withForeignPtr (unConstructor cns)
 
 instance Marshal Solver (Ptr Z3_solver) where
   c2h ctx slvPtr = withContext ctx $ \ctxPtr -> do
