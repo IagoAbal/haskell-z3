@@ -1,8 +1,6 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- TODO: Error handling
-
 -- |
 -- Module    : Z3.Monad
 -- Copyright : (c) Iago Abal, 2013-2015
@@ -228,7 +226,9 @@ module Z3.Monad
   , funcDeclToString
   , benchmarkToSMTLibString
 
-  -- TODO: Error handling ?
+  -- * Error Handling
+  , Base.Z3Error(..)
+  , Base.Z3ErrorCode(..)
 
   -- * Miscellaneous
   , Version(..)
