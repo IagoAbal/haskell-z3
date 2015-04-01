@@ -66,7 +66,6 @@ module Z3.Monad
   , mkArraySort
   , mkTupleSort
   , mkConstructor
-  , delConstructor
   , mkDatatype
 
   -- * Constants and Applications
@@ -518,14 +517,6 @@ mkConstructor :: MonadZ3 z3
               -> [(Symbol, Maybe Sort, Int)]  -- ^ Name, sort option, and sortRefs
               -> z3 Constructor
 mkConstructor = liftFun3 Base.mkConstructor
-
--- | Reclaim memory allocated to constructor
---
--- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga63816efdbce93734c72f395b6a6a9e35>
-delConstructor :: MonadZ3 z3
-               => Constructor
-               -> z3 ()
-delConstructor = liftFun1 Base.delConstructor
 
 -- | Create datatype, such as lists, trees, records, enumerations or unions of
 --   records. The datatype may be recursive. Return the datatype sort.
