@@ -1757,6 +1757,9 @@ benchmarkToSMTLibString ctx name logic status attr assump form =
 -- Error handling
 
 -- | Z3 exceptions.
+--
+-- Z3 errors are re-thrown as Haskell 'Z3Error' exceptions,
+-- see 'Control.Exception'.
 data Z3Error = Z3Error
     { errCode :: Z3ErrorCode
     , errMsg  :: String
@@ -1766,6 +1769,7 @@ data Z3Error = Z3Error
 instance Show Z3Error where
   show (Z3Error _ s) = s
 
+-- | Z3 error codes.
 data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
   | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
   | InvalidUsage   | DecRefError | Z3Exception
