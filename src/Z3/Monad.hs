@@ -22,7 +22,6 @@ module Z3.Monad
     -- ** Z3 enviroments
   , Z3Env
   , newEnv
-  , delEnv
   , evalZ3WithEnv
 
   -- * Types
@@ -288,7 +287,6 @@ import Z3.Base
 import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
-import qualified Control.Exception as E
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Control.Monad.Fix ( MonadFix )
@@ -371,8 +369,9 @@ instance MonadZ3 Z3 where
 
 -- | Eval a Z3 script.
 evalZ3With :: Maybe Logic -> Opts -> Z3 a -> IO a
-evalZ3With mbLogic opts (Z3 s) =
-  E.bracket (newEnv mbLogic opts) delEnv $ runReaderT s
+evalZ3With mbLogic opts (Z3 s) = do
+  env <- newEnv mbLogic opts
+  runReaderT s env
 
 -- | Eval a Z3 script with default configuration options.
 evalZ3 :: Z3 a -> IO a
@@ -386,14 +385,6 @@ newEnv mbLogic opts =
     ctx <- Base.mkContext cfg
     solver <- maybe (Base.mkSolver ctx) (Base.mkSolverForLogic ctx) mbLogic
     return $ Z3Env solver ctx
-
--- TODO: Remove delEnv
--- | It does nothing. In the past, it was used to free a Z3 environment.
---
--- After having switched to Z3 API 4.0 environments are automatically
--- freed, no need for 'delEnv' anymore.
-delEnv :: Z3Env -> IO ()
-delEnv _ = return ()
 
 -- | Eval a Z3 script with a given environment.
 --
