@@ -1491,7 +1491,7 @@ checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 checkAssumptions = solverCheckAssumptions
 
 solverCheckAndGetModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
-solverCheckAndGetModel = solverCheckAndGetModel
+solverCheckAndGetModel = liftSolver0 Base.solverCheckAndGetModel
 
 -- | Get model.
 --
