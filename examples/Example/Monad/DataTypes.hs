@@ -1,9 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main where
+module Example.Monad.DataTypes where
 
 import Z3.Monad
 import Control.Monad.Trans (liftIO)
+
+run :: IO ()
+run = evalZ3 datatypeScript
 
 mkCellDatatype :: Z3 Sort
 mkCellDatatype = do
@@ -43,7 +46,7 @@ datatypeScript = do
   liftIO $ putStrLn "prove (nil != cons (nil,nil)) //Expect Unsat"
   p <- (mkEq nil t1 >>= mkNot)
   push
-  mkNot p >>= assertCnstr
+  mkNot p >>= assert
   check >>= liftIO . print
   pop 1
 
@@ -57,9 +60,6 @@ datatypeScript = do
   p4 <- mkAnd [p2, p3]
   p5 <- mkImplies p1 p4
   push
-  mkNot p5 >>= assertCnstr
+  mkNot p5 >>= assert
   check >>= liftIO . print
   pop 1
-
-main :: IO ()
-main = evalZ3 datatypeScript

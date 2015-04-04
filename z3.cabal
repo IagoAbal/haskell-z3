@@ -78,6 +78,24 @@ Library
     else
         extra-libraries:     gomp z3 gomp
 
+Flag examples
+     Description: Build examples.
+     Default: False
+     Manual: True
+
+Executable examples
+  if flag(examples)
+    Buildable:         True
+    Build-depends:     base >=4.5,
+                       z3 >=0.4,
+                       containers,
+                       mtl >2.1
+  else
+    Buildable:         False
+
+  Hs-source-dirs:      examples
+  Main-Is:             Examples.hs
+
 Test-suite spec
 
     Type:               exitcode-stdio-1.0
