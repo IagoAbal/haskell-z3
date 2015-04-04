@@ -71,6 +71,17 @@ module Z3.Monad
   , mkConst
   , mkFreshConst
   , mkFreshFuncDecl
+  -- ** Helpers
+  , mkVar
+  , mkBoolVar
+  , mkRealVar
+  , mkIntVar
+  , mkBvVar
+  , mkFreshVar
+  , mkFreshBoolVar
+  , mkFreshRealVar
+  , mkFreshIntVar
+  , mkFreshBvVar
 
   -- * Propositional Logic and Equality
   , mkTrue
@@ -549,6 +560,73 @@ mkFreshConst = liftFun2 Base.mkFreshConst
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1f60c7eb41c5603e55a188a14dc929ec>
 mkFreshFuncDecl :: MonadZ3 z3 => String -> [Sort] -> Sort -> z3 FuncDecl
 mkFreshFuncDecl = liftFun3 Base.mkFreshFuncDecl
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Declare and create a variable (aka /constant/).
+--
+-- An alias for 'mkConst'.
+mkVar :: MonadZ3 z3 => Symbol -> Sort -> z3 AST
+mkVar = liftFun2 Base.mkVar
+
+-- | Declarate and create a variable of sort /bool/.
+--
+-- See 'mkVar'.
+mkBoolVar :: MonadZ3 z3 => Symbol -> z3 AST
+mkBoolVar = liftFun1 Base.mkBoolVar
+
+-- | Declarate and create a variable of sort /real/.
+--
+-- See 'mkVar'.
+mkRealVar :: MonadZ3 z3 => Symbol -> z3 AST
+mkRealVar = liftFun1 Base.mkRealVar
+
+-- | Declarate and create a variable of sort /int/.
+--
+-- See 'mkVar'.
+mkIntVar :: MonadZ3 z3 => Symbol -> z3 AST
+mkIntVar = liftFun1 Base.mkIntVar
+
+-- | Declarate and create a variable of sort /bit-vector/.
+--
+-- See 'mkVar'.
+mkBvVar :: MonadZ3 z3 => Symbol
+                   -> Int     -- ^ bit-width
+                   -> z3 AST
+mkBvVar = liftFun2 Base.mkBvVar
+
+-- | Declare and create a /fresh/ variable (aka /constant/).
+--
+-- An alias for 'mkFreshConst'.
+mkFreshVar :: MonadZ3 z3 => String -> Sort -> z3 AST
+mkFreshVar = liftFun2 Base.mkFreshConst
+
+-- | Declarate and create a /fresh/ variable of sort /bool/.
+--
+-- See 'mkFreshVar'.
+mkFreshBoolVar :: MonadZ3 z3 => String -> z3 AST
+mkFreshBoolVar = liftFun1 Base.mkFreshBoolVar
+
+-- | Declarate and create a /fresh/ variable of sort /real/.
+--
+-- See 'mkFreshVar'.
+mkFreshRealVar :: MonadZ3 z3 => String -> z3 AST
+mkFreshRealVar = liftFun1 Base.mkFreshRealVar
+
+-- | Declarate and create a /fresh/ variable of sort /int/.
+--
+-- See 'mkFreshVar'.
+mkFreshIntVar :: MonadZ3 z3 => String -> z3 AST
+mkFreshIntVar = liftFun1 Base.mkFreshIntVar
+
+-- | Declarate and create a /fresh/ variable of sort /bit-vector/.
+--
+-- See 'mkFreshVar'.
+mkFreshBvVar :: MonadZ3 z3 => String
+                        -> Int     -- ^ bit-width
+                        -> z3 AST
+mkFreshBvVar = liftFun2 Base.mkFreshBvVar
 
 ---------------------------------------------------------------------
 -- Propositional Logic and Equality

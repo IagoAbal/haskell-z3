@@ -93,6 +93,17 @@ module Z3.Base (
   , mkConst
   , mkFreshFuncDecl
   , mkFreshConst
+  -- ** Helpers
+  , mkVar
+  , mkBoolVar
+  , mkRealVar
+  , mkIntVar
+  , mkBvVar
+  , mkFreshVar
+  , mkFreshBoolVar
+  , mkFreshRealVar
+  , mkFreshIntVar
+  , mkFreshBvVar
 
   -- * Propositional Logic and Equality
   , mkTrue
@@ -608,7 +619,7 @@ mkDatatype c sym consList = withContextError c $ \cPtr ->
 -- TODO: from Z3_mk_constructor_list on
 
 ---------------------------------------------------------------------
--- Constants and Applications
+-- * Constants and Applications
 
 -- | Declare a constant or function.
 mkFuncDecl :: Context   -- ^ Logical context.
@@ -652,6 +663,73 @@ mkFreshConst :: Context -- ^ Logical context.
              -> Sort    -- ^ Sort of the constant.
              -> IO AST
 mkFreshConst = liftFun2 z3_mk_fresh_const
+
+-------------------------------------------------
+-- ** Helpers
+
+-- | Declare and create a variable (aka /constant/).
+--
+-- An alias for 'mkConst'.
+mkVar :: Context -> Symbol -> Sort -> IO AST
+mkVar = mkConst
+
+-- | Declarate and create a variable of sort /bool/.
+--
+-- See 'mkVar'.
+mkBoolVar :: Context -> Symbol -> IO AST
+mkBoolVar ctx sym = mkVar ctx sym =<< mkBoolSort ctx
+
+-- | Declarate and create a variable of sort /real/.
+--
+-- See 'mkVar'.
+mkRealVar :: Context -> Symbol -> IO AST
+mkRealVar ctx sym = mkVar ctx sym =<< mkRealSort ctx
+
+-- | Declarate and create a variable of sort /int/.
+--
+-- See 'mkVar'.
+mkIntVar :: Context -> Symbol -> IO AST
+mkIntVar ctx sym = mkVar ctx sym =<< mkIntSort ctx
+
+-- | Declarate and create a variable of sort /bit-vector/.
+--
+-- See 'mkVar'.
+mkBvVar :: Context -> Symbol
+                   -> Int     -- ^ bit-width
+                   -> IO AST
+mkBvVar ctx sym sz = mkVar ctx sym =<< mkBvSort ctx sz
+
+-- | Declare and create a /fresh/ variable (aka /constant/).
+--
+-- An alias for 'mkFreshConst'.
+mkFreshVar :: Context -> String -> Sort -> IO AST
+mkFreshVar = mkFreshConst
+
+-- | Declarate and create a /fresh/ variable of sort /bool/.
+--
+-- See 'mkFreshVar'.
+mkFreshBoolVar :: Context -> String -> IO AST
+mkFreshBoolVar ctx str = mkFreshVar ctx str =<< mkBoolSort ctx
+
+-- | Declarate and create a /fresh/ variable of sort /real/.
+--
+-- See 'mkFreshVar'.
+mkFreshRealVar :: Context -> String -> IO AST
+mkFreshRealVar ctx str = mkFreshVar ctx str =<< mkRealSort ctx
+
+-- | Declarate and create a /fresh/ variable of sort /int/.
+--
+-- See 'mkFreshVar'.
+mkFreshIntVar :: Context -> String -> IO AST
+mkFreshIntVar ctx str = mkFreshVar ctx str =<< mkIntSort ctx
+
+-- | Declarate and create a /fresh/ variable of sort /bit-vector/.
+--
+-- See 'mkFreshVar'.
+mkFreshBvVar :: Context -> String
+                        -> Int     -- ^ bit-width
+                        -> IO AST
+mkFreshBvVar ctx str sz = mkFreshVar ctx str =<< mkBvSort ctx sz
 
 ---------------------------------------------------------------------
 -- Propositional Logic and Equality
