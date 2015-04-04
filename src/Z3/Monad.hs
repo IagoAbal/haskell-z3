@@ -199,16 +199,18 @@ module Z3.Monad
   , getDatatypeSortRecognizers
   , getDeclName
   , getSort
-  , getBool
+  , getBoolValue
   , getAstKind
   , toApp
   , getNumeralString
   -- ** Helpers
+  , getBool
   , getInt
   , getReal
+  , getBv
 
   -- * Models
-  , eval
+  , modelEval
   , evalArray
   , getFuncInterp
   , isAsArray
@@ -223,7 +225,14 @@ module Z3.Monad
   , modelToString
   , showModel
   -- ** Helpers
+  , EvalAst
+  , eval
+  , evalBool
+  , evalInt
+  , evalReal
+  , evalBv
   , evalT
+  , mapEval
   , FuncModel(..)
   , evalFunc
 
@@ -1263,8 +1272,8 @@ getSort = liftFun1 Base.getSort
 -- | Returns @Just True@, @Just False@, or @Nothing@ for /undefined/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
-getBool :: MonadZ3 z3 => AST -> z3 (Maybe Bool)
-getBool = liftFun1 Base.getBool
+getBoolValue :: MonadZ3 z3 => AST -> z3 (Maybe Bool)
+getBoolValue = liftFun1 Base.getBoolValue
 
 -- | Return the kind of the given AST.
 --
@@ -1283,6 +1292,10 @@ getNumeralString = liftFun1 Base.getNumeralString
 -------------------------------------------------
 -- ** Helpers
 
+-- | Read a 'Bool' value from an 'AST'
+getBool :: MonadZ3 z3 => AST -> z3 Bool
+getBool = liftFun1 Base.getBool
+
 -- | Return the integer value
 getInt :: MonadZ3 z3 => AST -> z3 Integer
 getInt = liftFun1 Base.getInt
@@ -1291,12 +1304,26 @@ getInt = liftFun1 Base.getInt
 getReal :: MonadZ3 z3 => AST -> z3 Rational
 getReal = liftFun1 Base.getReal
 
+-- | Read the 'Integer' value from an 'AST' of sort /bit-vector/.
+--
+-- See 'mkBv2int'.
+getBv :: MonadZ3 z3 => AST
+                    -> Bool  -- ^ signed?
+                    -> z3 Integer
+getBv = liftFun2 Base.getBv
+
 ---------------------------------------------------------------------
 -- Models
 
 -- | Evaluate an AST node in the given model.
-eval :: MonadZ3 z3 => Model -> AST -> z3 (Maybe AST)
-eval = liftFun2 Base.eval
+--
+-- The evaluation may fail for the following reasons:
+--
+--     * /t/ contains a quantifier.
+--     * the model /m/ is partial.
+--     * /t/ is type incorrect.
+modelEval :: MonadZ3 z3 => Model -> AST -> z3 (Maybe AST)
+modelEval = liftFun2 Base.modelEval
 
 -- | Get array as a list of argument/value pairs, if it is
 -- represented as a function (ie, using as-array).
@@ -1381,9 +1408,59 @@ showModel = modelToString
 -------------------------------------------------
 -- ** Helpers
 
+-- | Type of an evaluation function for 'AST'.
+--
+-- Evaluation may fail (i.e. return 'Nothing') for a few
+-- reasons, see 'modelEval'.
+type EvalAst m a = Model -> AST -> m (Maybe a)
+
+-- | An alias for 'modelEval'.
+eval :: MonadZ3 z3 => EvalAst z3 AST
+eval = liftFun2 Base.eval
+
+-- | Evaluate an AST node of sort /bool/ in the given model.
+--
+-- See 'modelEval' and 'getBool'.
+evalBool :: MonadZ3 z3 => EvalAst z3 Bool
+evalBool = liftFun2 Base.evalBool
+
+-- | Evaluate an AST node of sort /int/ in the given model.
+--
+-- See 'modelEval' and 'getInt'.
+evalInt :: MonadZ3 z3 => EvalAst z3 Integer
+evalInt = liftFun2 Base.evalInt
+
+-- | Evaluate an AST node of sort /real/ in the given model.
+--
+-- See 'modelEval' and 'getReal'.
+evalReal :: MonadZ3 z3 => EvalAst z3 Rational
+evalReal = liftFun2 Base.evalReal
+
+-- | Evaluate an AST node of sort /bit-vector/ in the given model.
+--
+-- The flag /signed/ decides whether the bit-vector value is
+-- interpreted as a signed or unsigned integer.
+--
+-- See 'modelEval' and 'getBv'.
+evalBv :: MonadZ3 z3 => Bool -- ^ signed?
+                     -> EvalAst z3 Integer
+evalBv = liftFun3 Base.evalBv
+
 -- | Evaluate a collection of AST nodes in the given model.
 evalT :: (MonadZ3 z3,Traversable t) => Model -> t AST -> z3 (Maybe (t AST))
 evalT = liftFun2 Base.evalT
+
+-- | Run a evaluation function on a 'Traversable' data structure of 'AST's
+-- (e.g. @[AST]@, @Vector AST@, @Maybe AST@, etc).
+--
+-- This a generic version of 'evalT' which can be used in combination with
+-- other helpers. For instance, @mapEval evalInt@ can be used to obtain
+-- the 'Integer' interpretation of a list of 'AST' of sort /int/.
+mapEval :: (MonadZ3 z3, Traversable t) => EvalAst z3 a
+                                       -> Model
+                                       -> t AST
+                                       -> z3 (Maybe (t a))
+mapEval f m = fmap T.sequence . T.mapM (f m)
 
 -- | Get function as a list of argument/value pairs.
 evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncModel)

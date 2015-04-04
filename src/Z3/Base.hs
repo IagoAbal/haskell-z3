@@ -221,16 +221,18 @@ module Z3.Base (
   , getDatatypeSortRecognizers
   , getDeclName
   , getSort
-  , getBool
+  , getBoolValue
   , getAstKind
   , toApp
   , getNumeralString
   -- ** Helpers
+  , getBool
   , getInt
   , getReal
+  , getBv
 
   -- * Models
-  , eval
+  , modelEval
   , evalArray
   , getFuncInterp
   , isAsArray
@@ -245,6 +247,13 @@ module Z3.Base (
   , modelToString
   , showModel
   -- ** Helpers
+  , EvalAst
+  , eval
+  , evalBool
+  , evalInt
+  , evalReal
+  , evalBv
+  , mapEval
   , evalT
   , FuncModel (..)
   , evalFunc
@@ -294,6 +303,7 @@ import Control.Applicative ( (<$>), (<*) )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( when )
 import Data.Int
+import Data.Maybe ( fromJust )
 import Data.Ratio ( numerator, denominator, (%) )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
@@ -553,6 +563,17 @@ mkBvSort c i
 -- Arrays are usually used to model the heap/memory in software verification.
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
+
+{- TODO
+data TupleTyple
+  = TupleType {
+      tupleSort :: Sort
+    , tupleCons :: FunDecl
+    , tupleProj :: [FunDecl]
+    }
+
+mkTupleSort :: ... -> IO TupleType
+-}
 
 -- | Create a tuple type
 --
@@ -1471,8 +1492,8 @@ getSort = liftFun1 z3_get_sort
 -- TODO: fix doc
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
-getBool :: Context -> AST -> IO (Maybe Bool)
-getBool c a = withContextError c $ \cPtr ->
+getBoolValue :: Context -> AST -> IO (Maybe Bool)
+getBoolValue c a = withContextError c $ \cPtr ->
   h2c a $ \astPtr ->
     castLBool <$> z3_get_bool_value cPtr astPtr
   where castLBool :: Z3_lbool -> Maybe Bool
@@ -1577,6 +1598,12 @@ getNumeralString = liftFun1 z3_get_numeral_string
 -------------------------------------------------
 -- ** Helpers
 
+-- | Read a 'Bool' value from an 'AST'
+getBool :: Context -> AST -> IO Bool
+getBool c a = fromJust <$> getBoolValue c a
+  -- TODO: throw an custom error if Nothing?
+  -- TODO: Refactor castLBool?
+
 -- | Read an 'Integer' value from an 'AST'
 getInt :: Context -> AST -> IO Integer
 getInt c a = read <$> getNumeralString c a
@@ -1594,6 +1621,14 @@ getReal c a = parse <$> getNumeralString c a
         parseDen ('/':sj) = read sj
         parseDen _        = error "Z3.Base.getReal: no parse"
 
+-- | Read the 'Integer' value from an 'AST' of sort /bit-vector/.
+--
+-- See 'mkBv2int'.
+getBv :: Context -> AST
+                 -> Bool  -- ^ signed?
+                 -> IO Integer
+getBv c a signed = getInt c =<< mkBv2int c a signed
+
 ---------------------------------------------------------------------
 -- Modifiers
 
@@ -1602,20 +1637,18 @@ getReal c a = parse <$> getNumeralString c a
 ---------------------------------------------------------------------
 -- Models
 
--- TODO: Alias modelEval == eval
-
 -- | Evaluate an AST node in the given model.
 --
 -- The evaluation may fail for the following reasons:
 --
 --     * /t/ contains a quantifier.
---     * the model m is partial.
+--     * the model /m/ is partial.
 --     * /t/ is type incorrect.
-eval :: Context
-        -> Model  -- ^ Model /m/.
-        -> AST    -- ^ Expression to evaluate /t/.
-        -> IO (Maybe AST)
-eval ctx m a =
+modelEval :: Context
+            -> Model  -- ^ Model /m/.
+            -> AST    -- ^ Expression to evaluate /t/.
+            -> IO (Maybe AST)
+modelEval ctx m a =
   withContext ctx $ \ctxPtr ->
   alloca $ \aptr2 ->
     h2c a $ \astPtr ->
@@ -1727,9 +1760,67 @@ showModel = modelToString
 -------------------------------------------------
 -- ** Helpers
 
+-- | Type of an evaluation function for 'AST'.
+--
+-- Evaluation may fail (i.e. return 'Nothing') for a few
+-- reasons, see 'modelEval'.
+type EvalAst a = Model -> AST -> IO (Maybe a)
+
+-- | An alias for 'modelEval'.
+eval :: Context -> EvalAst AST
+eval = modelEval
+
+-- | Evaluate an AST node of sort /bool/ in the given model.
+--
+-- See 'modelEval' and 'getBool'.
+evalBool :: Context -> EvalAst Bool
+evalBool ctx m ast = eval ctx m ast >>= T.traverse (getBool ctx)
+
+-- | Evaluate an AST node of sort /int/ in the given model.
+--
+-- See 'modelEval' and 'getInt'.
+evalInt :: Context -> EvalAst Integer
+evalInt ctx m ast = eval ctx m ast >>= T.traverse (getInt ctx)
+
+-- | Evaluate an AST node of sort /real/ in the given model.
+--
+-- See 'modelEval' and 'getReal'.
+evalReal :: Context -> EvalAst Rational
+evalReal ctx m ast = eval ctx m ast >>= T.traverse (getReal ctx)
+
+-- | Evaluate an AST node of sort /bit-vector/ in the given model.
+--
+-- The flag /signed/ decides whether the bit-vector value is
+-- interpreted as a signed or unsigned integer.
+--
+-- See 'modelEval' and 'getBv'.
+evalBv :: Context -> Bool -- ^ signed?
+                  -> EvalAst Integer
+evalBv ctx signed m ast =
+  eval ctx m ast >>= T.traverse (\a -> getBv ctx a signed)
+
 -- | Evaluate a /collection/ of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
-evalT c m = fmap T.sequence . T.mapM (eval c m)
+evalT c = mapEval (eval c)
+
+-- | Run a evaluation function on a 'Traversable' data structure of 'AST's
+-- (e.g. @[AST]@, @Vector AST@, @Maybe AST@, etc).
+--
+-- This a generic version of 'evalT' which can be used in combination with
+-- other helpers. For instance, @mapEval (evalInt c)@ can be used to obtain
+-- the 'Integer' interpretation of a list of 'AST' of sort /int/.
+mapEval :: Traversable t => EvalAst a -> Model -> t AST -> IO (Maybe (t a))
+mapEval f m = fmap T.sequence . T.mapM (f m)
+
+{- TODO: Parameterize FuncModel
+
+data FuncModel a b = FuncModel [([a], b)] b
+
+type FuncModelAST = FuncModel AST AST
+
+evalFuncWith :: Context -> Model -> EvalAst a -> EvalAst b -> FuncDecl -> IO (Maybe (FuncModel a b))
+
+-}
 
 -- | The interpretation of a function.
 data FuncModel = FuncModel
