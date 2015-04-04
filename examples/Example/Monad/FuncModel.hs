@@ -1,6 +1,14 @@
-module Main where
+-- | Extracting function and array interpretations.
+module Example.Monad.FuncModel
+  ( run )
+  where
 
 import Z3.Monad
+
+run :: IO ()
+run =
+    do evalZ3 arrayScript >>= print
+       evalZ3 funcScript >>= print
 
 type RetType = ([([Integer], Integer)], Integer)
 
@@ -16,6 +24,8 @@ toRetType (FuncModel fs elsePart) =
        elsePart' <- getInt elsePart
        return (fs', elsePart')
 
+-- * Arrays
+
 arrayScript :: Z3 (RetType, RetType)
 arrayScript =
     do intSort <- mkIntSort
@@ -27,54 +37,51 @@ arrayScript =
        a1      <- mkConst a1Sym arrSort
        a2      <- mkConst a2Sym arrSort
 
-       
-       i1      <- mkInt (5 :: Int)
-       i2      <- mkInt (10 :: Int)
+
+       i1      <- mkIntNum (5 :: Int)
+       i2      <- mkIntNum (10 :: Int)
        a1Val1  <- mkSelect a1 i1
-       mkGt a1Val1 i2 >>= assertCnstr
+       mkGt a1Val1 i2 >>= assert
 
-       i3      <- mkInt (42 :: Int)
-       i4      <- mkInt (81 :: Int)
+       i3      <- mkIntNum (42 :: Int)
+       i4      <- mkIntNum (81 :: Int)
        a3      <- mkStore a1 i3 i4
-       mkEq a2 a3 >>= assertCnstr
+       mkEq a2 a3 >>= assert
 
-       let 
+       let
            convertArr :: Model -> AST -> Z3 RetType
-           convertArr model arr = 
+           convertArr model arr =
                do Just f <- evalArray model arr
                   toRetType f
 
        (_res, modelMb) <- getModel
        case modelMb of
-         Just model -> 
+         Just model ->
              do a1' <- convertArr model a1
                 a2' <- convertArr model a2
                 return (a1', a2')
          Nothing -> error "Couldn't construct model"
 
-
+-- * Functions
 
 funcScript :: Z3 RetType
-funcScript =
-    do intSort <- mkIntSort
-       fSym    <- mkStringSymbol "f"
-       fDecl   <- mkFuncDecl fSym [intSort, intSort] intSort
+funcScript = do
+  -- f :: (Integer,Integer) -> Integer
+  intSort <- mkIntSort
+  fDecl   <- mkFreshFuncDecl "f" [intSort, intSort] intSort
 
-       i1      <- mkInt (5 :: Int)
-       i2      <- mkInt (10 :: Int)
-       i3      <- mkInt (42 :: Int)
+  -- f(5,10) > 42
+  i5      <- mkIntNum (5 :: Integer)
+  i10     <- mkIntNum (10 :: Integer)
+  i42     <- mkIntNum (42 :: Integer)
+  r       <- mkApp fDecl [i5, i10]
+  assert =<< mkGt r i42
 
-       v       <- mkApp fDecl [i1, i2]
+  -- check satisfiability and obtain model
+  (res, mbModel) <- getModel
+  case mbModel of
+       Just model -> do
+         Just f <- evalFunc model fDecl
+         toRetType f
+       Nothing -> error ("Couldn't construct model: " ++ show res)
 
-       mkGt v i3 >>= assertCnstr
-       (_res, modelMb) <- getModel
-       case modelMb of
-         Just model -> 
-             do Just f <- evalFunc model fDecl
-                toRetType f
-         Nothing -> error "Couldn't construct model"
-
-main :: IO ()
-main = 
-    do evalZ3 arrayScript >>= print
-       evalZ3 funcScript >>= print

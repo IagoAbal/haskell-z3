@@ -1,4 +1,7 @@
-module Main where
+-- | Generate SMTLib.
+module Example.Monad.ToSMTLib
+  ( run )
+  where
 
 import Control.Applicative
 import Control.Monad ( join )
@@ -8,6 +11,8 @@ import qualified Data.Traversable as T
 
 import Z3.Monad
 
+run :: IO ()
+run = evalZ3 script >>= putStrLn
 
 script :: Z3 String
 script = do
@@ -16,8 +21,8 @@ script = do
   q2 <- flip mkConst intSort =<< mkStringSymbol "q2"
   q3 <- flip mkConst intSort =<< mkStringSymbol "q3"
   q4 <- flip mkConst intSort =<< mkStringSymbol "q4"
-  _1 <- mkInt 1
-  _4 <- mkInt 4
+  _1 <- mkIntNum (1::Integer)
+  _4 <- mkIntNum (4::Integer)
   -- the ith-queen is in the ith-row.
   -- qi is the column of the ith-queen
   as1 <- mkAnd =<< T.sequence [mkLe _1 q1, mkLe q1 _4]
@@ -40,9 +45,7 @@ script = do
                           _true
   where mkAbs :: AST -> Z3 AST
         mkAbs x = do
-          _0 <- mkInt 0
+          _0 <- mkIntNum (0::Integer)
           join $ mkIte <$> mkLe _0 x <*> pure x <*> mkUnaryMinus x
         diagonal d c c' =
-          join $ mkEq <$> (mkAbs =<< mkSub [c',c]) <*> (mkInt d)
-
-main = evalZ3 script >>= putStrLn
+          join $ mkEq <$> (mkAbs =<< mkSub [c',c]) <*> (mkIntNum d)
