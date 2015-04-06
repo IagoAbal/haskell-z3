@@ -180,8 +180,12 @@ module Z3.Monad
   , mkUnsignedInt64
   -- ** Helpers
   , mkIntegral
+  , mkRational
+  , mkFixed
   , mkRealNum
+  , mkInteger
   , mkIntNum
+  , mkBitvector
   , mkBvNum
 
   -- * Quantifiers
@@ -307,6 +311,7 @@ import Z3.Base
 import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
+import Data.Fixed ( Fixed, HasResolution )
 import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Control.Monad.Fix ( MonadFix )
@@ -1197,13 +1202,31 @@ mkUnsignedInt64 = liftFun2 Base.mkUnsignedInt64
 mkIntegral :: (MonadZ3 z3, Integral a) => a -> Sort -> z3 AST
 mkIntegral = liftFun2 Base.mkIntegral
 
+-- | Create a numeral of sort /real/ from a 'Rational'.
+mkRational :: MonadZ3 z3 => Rational -> z3 AST
+mkRational = liftFun1 Base.mkRational
+
+-- | Create a numeral of sort /real/ from a 'Fixed'.
+mkFixed :: (MonadZ3 z3, HasResolution a) => Fixed a -> z3 AST
+mkFixed = liftFun1 Base.mkFixed
+
 -- | Create a numeral of sort /real/ from a 'Real'.
 mkRealNum :: (MonadZ3 z3, Real r) => r -> z3 AST
 mkRealNum = liftFun1 Base.mkRealNum
 
+-- | Create a numeral of sort /int/ from an 'Integer'.
+mkInteger :: MonadZ3 z3 => Integer -> z3 AST
+mkInteger = liftFun1 Base.mkInteger
+
 -- | Create a numeral of sort /int/ from an 'Integral'.
 mkIntNum :: (MonadZ3 z3, Integral a) => a -> z3 AST
 mkIntNum = liftFun1 Base.mkIntNum
+
+-- | Create a numeral of sort /Bit-vector/ from an 'Integer'.
+mkBitvector :: MonadZ3 z3 => Int      -- ^ bit-width
+                          -> Integer  -- ^ integer value
+                          -> z3 AST
+mkBitvector = liftFun2 Base.mkBitvector
 
 -- | Create a numeral of sort /Bit-vector/ from an 'Integral'.
 mkBvNum :: (MonadZ3 z3, Integral i) => Int    -- ^ bit-width

@@ -221,8 +221,12 @@ module Z3.Base (
   , mkUnsignedInt64
   -- ** Helpers
   , mkIntegral
+  , mkRational
+  , mkFixed
   , mkRealNum
+  , mkInteger
   , mkIntNum
+  , mkBitvector
   , mkBvNum
 
   -- * Quantifiers
@@ -321,6 +325,7 @@ import Z3.Base.C
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( join, when )
+import Data.Fixed ( Fixed, HasResolution )
 import Data.Int
 import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
 import Data.Maybe ( fromJust )
@@ -1244,6 +1249,14 @@ mkIntegral :: Integral a => Context -> a -> Sort -> IO AST
 mkIntegral c n s = mkNumeral c n_str s
   where n_str = show $ toInteger n
 
+-- | Create a numeral of sort /real/ from a 'Rational'.
+mkRational :: Context -> Rational -> IO AST
+mkRational = mkRealNum
+
+-- | Create a numeral of sort /real/ from a 'Fixed'.
+mkFixed :: HasResolution a => Context -> Fixed a -> IO AST
+mkFixed ctx = mkRational ctx . toRational
+
 -- | Create a numeral of sort /real/ from a 'Real'.
 mkRealNum :: Real r => Context -> r -> IO AST
 mkRealNum c n = mkNumeral c n_str =<< mkRealSort c
@@ -1252,9 +1265,19 @@ mkRealNum c n = mkNumeral c n_str =<< mkRealSort c
         r_d   = toInteger $ denominator r
         n_str = show r_n ++ " / " ++ show r_d
 
+-- | Create a numeral of sort /int/ from an 'Integer'.
+mkInteger :: Context -> Integer -> IO AST
+mkInteger = mkIntNum
+
 -- | Create a numeral of sort /int/ from an 'Integral'.
 mkIntNum :: Integral a => Context -> a -> IO AST
 mkIntNum ctx n = mkIntegral ctx n =<< mkIntSort ctx
+
+-- | Create a numeral of sort /Bit-vector/ from an 'Integer'.
+mkBitvector :: Context -> Int      -- ^ bit-width
+                       -> Integer  -- ^ integer value
+                       -> IO AST
+mkBitvector = mkBvNum
 
 -- | Create a numeral of sort /Bit-vector/ from an 'Integral'.
 mkBvNum :: Integral i => Context -> Int    -- ^ bit-width
