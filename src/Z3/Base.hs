@@ -30,6 +30,25 @@ Add here the IO-based wrapper for a new Z3 API function:
 * Add the API function to the module export list, (only) if needed.
 
 This should be straightforward for most cases using [MARSHALLING HELPERS].
+
+Reference counting
+------------------
+
+When an object is returned by the C API, we:
+* increment its reference counter (if applicable),
+* wrap the pointer into a ForeignPtr, and
+* install a finalizer to decrement the counter.
+
+Objects with explicit /delete/ functions, instead of reference
+counters, are handled analogously.In this way, we move memory
+management into the GC.
+
+Remarkably, a Z3_context cannot be deleted until we "free" every
+object depending on it. But ForeignPtr finalizers do not provide
+any ordering guarantee, and it's not possible to establish
+dependencies between finalizers. Thus, we /count references/ to
+a Z3_context and only delete it when this count reaches /zero/.
+
 -}
 
 module Z3.Base (
@@ -299,10 +318,11 @@ module Z3.Base (
 
 import Z3.Base.C
 
-import Control.Applicative ( (<$>), (<*) )
+import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
-import Control.Monad ( when )
+import Control.Monad ( join, when )
 import Data.Int
+import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
 import Data.Maybe ( fromJust )
 import Data.Ratio ( numerator, denominator, (%) )
 import Data.Traversable ( Traversable )
@@ -324,7 +344,11 @@ newtype Config = Config { unConfig :: Ptr Z3_config }
     deriving Eq
 
 -- | A Z3 /logical context/.
-newtype Context = Context { unContext :: ForeignPtr Z3_context }
+data Context =
+    Context {
+      unContext :: ForeignPtr Z3_context
+    , refCount  :: !(IORef Word)
+    }
     deriving Eq
 
 -- | A Z3 /symbol/.
@@ -455,10 +479,25 @@ mkContext :: Config -> IO Context
 mkContext cfg = do
   ctxPtr <- z3_mk_context_rc (unConfig cfg)
   z3_set_error_handler ctxPtr nullFunPtr
-  Context <$> newForeignPtr ctxPtr (z3_del_context ctxPtr)
+  count <- newIORef 1
+  Context <$> newForeignPtr ctxPtr (contextDecRef ctxPtr count)
+          <*> pure count
 
 -- TODO: Z3_update_param_value
 -- TODO: Z3_interrupt
+
+-------------------------------------------------
+-- Reference counting of Context
+
+contextIncRef :: Context -> IO ()
+contextIncRef ctx = atomicModifyIORef' (refCount ctx) $ \n ->
+  (n+1, ())
+
+contextDecRef :: Ptr Z3_context -> IORef Word -> IO ()
+contextDecRef ctxPtr count = join $ atomicModifyIORef' count $ \n ->
+  if n > 1
+    then (n-1, return ())
+    else (  0, z3_del_context ctxPtr)
 
 ---------------------------------------------------------------------
 -- Parameters
@@ -2253,9 +2292,6 @@ using 'marshal'. Worst case scenario, write the marshalling code yourself.
 withContext :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContext c = withForeignPtr (unContext c)
 
-withContext1 :: (Ptr Z3_context -> a -> IO r) -> Context -> a -> IO r
-withContext1 f c x = withContext c (`f` x)
-
 withContextError :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContextError c f = withContext c $ \cPtr -> checkError cPtr (f cPtr)
 
@@ -2283,6 +2319,31 @@ hs2cs []     f = f []
 hs2cs (h:hs) f =
   h2c h $ \c ->
   hs2cs hs $ \cs -> f (c:cs)
+
+type Z3SetRefCount c = Ptr Z3_context -> Ptr c -> IO ()
+type Z3IncRefFun c = Z3SetRefCount c
+type Z3DecRefFun c = Z3SetRefCount c
+
+mkC2hRefCount :: (ForeignPtr c -> h)
+                   -> Z3IncRefFun c
+                   -> Z3DecRefFun c
+                   -> Context -> Ptr c -> IO h
+mkC2hRefCount mk incRef decRef ctx xPtr =
+  withContext ctx $ \ctxPtr -> do
+    incRef ctxPtr xPtr
+    contextIncRef ctx
+    let xFinalizer = do
+        decRef ctxPtr xPtr
+        contextDecRef ctxPtr (refCount ctx)
+    mk <$> newForeignPtr xPtr xFinalizer
+
+dummy_inc_ref :: Z3IncRefFun c
+dummy_inc_ref _ _ = return ()
+
+on_ast_ptr :: Z3SetRefCount Z3_ast
+            -> (Ptr Z3_context -> Ptr a -> IO (Ptr Z3_ast))
+            -> Z3SetRefCount a
+f `on_ast_ptr` t = \ctxPtr ptr -> f ctxPtr =<< t ctxPtr ptr
 
 instance Marshal h (Ptr x) => Marshal (Maybe h) (Ptr x) where
   c2h c = T.mapM (c2h c) . ptrToMaybe
@@ -2326,16 +2387,13 @@ instance Marshal String CString where
   h2c   = withCString
 
 instance Marshal App (Ptr Z3_app) where
-  c2h ctx appPtr = withContext ctx $ \ctxPtr -> do
-    astPtr <- z3_app_to_ast ctxPtr appPtr
-    z3_inc_ref ctxPtr astPtr
-    App <$> newForeignPtr appPtr (withContext1 z3_dec_ref ctx astPtr)
+  c2h = mkC2hRefCount App
+            (z3_inc_ref `on_ast_ptr` z3_app_to_ast)
+            (z3_dec_ref `on_ast_ptr` z3_app_to_ast)
   h2c app = withForeignPtr (unApp app)
 
 instance Marshal Params (Ptr Z3_params) where
-  c2h ctx prmPtr = withContext ctx $ \ctxPtr -> do
-    z3_params_inc_ref ctxPtr prmPtr
-    Params <$> newForeignPtr prmPtr (withContext1 z3_params_dec_ref ctx prmPtr)
+  c2h = mkC2hRefCount Params z3_params_inc_ref z3_params_dec_ref
   h2c prm = withForeignPtr (unParams prm)
 
 instance Marshal Symbol (Ptr Z3_symbol) where
@@ -2343,9 +2401,7 @@ instance Marshal Symbol (Ptr Z3_symbol) where
   h2c s f = f (unSymbol s)
 
 instance Marshal AST (Ptr Z3_ast) where
-  c2h ctx astPtr = withContext ctx $ \ctxPtr -> do
-    z3_inc_ref ctxPtr astPtr
-    AST <$> newForeignPtr astPtr (withContext1 z3_dec_ref ctx astPtr)
+  c2h = mkC2hRefCount AST z3_inc_ref z3_dec_ref
   h2c a f = withForeignPtr (unAST a) f
 
 instance Marshal [AST] (Ptr Z3_ast_vector) where
@@ -2360,55 +2416,43 @@ instance Marshal [AST] (Ptr Z3_ast_vector) where
   h2c _ _ = error "Marshal [AST] (Ptr Z3_ast_vector) => h2c not implemented"
 
 instance Marshal Sort (Ptr Z3_sort) where
-  c2h ctx srtPtr = withContext ctx $ \ctxPtr -> do
-    astPtr <- z3_sort_to_ast ctxPtr srtPtr
-    z3_inc_ref ctxPtr astPtr
-    Sort <$> newForeignPtr srtPtr (withContext1 z3_dec_ref ctx astPtr)
+  c2h = mkC2hRefCount Sort
+            (z3_inc_ref `on_ast_ptr` z3_sort_to_ast)
+            (z3_dec_ref `on_ast_ptr` z3_sort_to_ast)
   h2c srt = withForeignPtr (unSort srt)
 
 instance Marshal FuncDecl (Ptr Z3_func_decl) where
-  c2h ctx fndPtr = withContext ctx $ \ctxPtr -> do
-    astPtr <- z3_func_decl_to_ast ctxPtr fndPtr
-    z3_inc_ref ctxPtr astPtr
-    FuncDecl <$> newForeignPtr fndPtr (withContext1 z3_dec_ref ctx astPtr)
+  c2h = mkC2hRefCount FuncDecl
+            (z3_inc_ref `on_ast_ptr` z3_func_decl_to_ast)
+            (z3_dec_ref `on_ast_ptr` z3_func_decl_to_ast)
   h2c fnd = withForeignPtr (unFuncDecl fnd)
 
 instance Marshal FuncEntry (Ptr Z3_func_entry) where
-  c2h ctx fnePtr = withContext ctx $ \ctxPtr -> do
-    z3_func_entry_inc_ref ctxPtr fnePtr
-    FuncEntry <$> newForeignPtr fnePtr
-        (withContext1 z3_func_entry_dec_ref ctx fnePtr)
+  c2h = mkC2hRefCount FuncEntry z3_func_entry_inc_ref
+                                z3_func_entry_dec_ref
   h2c fne = withForeignPtr (unFuncEntry fne)
 
 instance Marshal FuncInterp (Ptr Z3_func_interp) where
-  c2h ctx fniPtr = withContext ctx $ \ctxPtr -> do
-    z3_func_interp_inc_ref ctxPtr fniPtr
-    FuncInterp <$> newForeignPtr fniPtr
-        (withContext1 z3_func_interp_dec_ref ctx fniPtr)
+  c2h = mkC2hRefCount FuncInterp z3_func_interp_inc_ref
+                                 z3_func_interp_dec_ref
   h2c fni = withForeignPtr (unFuncInterp fni)
 
 instance Marshal Model (Ptr Z3_model) where
-  c2h ctx mPtr = withContext ctx $ \ctxPtr -> do
-    z3_model_inc_ref ctxPtr mPtr
-    Model <$> newForeignPtr mPtr (withContext1 z3_model_dec_ref ctx mPtr)
+  c2h = mkC2hRefCount Model z3_model_inc_ref z3_model_dec_ref
   h2c m = withForeignPtr (unModel m)
 
 instance Marshal Pattern (Ptr Z3_pattern) where
-  c2h ctx patPtr = withContext ctx $ \ctxPtr -> do
-    astPtr <- z3_pattern_to_ast ctxPtr patPtr
-    z3_inc_ref ctxPtr astPtr
-    Pattern <$> newForeignPtr patPtr (withContext1 z3_dec_ref ctx astPtr)
+  c2h = mkC2hRefCount Pattern
+            (z3_inc_ref `on_ast_ptr` z3_pattern_to_ast)
+            (z3_dec_ref `on_ast_ptr` z3_pattern_to_ast)
   h2c pat = withForeignPtr (unPattern pat)
 
 instance Marshal Constructor (Ptr Z3_constructor) where
-  c2h ctx cnsPtr = Constructor <$>
-    newForeignPtr cnsPtr (withContext1 z3_del_constructor ctx cnsPtr)
+  c2h = mkC2hRefCount Constructor dummy_inc_ref z3_del_constructor
   h2c cns = withForeignPtr (unConstructor cns)
 
 instance Marshal Solver (Ptr Z3_solver) where
-  c2h ctx slvPtr = withContext ctx $ \ctxPtr -> do
-    z3_solver_inc_ref ctxPtr slvPtr
-    Solver <$> newForeignPtr slvPtr (withContext1 z3_solver_dec_ref ctx slvPtr)
+  c2h = mkC2hRefCount Solver z3_solver_inc_ref z3_solver_dec_ref
   h2c slv = withForeignPtr (unSolver slv)
 
 
