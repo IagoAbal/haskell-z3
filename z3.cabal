@@ -44,14 +44,11 @@ Library
     Exposed-modules:
 
         Z3.Base
+        Z3.Base.C
 
         Z3.Opts
 
         Z3.Monad
-
-    Other-modules:
-
-        Z3.Base.C
 
     ghc-options: -Wall -Werror
 
