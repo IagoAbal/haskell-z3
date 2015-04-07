@@ -440,7 +440,7 @@ paramsSetBool :: MonadZ3 z3 => Params -> Symbol -> Bool -> z3 ()
 paramsSetBool = liftFun3 Base.paramsSetBool
 
 -- | Add a unsigned parameter /k/ with value /v/ to the parameter set /p/.
-paramsSetUInt :: MonadZ3 z3 => Params -> Symbol -> Int -> z3 ()
+paramsSetUInt :: MonadZ3 z3 => Params -> Symbol -> Word -> z3 ()
 paramsSetUInt = liftFun3 Base.paramsSetUInt
 
 -- | Add a double parameter /k/ with value /v/ to the parameter set /p/.
