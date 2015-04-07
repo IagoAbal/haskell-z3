@@ -258,6 +258,7 @@ module Z3.Monad
   , getVersion
 
   -- * Solvers
+  , solverGetHelp
   , solverSetParams
   , solverPush
   , solverPop
@@ -1545,6 +1546,10 @@ getVersion = liftIO Base.getVersion
 -- mkSolverForLogic c logic = withContextError c $ \cPtr ->
 --   do sym <- mkStringSymbol c (show logic)
 --      c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
+
+-- | Return a string describing all solver available parameters.
+solverGetHelp :: MonadZ3 z3 => z3 String
+solverGetHelp = liftSolver0 Base.solverGetHelp
 
 -- | Set the solver using the given parameters.
 solverSetParams :: MonadZ3 z3 => Params -> z3 ()

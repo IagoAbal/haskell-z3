@@ -970,6 +970,10 @@ foreign import ccall unsafe "Z3_mk_simple_solver"
 foreign import ccall unsafe "Z3_mk_solver_for_logic"
     z3_mk_solver_for_logic :: Ptr Z3_context -> Ptr Z3_symbol -> IO (Ptr Z3_solver)
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga047bb9dff9d57c7d3a71b7af4555956b>
+foreign import ccall unsafe "Z3_solver_get_help"
+    z3_solver_get_help :: Ptr Z3_context -> Ptr Z3_solver -> IO Z3_string
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga887441b3468a1bc605bbf564ddebf2ae>
 foreign import ccall unsafe "Z3_solver_set_params"
     z3_solver_set_params :: Ptr Z3_context -> Ptr Z3_solver -> Ptr Z3_params ->

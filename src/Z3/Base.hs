@@ -303,6 +303,7 @@ module Z3.Base (
   , mkSolver
   , mkSimpleSolver
   , mkSolverForLogic
+  , solverGetHelp
   , solverSetParams
   , solverPush
   , solverPop
@@ -2227,6 +2228,10 @@ mkSolverForLogic :: Context -> Logic -> IO Solver
 mkSolverForLogic c logic = withContextError c $ \cPtr ->
   do sym <- mkStringSymbol c (show logic)
      c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
+
+-- | Return a string describing all solver available parameters.
+solverGetHelp :: Context -> Solver -> IO String
+solverGetHelp = liftFun1 z3_solver_get_help
 
 -- | Set the given solver using the given parameters.
 solverSetParams :: Context -> Solver -> Params -> IO ()
