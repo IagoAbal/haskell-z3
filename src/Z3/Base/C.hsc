@@ -911,7 +911,7 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
 foreign import ccall unsafe "Z3_model_to_string"
-    z3_model_to_string :: Ptr Z3_context -> Ptr Z3_model -> IO CString
+    z3_model_to_string :: Ptr Z3_context -> Ptr Z3_model -> IO Z3_string
 
 -- TODO From section 'Constraints' on.
 
