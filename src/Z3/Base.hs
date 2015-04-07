@@ -520,7 +520,7 @@ paramsSetBool :: Context -> Params -> Symbol -> Bool -> IO ()
 paramsSetBool = liftFun3 z3_params_set_bool
 
 -- | Add a unsigned parameter /k/ with value /v/ to the parameter set /p/.
-paramsSetUInt :: Context -> Params -> Symbol -> Int -> IO ()
+paramsSetUInt :: Context -> Params -> Symbol -> Word -> IO ()
 paramsSetUInt = liftFun3 z3_params_set_uint
 
 -- | Add a double parameter /k/ with value /v/ to the parameter set /p/.
