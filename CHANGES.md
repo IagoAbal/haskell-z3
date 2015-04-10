@@ -4,7 +4,7 @@
 ## 4.0.0
 
 This release brings support for the new Z3 4.x API,
-and **removes** support for the old API.
+and *removes* support for the old API.
 We are following a new version policy, yet compatible with Haskell's PVP.
 So new versions are of the form *x.y.z*,
 where *x* is the version of Z3 API supported,
@@ -37,9 +37,9 @@ and proposed a fix.
 
 * MonadZ3 must be Applicative.
 * Numerals API is now closer to Z3 C API.
-  So, for instance, 'mkInt' now takes both an integer and a sort.
-  You can use 'mkInteger' or 'mkIntNum' instead.
-* Z3.Monad.assertCnstr is now Z3.Monad.assert
+  So, for instance, ```mkInt``` now takes both an integer and a sort.
+  You can use ```mkInteger``` or ```mkIntNum``` instead.
+* ```Z3.Monad.assertCnstr``` is now called ```Z3.Monad.assert```.
 
 ### Removals
 
