@@ -9,7 +9,9 @@
 -- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
 --
--- A simple monadic wrapper for 'Z3.Base'.
+-- A simple monadic interface to Z3 API.
+--
+-- Examples: <https://bitbucket.org/iago/z3-haskell/src/tip/examples/Example/Monad>
 
 module Z3.Monad
   ( -- * Z3 monad
