@@ -2,37 +2,39 @@ Name:                z3
 Version:             4.0.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
-    Bindings for the Z3 Theorem Prover (<http://z3.codeplex.com>).
+    Bindings for the (now open source!) Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
     .
-    Low-level bindings to the Z3 API are provided by "Z3.Base", this API is
-    still incomplete but pretty much stable.
+    * "Z3.Base.C" provides the raw foreign imports from Z3's C API.
     .
-    A simple but convenient wrapper for "Z3.Base" is provided by "Z3.Monad".
+    * "Z3.Base" does the marshaling of values between Haskell and C,
+    and transparently handles reference counting of Z3 objects for you.
     .
-    Important notes:
+    * "Z3.Monad" provides a convenient monadic wrapper for the common usage scenario.
     .
-    * Installation (Unix-like): Just be sure to use the standard locations for
-    dynamic libraries (\/usr\/lib) and header files (\/usr\/include), or else
-    use the --extra-lib-dirs and --extra-include-dirs Cabal flags.
+    Examples: <https://bitbucket.org/iago/z3-haskell/src/tip/examples>
     .
-    * Haddock documentation can be found at
-    <http://www.iagoabal.eu/z3-haskell/doc/0.3.2>.
+    Changelog: <https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md>
     .
-    * Hackage fails to compile this package because of the (unsatisfied) /libz3/
-    dependency.
+    Installation:
     .
-    A changelog is available at <https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md>
+    * /Unix-like/: Just be sure to use the standard locations for
+    dynamic libraries (\/usr\/lib) and header files (\/usr\/include),
+    or else use the --extra-lib-dirs and --extra-include-dirs Cabal flags.
+    .
+    (Hackage reports a build failure because Z3's library is missing.)
+
 Homepage:            http://bitbucket.org/iago/z3-haskell
 License:             BSD3
 License-file:        LICENSE
 Author:              Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
-Maintainer:          Iago Abal <mail@iagoabal.eu>,
-                     David Castro <david.castro.dcp@gmail.com>
-Copyright:           2012-2014, Iago Abal, David Castro
-Category:            Math, SMT, Theorem Provers, Formal Methods
+Maintainer:          Iago Abal <mail@iagoabal.eu>
+Copyright:           2012-2015, Iago Abal, David Castro
+Category:            Math, SMT, Theorem Provers, Formal Methods, Bit vectors
 Build-type:          Simple
 Cabal-version:       >= 1.8
+
+Extra-source-files:  README CHANGES HACKING
 
 source-repository head
   type:     mercurial
