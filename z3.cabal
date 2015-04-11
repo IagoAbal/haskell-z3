@@ -34,7 +34,7 @@ Category:            Math, SMT, Theorem Provers, Formal Methods, Bit vectors
 Build-type:          Simple
 Cabal-version:       >= 1.8
 
-Extra-source-files:  README CHANGES HACKING
+Extra-source-files:  README.md CHANGES.md HACKING.md
 
 source-repository head
   type:     mercurial
