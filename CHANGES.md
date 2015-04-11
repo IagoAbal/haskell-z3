@@ -1,5 +1,5 @@
 
-# The Z3 Haskell Package CHANGELOG
+# Release Notes
 
 ## 4.0.0
 
@@ -77,10 +77,10 @@ Thanks to Scott West and Nadia Polikarpova for contributing to this release.
 
 ### Deprecations
 
-* We deprecate _showContext_, _showModel_ and _getModel_; since we prefer to avoid deviations from Z3 API names. 
+* We deprecate _showContext_, _showModel_ and _getModel_; since we prefer to avoid deviations from Z3 API names.
   Use _contextToString_, _modelToString_ and _checkAndGetModel_ instead.
 * We deprecate the Z3.Lang interface, that will be moved to a separate pacakge.
-  Few people is using this (_DSL_ish) interface and it is arguably more unstable than Z3.Base or Z3.Monad. 
+  Few people is using this (_DSL_ish) interface and it is arguably more unstable than Z3.Base or Z3.Monad.
   It also introduces dependencies with GHC extensions like type families that we prefer to avoid in a more stable package.
 
 ### Misc
