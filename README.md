@@ -5,15 +5,17 @@ These are Haskell bindings for the Z3 theorem prover.
 We don't provide any high-level interface (e.g. in the form of a Haskell eDSL) here,
 these bindings are targeted to those who want to build verification tools on top of Z3 in Haskell.
 
-[Changelog here.](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md).
+[Changelog here.](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md)
 
-[Do you want to contribute?](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md).
+[Examples here.](https://bitbucket.org/iago/z3-haskell/src/tip/examples)
+
+[Do you want to contribute?](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md)
 
 ## Installation
 
 Preferably use the [z3](http://hackage.haskell.org/package/z3) package.
 
-* Download and install a *4.x* [Z3](http://z3.codeplex.com) release.
+* Install a [Z3](https://github.com/Z3Prover/z3) *4.x* release.
   (Support for Z3 *3.x* is provided by the *0.3.2* version of these bindings.)
 * Just type _cabal install z3_ if you used the standard locations for dynamic libraries (_/usr/lib_) and header files (_/usr/include_).
 
