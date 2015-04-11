@@ -13,7 +13,7 @@ and *z* is a minor revision of the bindings.
 Consequently, we bumped the version to *4.0.0* :-).
 
 Special thanks to Nadia Polikarpova,
-who diagnosed a problem in our use of ForeignPtr finalizers,
+who diagnosed a problem in our use of ```ForeignPtr``` finalizers,
 and proposed a fix.
 
 ### Cabal package
@@ -25,25 +25,23 @@ and proposed a fix.
 * Switched to Z3 4.x API.
 * Reference counting is managed by the gargabe collector.
 * Algebraic datatypes. (KC Sivaramakrishnan)
-* Z3_get_ast_kind, Z3_solver_check_assumptions, Z3_solver_get_unsat_core. (Nadia Polikarpova)
-* Z3_mk_fresh_const, Z3_mk_fresh_func_decl. (KC Sivaramakrishnan)
-* MonadFix instance for the Z3 monad. (Pepe Iborra)
+* ```Z3_get_ast_kind```, ```Z3_solver_check_assumptions```, ```Z3_solver_get_unsat_core```. (Nadia Polikarpova)
+* ```Z3_mk_fresh_const```, ```Z3_mk_fresh_func_decl```. (KC Sivaramakrishnan)
+* ```MonadFix``` instance for the ```Z3``` monad. (Pepe Iborra)
 * Hspec test-suite, with just a couple of tests, more to come...
 * A few more helpers for creating numerals, evaluating expressions, and so on.
-* Module Z3.Base.C, a very low-level interface to Z3 C API, is now exported.
+* Module ```Z3.Base.C```, a very low-level interface to Z3 C API, is now exported.
   Just in case you want to write your own marshaling layer ;-)
 
-### API-breaking changes
+### Removals and API-breaking changes
 
-* MonadZ3 must be Applicative.
+* No more support for the old Z3 3.x API.
+* Removed ```Z3.Lang``` module, this should re-appear as a separate package soon.
+* ```MonadZ3``` instances must be ```Applicative```.
 * Numerals API is now closer to Z3 C API.
   So, for instance, ```mkInt``` now takes both an integer and a sort.
   You can use ```mkInteger``` or ```mkIntNum``` instead.
 * ```Z3.Monad.assertCnstr``` is now called ```Z3.Monad.assert```.
-
-### Removals
-
-* No more support for the old Z3 3.x API.
 
 ### Refactoring and clean-up
 
