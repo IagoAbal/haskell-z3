@@ -56,7 +56,7 @@ Library
     ghc-options: -Wall
 
     -- Ban to mtl-2.1: modify in MonadState causes <<loop>> in mtl-2.1
-    Build-depends:       base >= 4.5,
+    Build-depends:       base >= 4.5 && <5,
                          containers,
                          mtl > 2.1
 
