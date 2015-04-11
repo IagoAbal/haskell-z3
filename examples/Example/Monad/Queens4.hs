@@ -23,8 +23,8 @@ script = do
   q2 <- mkFreshIntVar "q2"
   q3 <- mkFreshIntVar "q3"
   q4 <- mkFreshIntVar "q4"
-  _1 <- mkIntNum (1::Integer)
-  _4 <- mkIntNum (4::Integer)
+  _1 <- mkInteger 1
+  _4 <- mkInteger 4
   -- the ith-queen is in the ith-row.
   -- qi is the column of the ith-queen
   assert =<< mkAnd =<< T.sequence
@@ -47,10 +47,8 @@ script = do
   -- check and get solution
   fmap snd $ withModel $ \m ->
     catMaybes <$> mapM (evalInt m) [q1,q2,q3,q4]
-  where mkAbs :: AST -> Z3 AST
-        mkAbs x = do
-          _0 <- mkIntNum (0::Integer)
+  where mkAbs x = do
+          _0 <- mkInteger 0
           join $ mkIte <$> mkLe _0 x <*> pure x <*> mkUnaryMinus x
-        diagonal :: Integer -> AST -> AST -> Z3 AST
         diagonal d c c' =
-          join $ mkEq <$> (mkAbs =<< mkSub [c',c]) <*> (mkIntNum d)
+          join $ mkEq <$> (mkAbs =<< mkSub [c',c]) <*> (mkInteger d)
