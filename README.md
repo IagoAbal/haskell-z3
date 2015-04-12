@@ -9,7 +9,7 @@ these bindings are targeted to those who want to build verification tools on top
 
 [Examples here.](https://bitbucket.org/iago/z3-haskell/src/tip/examples)
 
-[Do you want to contribute?](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md)
+[Do you want to contribute?](https://bitbucket.org/iago/z3-haskell/src/tip/HACKING.md)
 
 ## Installation
 
