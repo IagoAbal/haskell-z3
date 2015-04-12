@@ -111,6 +111,6 @@ Test-suite spec
     Main-is:            Spec.hs
 
     Build-depends:      base >= 4.5,
-                        z3 >= 0.4,
+                        z3 == 4.*,
                         hspec >= 2.1,
                         QuickCheck >= 2.5.1
