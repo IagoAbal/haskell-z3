@@ -105,6 +105,7 @@ module Z3.Base (
   , mkTupleSort
   , mkConstructor
   , mkDatatype
+  , mkSetSort
 
   -- * Constants and Applications
   , mkFuncDecl
@@ -211,6 +212,18 @@ module Z3.Base (
   , mkConstArray
   , mkMap
   , mkArrayDefault
+  
+  -- * Sets
+  , mkEmptySet
+  , mkFullSet
+  , mkSetAdd
+  , mkSetDel
+  , mkSetUnion
+  , mkSetIntersect
+  , mkSetDifference
+  , mkSetComplement
+  , mkSetMember
+  , mkSetSubset
 
   -- * Numerals
   , mkNumeral
@@ -681,6 +694,11 @@ mkDatatype c sym consList = withContextError c $ \cPtr ->
   marshalArrayLen consList $ \ n consPtrs -> checkError cPtr $ do
     sortPtr <- z3_mk_datatype cPtr (unSymbol sym) n consPtrs
     c2h c sortPtr
+    
+-- | Create an set type with a given domain type
+mkSetSort :: Context -> Sort -> IO Sort
+mkSetSort = liftFun1 z3_mk_set_sort
+    
 
 -- TODO: from Z3_mk_constructor_list on
 
@@ -1189,7 +1207,70 @@ mkArrayDefault = liftFun1 z3_mk_array_default
 ---------------------------------------------------------------------
 -- Sets
 
--- TODO: Sets
+-- | Create the empty set.
+mkEmptySet :: Context
+            -> Sort   -- ^ Domain sort of the set.
+            -> IO AST
+mkEmptySet = liftFun1 z3_mk_empty_set
+
+-- | Create the full set.
+mkFullSet :: Context
+            -> Sort   -- ^ Domain sort of the set.
+            -> IO AST
+mkFullSet = liftFun1 z3_mk_full_set
+
+-- | Add an element to a set.
+mkSetAdd :: Context
+          -> AST      -- ^ Set.
+          -> AST      -- ^ Element.
+          -> IO AST
+mkSetAdd = liftFun2 z3_mk_set_add
+
+-- | Remove an element from a set.
+mkSetDel :: Context
+          -> AST      -- ^ Set.
+          -> AST      -- ^ Element.
+          -> IO AST
+mkSetDel = liftFun2 z3_mk_set_del
+
+-- | Take the union of a list of sets.
+mkSetUnion :: Context -> [AST] -> IO AST
+mkSetUnion ctx args = marshal z3_mk_set_union ctx $ \f ->
+  marshalArrayLen args $ \argsNum argsArr ->
+    f argsNum argsArr
+
+-- | Take the intersection of a list of sets.
+mkSetIntersect :: Context -> [AST] -> IO AST
+mkSetIntersect ctx args = marshal z3_mk_set_intersect ctx $ \f ->
+  marshalArrayLen args $ \argsNum argsArr ->
+    f argsNum argsArr
+
+-- | Take the set difference between two sets.
+mkSetDifference :: Context
+          -> AST      -- ^ First set.
+          -> AST      -- ^ Second set.
+          -> IO AST
+mkSetDifference = liftFun2 z3_mk_set_difference
+
+-- | Take the complement of a set.
+mkSetComplement :: Context
+          -> AST      -- ^ Set.
+          -> IO AST
+mkSetComplement = liftFun1 z3_mk_set_complement
+
+-- | Check for set membership.
+mkSetMember :: Context
+          -> AST      -- ^ Element.
+          -> AST      -- ^ Set.
+          -> IO AST
+mkSetMember = liftFun2 z3_mk_set_member
+
+-- | Check if the first set is a subset of the second set.
+mkSetSubset :: Context
+          -> AST      -- ^ First set.
+          -> AST      -- ^ Second set.
+          -> IO AST
+mkSetSubset = liftFun2 z3_mk_set_subset
 
 ---------------------------------------------------------------------
 -- * Numerals
