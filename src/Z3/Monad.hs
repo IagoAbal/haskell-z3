@@ -66,6 +66,7 @@ module Z3.Monad
   , mkTupleSort
   , mkConstructor
   , mkDatatype
+  , mkSetSort
 
   -- * Constants and Applications
   , mkFuncDecl
@@ -172,6 +173,18 @@ module Z3.Monad
   , mkConstArray
   , mkMap
   , mkArrayDefault
+  
+  -- * Sets
+  , mkEmptySet
+  , mkFullSet
+  , mkSetAdd
+  , mkSetDel
+  , mkSetUnion
+  , mkSetIntersect
+  , mkSetDifference
+  , mkSetComplement
+  , mkSetMember
+  , mkSetSubset
 
   -- * Numerals
   , mkNumeral
@@ -546,6 +559,13 @@ mkDatatype :: MonadZ3 z3
            -> [Constructor]
            -> z3 Sort
 mkDatatype = liftFun2 Base.mkDatatype
+
+-- | Create a set type
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6865879523e7e882d7e50a2d8445ac8b>
+--
+mkSetSort :: MonadZ3 z3 => Sort -> z3 Sort
+mkSetSort = liftFun1 Base.mkSetSort
 
 ---------------------------------------------------------------------
 -- Constants and Applications
@@ -1148,6 +1168,69 @@ mkMap = liftFun2 Base.mkMap
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga78e89cca82f0ab4d5f4e662e5e5fba7d>
 mkArrayDefault :: MonadZ3 z3 => AST -> z3 AST
 mkArrayDefault = liftFun1 Base.mkArrayDefault
+
+---------------------------------------------------------------------
+-- Sets
+
+-- | Create the empty set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga358b6b80509a567148f1c0ca9252118c>
+mkEmptySet :: MonadZ3 z3 => Sort -> z3 AST
+mkEmptySet = liftFun1 Base.mkEmptySet
+
+-- | Create the full set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e92662c657374f7332aa32ce4503dd2>
+mkFullSet :: MonadZ3 z3 => Sort -> z3 AST
+mkFullSet = liftFun1 Base.mkFullSet
+
+-- | Add an element to a set. 
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga856c3d0e28ce720f53912c2bbdd76175>
+mkSetAdd :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSetAdd = liftFun2 Base.mkSetAdd
+
+-- | Remove an element from a set. 
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga80e883f39dd3b88f9d0745c8a5b91d1d>
+mkSetDel :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSetDel = liftFun2 Base.mkSetDel
+
+-- | Take the union of a list of sets.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4050162a13d539b8913200963bb4743c>
+mkSetUnion :: MonadZ3 z3 => [AST] -> z3 AST
+mkSetUnion = liftFun1 Base.mkSetUnion
+
+-- | Take the intersection of a list of sets.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8a8abff0ebe6aeeaa6c919eaa013049d>
+mkSetIntersect :: MonadZ3 z3 => [AST] -> z3 AST
+mkSetIntersect = liftFun1 Base.mkSetIntersect
+    
+-- | Take the set difference between two sets.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb49c62f70b8198362e1a29ba6d8bde1>
+mkSetDifference :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSetDifference = liftFun2 Base.mkSetDifference
+
+-- | Take the complement of a set. 
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5c57143c9229cdf730c5103ff696590f>
+mkSetComplement :: MonadZ3 z3 => AST -> z3 AST
+mkSetComplement = liftFun1 Base.mkSetComplement
+
+-- | Check for set membership.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac6e516f3dce0bdd41095c6d6daf56063>
+mkSetMember :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSetMember = liftFun2 Base.mkSetMember
+
+-- | Check if the first set is a subset of the second set.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga139c5803af0e86464adc7cedc53e7f3a>
+mkSetSubset :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkSetSubset = liftFun2 Base.mkSetSubset
 
 ---------------------------------------------------------------------
 -- * Numerals

@@ -249,6 +249,10 @@ foreign import ccall unsafe "Z3_mk_datatype"
                    -> CUInt
                    -> Ptr (Ptr Z3_constructor)
                    -> IO (Ptr Z3_sort)
+                   
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6865879523e7e882d7e50a2d8445ac8b>
+foreign import ccall unsafe "Z3_mk_set_sort"
+    z3_mk_set_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)
 
 -- TODO Sorts: from Z3_mk_array_sort on
 
@@ -613,7 +617,48 @@ foreign import ccall unsafe "Z3_mk_map"
 foreign import ccall unsafe "Z3_mk_array_default"
     z3_mk_array_default :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
--- TODO Sets
+--------------------------------------------------------------------------------
+-- * Sets
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga358b6b80509a567148f1c0ca9252118c>
+foreign import ccall unsafe "Z3_mk_empty_set"
+    z3_mk_empty_set :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5e92662c657374f7332aa32ce4503dd2>
+foreign import ccall unsafe "Z3_mk_full_set"
+    z3_mk_full_set :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga856c3d0e28ce720f53912c2bbdd76175>
+foreign import ccall unsafe "Z3_mk_set_add"
+    z3_mk_set_add :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga80e883f39dd3b88f9d0745c8a5b91d1d>
+foreign import ccall unsafe "Z3_mk_set_del"
+    z3_mk_set_del :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4050162a13d539b8913200963bb4743c>
+foreign import ccall unsafe "Z3_mk_set_union"
+    z3_mk_set_union :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8a8abff0ebe6aeeaa6c919eaa013049d>
+foreign import ccall unsafe "Z3_mk_set_intersect"
+    z3_mk_set_intersect :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb49c62f70b8198362e1a29ba6d8bde1>
+foreign import ccall unsafe "Z3_mk_set_difference"
+    z3_mk_set_difference :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5c57143c9229cdf730c5103ff696590f>
+foreign import ccall unsafe "Z3_mk_set_complement"
+    z3_mk_set_complement :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gac6e516f3dce0bdd41095c6d6daf56063>
+foreign import ccall unsafe "Z3_mk_set_member"
+    z3_mk_set_member :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga139c5803af0e86464adc7cedc53e7f3a>
+foreign import ccall unsafe "Z3_mk_set_subset"
+    z3_mk_set_subset :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 ---------------------------------------------------------------------
 -- * Numerals
