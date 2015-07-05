@@ -1,6 +1,16 @@
 
 # Release Notes
 
+## 4.1.0
+
+Small maintenance release that however introduces one API breaking change.
+
+* Added bindings for the _Set_ API. (Nadia Polikarpova)
+* Replace the now deprecated Z3_eval with Z3_model_eval.
+
+This latter change  breaks the API by changing the type of ```modelEval```
+which now takes an extra ```Bool``` parameter to force model completion.
+
 ## 4.0.0
 
 This release brings support for the new Z3 4.x API,
