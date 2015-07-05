@@ -173,7 +173,7 @@ module Z3.Monad
   , mkConstArray
   , mkMap
   , mkArrayDefault
-  
+
   -- * Sets
   , mkEmptySet
   , mkFullSet
@@ -1184,13 +1184,13 @@ mkEmptySet = liftFun1 Base.mkEmptySet
 mkFullSet :: MonadZ3 z3 => Sort -> z3 AST
 mkFullSet = liftFun1 Base.mkFullSet
 
--- | Add an element to a set. 
+-- | Add an element to a set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga856c3d0e28ce720f53912c2bbdd76175>
 mkSetAdd :: MonadZ3 z3 => AST -> AST -> z3 AST
 mkSetAdd = liftFun2 Base.mkSetAdd
 
--- | Remove an element from a set. 
+-- | Remove an element from a set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga80e883f39dd3b88f9d0745c8a5b91d1d>
 mkSetDel :: MonadZ3 z3 => AST -> AST -> z3 AST
@@ -1207,14 +1207,14 @@ mkSetUnion = liftFun1 Base.mkSetUnion
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8a8abff0ebe6aeeaa6c919eaa013049d>
 mkSetIntersect :: MonadZ3 z3 => [AST] -> z3 AST
 mkSetIntersect = liftFun1 Base.mkSetIntersect
-    
+
 -- | Take the set difference between two sets.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gabb49c62f70b8198362e1a29ba6d8bde1>
 mkSetDifference :: MonadZ3 z3 => AST -> AST -> z3 AST
 mkSetDifference = liftFun2 Base.mkSetDifference
 
--- | Take the complement of a set. 
+-- | Take the complement of a set.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5c57143c9229cdf730c5103ff696590f>
 mkSetComplement :: MonadZ3 z3 => AST -> z3 AST
