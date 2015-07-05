@@ -1791,14 +1791,16 @@ getBv c a signed = getInt c =<< mkBv2int c a signed
 modelEval :: Context
             -> Model  -- ^ Model /m/.
             -> AST    -- ^ Expression to evaluate /t/.
+            -> Bool   -- ^ Model completion?
             -> IO (Maybe AST)
-modelEval ctx m a =
+modelEval ctx m a b =
   withContext ctx $ \ctxPtr ->
   alloca $ \aptr2 ->
     h2c a $ \astPtr ->
     h2c m $ \mPtr ->
+    h2c b $ \b' ->
     checkError ctxPtr $
-      z3_eval ctxPtr mPtr astPtr aptr2 >>= peekAST aptr2 . toBool
+      z3_model_eval ctxPtr mPtr astPtr b' aptr2 >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
@@ -1910,9 +1912,9 @@ showModel = modelToString
 -- reasons, see 'modelEval'.
 type EvalAst a = Model -> AST -> IO (Maybe a)
 
--- | An alias for 'modelEval'.
+-- | An alias for 'modelEval' with model completion enabled.
 eval :: Context -> EvalAst AST
-eval = modelEval
+eval ctx m a = modelEval ctx m a True
 
 -- | Evaluate an AST node of sort /bool/ in the given model.
 --
@@ -2629,4 +2631,3 @@ unBool False = z3_false
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
-
