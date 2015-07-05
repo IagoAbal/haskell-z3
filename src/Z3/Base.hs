@@ -212,7 +212,7 @@ module Z3.Base (
   , mkConstArray
   , mkMap
   , mkArrayDefault
-  
+
   -- * Sets
   , mkEmptySet
   , mkFullSet
@@ -694,11 +694,11 @@ mkDatatype c sym consList = withContextError c $ \cPtr ->
   marshalArrayLen consList $ \ n consPtrs -> checkError cPtr $ do
     sortPtr <- z3_mk_datatype cPtr (unSymbol sym) n consPtrs
     c2h c sortPtr
-    
+
 -- | Create an set type with a given domain type
 mkSetSort :: Context -> Sort -> IO Sort
 mkSetSort = liftFun1 z3_mk_set_sort
-    
+
 
 -- TODO: from Z3_mk_constructor_list on
 
