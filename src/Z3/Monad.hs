@@ -1431,8 +1431,10 @@ getBv = liftFun2 Base.getBv
 --     * /t/ contains a quantifier.
 --     * the model /m/ is partial.
 --     * /t/ is type incorrect.
-modelEval :: MonadZ3 z3 => Model -> AST -> z3 (Maybe AST)
-modelEval = liftFun2 Base.modelEval
+modelEval :: MonadZ3 z3 => Model -> AST
+             -> Bool  -- ^ Model completion?
+             -> z3 (Maybe AST)
+modelEval = liftFun3 Base.modelEval
 
 -- | Get array as a list of argument/value pairs, if it is
 -- represented as a function (ie, using as-array).
@@ -1523,7 +1525,7 @@ showModel = modelToString
 -- reasons, see 'modelEval'.
 type EvalAst m a = Model -> AST -> m (Maybe a)
 
--- | An alias for 'modelEval'.
+-- | An alias for 'modelEval' with model completion enabled.
 eval :: MonadZ3 z3 => EvalAst z3 AST
 eval = liftFun2 Base.eval
 
