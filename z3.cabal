@@ -1,5 +1,5 @@
 Name:                z3
-Version:             4.0.0
+Version:             4.1.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the (now open source!) Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
