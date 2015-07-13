@@ -2574,32 +2574,32 @@ marshal f c cont = withContextError c $ \cPtr ->
 
 liftFun0 :: Marshal rh rc => (Ptr Z3_context -> IO rc) ->
               Context -> IO rh
-liftFun0 f c = withContextError c $ \cPtr ->
-  c2h c =<< f cPtr
+liftFun0 f c = withContext c $ \cPtr ->
+  c2h c =<< checkError cPtr (f cPtr)
 {-# INLINE liftFun0 #-}
 
 liftFun1 :: (Marshal ah ac, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> IO rc) ->
               Context -> ah -> IO rh
-liftFun1 f c x = withContextError c $ \cPtr ->
+liftFun1 f c x = withContext c $ \cPtr ->
   h2c x $ \a ->
-    c2h c =<< f cPtr a
+    c2h c =<< checkError cPtr (f cPtr a)
 {-# INLINE liftFun1 #-}
 
 liftFun2 :: (Marshal ah ac, Marshal bh bc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> IO rc) ->
               Context -> ah -> bh -> IO rh
-liftFun2 f c x y = withContextError c $ \cPtr ->
+liftFun2 f c x y = withContext c $ \cPtr ->
   h2c x $ \a -> h2c y $ \b ->
-    c2h c =<< f cPtr a b
+    c2h c =<< checkError cPtr (f cPtr a b)
 {-# INLINE liftFun2 #-}
 
 liftFun3 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> cc -> IO rc) ->
               Context -> ah -> bh -> ch -> IO rh
-liftFun3 f c x y z = withContextError c $ \cPtr ->
+liftFun3 f c x y z = withContext c $ \cPtr ->
   h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
-    c2h c =<< f cPtr x1 y1 z1
+    c2h c =<< checkError cPtr (f cPtr x1 y1 z1)
 {-# INLINE liftFun3 #-}
 
 ---------------------------------------------------------------------
