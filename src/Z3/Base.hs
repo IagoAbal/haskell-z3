@@ -649,9 +649,9 @@ mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
   marshalArray sorts $ \ sortsPtr ->
   alloca $ \ outConstrPtr ->
   allocaArray n $ \ outProjsPtr -> do
-    srtPtr <- z3_mk_tuple_sort cPtr symPtr
-                            (fromIntegral n) symsPtr sortsPtr
-                            outConstrPtr outProjsPtr
+    srtPtr <- checkError cPtr $ z3_mk_tuple_sort cPtr symPtr
+                                  (fromIntegral n) symsPtr sortsPtr
+                                  outConstrPtr outProjsPtr
     outConstr <- peek outConstrPtr
     outProjs  <- peekArray n outProjsPtr
     sort <- c2h c srtPtr
@@ -690,10 +690,8 @@ mkDatatype :: Context
            -> Symbol
            -> [Constructor]
            -> IO Sort
-mkDatatype c sym consList = withContextError c $ \cPtr ->
-  marshalArrayLen consList $ \ n consPtrs -> checkError cPtr $ do
-    sortPtr <- z3_mk_datatype cPtr (unSymbol sym) n consPtrs
-    c2h c sortPtr
+mkDatatype c sym consList = marshalArrayLen consList $ \ n consPtrs -> do
+  toHsCheckError c $ \cPtr -> checkError cPtr $ z3_mk_datatype cPtr (unSymbol sym) n consPtrs
 
 -- | Create an set type with a given domain type
 mkSetSort :: Context -> Sort -> IO Sort
@@ -1548,12 +1546,11 @@ getDatatypeSortConstructors :: Context
 getDatatypeSortConstructors c dtSort =
   withContextError c $ \cPtr ->
   h2c dtSort $ \dtSortPtr -> do
-  numCons <- z3_get_datatype_sort_num_constructors cPtr dtSortPtr
-  T.mapM (getConstructor cPtr dtSortPtr) [0..(numCons-1)]
+  numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
   where
-    getConstructor cPtr dtSortPtr idx = do
-      funcDeclPtr <- z3_get_datatype_sort_constructor cPtr dtSortPtr idx
-      c2h c funcDeclPtr
+    getConstructor dtSortPtr idx = do
+      toHsCheckError c $ \cPtr -> z3_get_datatype_sort_constructor cPtr dtSortPtr idx
 
 -- TODO: Needs proper review
 -- | Get list of recognizers for datatype.
@@ -1563,13 +1560,12 @@ getDatatypeSortRecognizers :: Context
 getDatatypeSortRecognizers c dtSort =
   withContextError c $ \cPtr ->
   h2c dtSort $ \dtSortPtr -> do
-  numCons <- z3_get_datatype_sort_num_constructors cPtr dtSortPtr
-  T.mapM (getConstructor cPtr dtSortPtr) [0..(numCons-1)]
+  numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
   where
     -- TODO: Maybe this should be renamed to getRecognizer :-)
-    getConstructor cPtr dtSortPtr idx = do
-      funcDeclPtr <- z3_get_datatype_sort_recognizer cPtr dtSortPtr idx
-      c2h c funcDeclPtr
+    getConstructor dtSortPtr idx = do
+      toHsCheckError c $ \cPtr -> z3_get_datatype_sort_recognizer cPtr dtSortPtr idx
 
 -- TODO: Z3_get_datatype_sort_constructor_accessor
 
@@ -1585,9 +1581,8 @@ getDatatypeSortRecognizers c dtSort =
 
 -- | Return the constant declaration name as a symbol.
 getDeclName :: Context -> FuncDecl -> IO Symbol
-getDeclName c decl = withContextError c $ \cPtr ->
-  h2c decl $ \declPtr ->
-    Symbol <$> z3_get_decl_name cPtr declPtr
+getDeclName c decl = h2c decl $ \declPtr ->
+  Symbol <$> withContextError c (\cPtr -> z3_get_decl_name cPtr declPtr)
 
 -- TODO: Z3_get_decl_kind
 
@@ -1637,9 +1632,8 @@ getSort = liftFun1 z3_get_sort
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
 -- otherwise.
 getBoolValue :: Context -> AST -> IO (Maybe Bool)
-getBoolValue c a = withContextError c $ \cPtr ->
-  h2c a $ \astPtr ->
-    castLBool <$> z3_get_bool_value cPtr astPtr
+getBoolValue c a = h2c a $ \astPtr ->
+  castLBool <$> withContextError c (\cPtr -> z3_get_bool_value cPtr astPtr)
   where castLBool :: Z3_lbool -> Maybe Bool
         castLBool lb
           | lb == z3_l_true  = Just True
@@ -1799,8 +1793,8 @@ modelEval ctx m a b =
     h2c a $ \astPtr ->
     h2c m $ \mPtr ->
     h2c b $ \b' ->
-    checkError ctxPtr $
-      z3_model_eval ctxPtr mPtr astPtr b' aptr2 >>= peekAST aptr2 . toBool
+    checkError ctxPtr
+      (z3_model_eval ctxPtr mPtr astPtr b' aptr2) >>= peekAST aptr2 . toBool
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
@@ -2308,9 +2302,8 @@ mkSimpleSolver :: Context -> IO Solver
 mkSimpleSolver = liftFun0 z3_mk_simple_solver
 
 mkSolverForLogic :: Context -> Logic -> IO Solver
-mkSolverForLogic c logic = withContextError c $ \cPtr ->
-  do sym <- mkStringSymbol c (show logic)
-     c2h c =<< z3_mk_solver_for_logic cPtr (unSymbol sym)
+mkSolverForLogic c logic = mkStringSymbol c (show logic) >>= \sym ->
+  toHsCheckError c $ \cPtr -> z3_mk_solver_for_logic cPtr $ unSymbol sym
 
 -- | Return a string describing all solver available parameters.
 solverGetHelp :: Context -> Solver -> IO String
@@ -2424,6 +2417,10 @@ liftAstN _ f c es = marshal f c $ marshalArrayLen es
 class Marshal h c where
   c2h :: Context -> c -> IO h
   h2c :: h -> (c -> IO r) -> IO r
+
+toHsCheckError :: Marshal h c => Context -> (Ptr Z3_context -> IO c) -> IO h
+toHsCheckError c f = withContext c $ \cPtr ->
+  c2h c =<< checkError cPtr (f cPtr)
 
 hs2cs :: Marshal h c => [h] -> ([c] -> IO r) -> IO r
 hs2cs []     f = f []
@@ -2569,37 +2566,32 @@ instance Marshal Solver (Ptr Z3_solver) where
 
 marshal :: Marshal rh rc => (Ptr Z3_context -> t) ->
               Context -> (t -> IO rc) -> IO rh
-marshal f c cont = withContextError c $ \cPtr ->
-  cont (f cPtr) >>= c2h c
+marshal f c cont = toHsCheckError c $ \cPtr -> cont $ f cPtr
 
 liftFun0 :: Marshal rh rc => (Ptr Z3_context -> IO rc) ->
               Context -> IO rh
-liftFun0 f c = withContext c $ \cPtr ->
-  c2h c =<< checkError cPtr (f cPtr)
+liftFun0 = flip toHsCheckError
 {-# INLINE liftFun0 #-}
 
 liftFun1 :: (Marshal ah ac, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> IO rc) ->
               Context -> ah -> IO rh
-liftFun1 f c x = withContext c $ \cPtr ->
-  h2c x $ \a ->
-    c2h c =<< checkError cPtr (f cPtr a)
+liftFun1 f c x = h2c x $ \a ->
+  toHsCheckError c $ \cPtr -> f cPtr a
 {-# INLINE liftFun1 #-}
 
 liftFun2 :: (Marshal ah ac, Marshal bh bc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> IO rc) ->
               Context -> ah -> bh -> IO rh
-liftFun2 f c x y = withContext c $ \cPtr ->
-  h2c x $ \a -> h2c y $ \b ->
-    c2h c =<< checkError cPtr (f cPtr a b)
+liftFun2 f c x y = h2c x $ \a -> h2c y $ \b ->
+  toHsCheckError c $ \cPtr -> f cPtr a b
 {-# INLINE liftFun2 #-}
 
 liftFun3 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal rh rc) =>
               (Ptr Z3_context -> ac -> bc -> cc -> IO rc) ->
               Context -> ah -> bh -> ch -> IO rh
-liftFun3 f c x y z = withContext c $ \cPtr ->
-  h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
-    c2h c =<< checkError cPtr (f cPtr x1 y1 z1)
+liftFun3 f c x y z = h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
+  toHsCheckError c $ \cPtr -> f cPtr x1 y1 z1
 {-# INLINE liftFun3 #-}
 
 ---------------------------------------------------------------------
