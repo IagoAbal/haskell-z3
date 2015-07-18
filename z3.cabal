@@ -110,6 +110,8 @@ Test-suite spec
 
     Main-is:            Spec.hs
 
+    Other-modules:      Z3.Base.Spec
+
     Build-depends:      base >= 4.5,
                         z3 == 4.*,
                         hspec >= 2.1,
