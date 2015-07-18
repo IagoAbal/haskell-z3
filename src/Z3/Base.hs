@@ -691,7 +691,7 @@ mkDatatype :: Context
            -> [Constructor]
            -> IO Sort
 mkDatatype c sym consList = marshalArrayLen consList $ \ n consPtrs -> do
-  toHsCheckError c $ \cPtr -> checkError cPtr $ z3_mk_datatype cPtr (unSymbol sym) n consPtrs
+  toHsCheckError c $ \cPtr -> z3_mk_datatype cPtr (unSymbol sym) n consPtrs
 
 -- | Create an set type with a given domain type
 mkSetSort :: Context -> Sort -> IO Sort
