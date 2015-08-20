@@ -222,6 +222,8 @@ module Z3.Monad
   , getAstKind
   , toApp
   , getNumeralString
+  , simplify
+  , simplifyEx
   -- ** Helpers
   , getBool
   , getInt
@@ -1397,6 +1399,18 @@ toApp = liftFun1 Base.toApp
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: MonadZ3 z3 => AST -> z3 String
 getNumeralString = liftFun1 Base.getNumeralString
+
+-- | Simplify the expression.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gada433553406475e5dd6a494ea957844c>
+simplify :: MonadZ3 z3 => AST -> z3 AST
+simplify = liftFun1 Base.simplify
+
+-- | Simplify the expression using the given parameters.
+--
+-- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga34329d4c83ca8c98e18b2884b679008c>
+simplifyEx :: MonadZ3 z3 => AST -> Params -> z3 AST
+simplifyEx = liftFun2 Base.simplifyEx
 
 -------------------------------------------------
 -- ** Helpers
