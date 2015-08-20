@@ -815,6 +815,14 @@ foreign import ccall unsafe "Z3_to_app"
 foreign import ccall unsafe "Z3_pattern_to_ast"
   z3_pattern_to_ast :: Ptr Z3_context -> Ptr Z3_pattern -> IO (Ptr Z3_ast)
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gada433553406475e5dd6a494ea957844c>
+foreign import ccall unsafe "Z3_simplify"
+  z3_simplify :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga34329d4c83ca8c98e18b2884b679008c>
+foreign import ccall unsafe "Z3_simplify_ex"
+  z3_simplify_ex :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_params -> IO (Ptr Z3_ast)
+
 -- TODO Modifiers
 
 ---------------------------------------------------------------------

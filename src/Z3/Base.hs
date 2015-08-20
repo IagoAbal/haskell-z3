@@ -261,6 +261,8 @@ module Z3.Base (
   , getAstKind
   , toApp
   , getNumeralString
+  , simplify
+  , simplifyEx
   -- ** Helpers
   , getBool
   , getInt
@@ -1725,9 +1727,11 @@ getNumeralString = liftFun1 z3_get_numeral_string
 
 -- TODO: Z3_get_quantifier_body
 
--- TODO: Z3_simplify
+simplify :: Context -> AST -> IO AST
+simplify = liftFun1 z3_simplify
 
--- TODO: Z3_simplify_ex
+simplifyEx :: Context -> AST -> Params -> IO AST
+simplifyEx = liftFun2 z3_simplify_ex
 
 -- TODO: Z3_simplify_get_help
 
