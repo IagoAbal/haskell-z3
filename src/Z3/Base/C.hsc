@@ -751,6 +751,10 @@ foreign import ccall unsafe "Z3_func_decl_to_ast"
 foreign import ccall unsafe "Z3_get_ast_kind"
     z3_get_ast_kind :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_ast_kind
 
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga87a4f9add28db792a24476a1082b4fe4>
+foreign import ccall unsafe "Z3_is_app"
+    z3_is_app :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae8ad520b79b46c323863bacffa0e12c0>
 foreign import ccall unsafe "Z3_get_app_num_args"
     z3_get_app_num_args :: Ptr Z3_context -> Ptr Z3_app -> IO CUInt
