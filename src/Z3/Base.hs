@@ -256,9 +256,14 @@ module Z3.Base (
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDeclName
+  , appToAst
+  , getAppDecl
+  , getAppNumArgs
+  , getAppArg
   , getSort
   , getBoolValue
   , getAstKind
+  , isApp
   , toApp
   , getNumeralString
   , simplify
@@ -1610,13 +1615,21 @@ getDeclName c decl = h2c decl $ \declPtr ->
 
 -- TODO: Z3_get_decl_rational_parameter
 
--- TODO: Z3_app_to_ast
+-- | Convert an app into AST. This is just type casting.
+appToAst :: Context -> App -> IO AST
+appToAst = liftFun1 z3_app_to_ast
 
--- TODO: Z3_get_app_decl
+-- | Return the declaration of a constant or function application.
+getAppDecl :: Context -> App -> IO FuncDecl
+getAppDecl = liftFun1 z3_get_app_decl
 
--- TODO: Z3_get_app_num_args
+-- | Return the number of argument of an application. If t is an constant, then the number of arguments is 0.
+getAppNumArgs :: Context -> App -> IO Word
+getAppNumArgs = liftFun1 z3_get_app_num_args
 
--- TODO: Z3_get_app_arg
+-- | Return the i-th argument of the given application.
+getAppArg :: Context -> App -> Word -> IO AST
+getAppArg = liftFun2 z3_get_app_arg
 
 -- TODO: Z3_is_eq_ast
 
@@ -1659,7 +1672,9 @@ getAstKind ctx ast = toAstKind <$> liftFun1 z3_get_ast_kind ctx ast
           | otherwise                 =
               error "Z3.Base.getAstKind: unknown `Z3_ast_kind'"
 
--- TODO: Z3_is_app
+-- | Return True if an ast is APP_AST, False otherwise.
+isApp :: Context -> AST -> IO Bool
+isApp = liftFun1 z3_is_app
 
 -- TODO: Z3_is_numeral_ast
 
