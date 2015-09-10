@@ -1624,11 +1624,11 @@ getAppDecl :: Context -> App -> IO FuncDecl
 getAppDecl = liftFun1 z3_get_app_decl
 
 -- | Return the number of argument of an application. If t is an constant, then the number of arguments is 0.
-getAppNumArgs :: Context -> App -> IO Word
+getAppNumArgs :: Context -> App -> IO Int
 getAppNumArgs = liftFun1 z3_get_app_num_args
 
 -- | Return the i-th argument of the given application.
-getAppArg :: Context -> App -> Word -> IO AST
+getAppArg :: Context -> App -> Int -> IO AST
 getAppArg = liftFun2 z3_get_app_arg
 
 -- TODO: Z3_is_eq_ast

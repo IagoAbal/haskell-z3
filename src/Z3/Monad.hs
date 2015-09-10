@@ -217,9 +217,14 @@ module Z3.Monad
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDeclName
+  , appToAst
+  , getAppDecl
+  , getAppNumArgs
+  , getAppArg
   , getSort
   , getBoolValue
   , getAstKind
+  , isApp
   , toApp
   , getNumeralString
   , simplify
@@ -1376,6 +1381,22 @@ getDatatypeSortRecognizers = liftFun1 Base.getDatatypeSortRecognizers
 getDeclName :: MonadZ3 z3 => FuncDecl -> z3 Symbol
 getDeclName = liftFun1 Base.getDeclName
 
+-- | Convert an app into AST. This is just type casting.
+appToAst :: MonadZ3 z3 => App -> z3 AST
+appToAst = liftFun1 Base.appToAst
+
+-- | Return the declaration of a constant or function application.
+getAppDecl :: MonadZ3 z3 => App -> z3 FuncDecl
+getAppDecl = liftFun1 Base.getAppDecl
+
+-- | Return the number of argument of an application. If t is an constant, then the number of arguments is 0.
+getAppNumArgs :: MonadZ3 z3 => App -> z3 Int
+getAppNumArgs = liftFun1 Base.getAppNumArgs
+
+-- | Return the i-th argument of the given application.
+getAppArg :: MonadZ3 z3 => App -> Int -> z3 AST
+getAppArg = liftFun2 Base.getAppArg
+
 -- | Return the sort of an AST node.
 getSort :: MonadZ3 z3 => AST -> z3 Sort
 getSort = liftFun1 Base.getSort
@@ -1391,6 +1412,10 @@ getBoolValue = liftFun1 Base.getBoolValue
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4c43608feea4cae363ef9c520c239a5c>
 getAstKind :: MonadZ3 z3 => AST -> z3 ASTKind
 getAstKind = liftFun1 Base.getAstKind
+
+-- | Return True if an ast is APP_AST, False otherwise.
+isApp :: MonadZ3 z3 => AST -> z3 Bool
+isApp = liftFun1 Base.isApp
 
 -- | Cast AST into an App.
 toApp :: MonadZ3 z3 => AST -> z3 App
