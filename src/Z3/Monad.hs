@@ -1398,17 +1398,9 @@ getAppNumArgs = liftFun1 Base.getAppNumArgs
 getAppArg :: MonadZ3 z3 => App -> Int -> z3 AST
 getAppArg = liftFun2 Base.getAppArg
 
--- | Return a list of all the arguments
+-- | Return a list of all the arguments of the given application.
 getAppArgs :: MonadZ3 z3 => App -> z3 [AST]
-getAppArgs a = do
-  n <- getAppNumArgs a
-  getAppArgs' 0 n where
-    getAppArgs' :: MonadZ3 z3 => Int -> Int -> z3 [AST]
-    getAppArgs' i n | i >= n    = return []
-                    | otherwise = do
-                      ai <- getAppArg a i
-                      as <- getAppArgs' (i + 1) n
-                      return (ai : as)
+getAppArgs = liftFun1 Base.getAppArgs
 
 -- | Return the sort of an AST node.
 getSort :: MonadZ3 z3 => AST -> z3 Sort
