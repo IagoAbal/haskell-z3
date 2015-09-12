@@ -260,6 +260,7 @@ module Z3.Base (
   , getAppDecl
   , getAppNumArgs
   , getAppArg
+  , getAppArgs
   , getSort
   , getBoolValue
   , getAstKind
@@ -1630,6 +1631,12 @@ getAppNumArgs = liftFun1 z3_get_app_num_args
 -- | Return the i-th argument of the given application.
 getAppArg :: Context -> App -> Int -> IO AST
 getAppArg = liftFun2 z3_get_app_arg
+
+-- | Return a list of all the arguments of the given application.
+getAppArgs :: Context -> App -> IO [AST]
+getAppArgs ctx a = do
+  n <- getAppNumArgs ctx a
+  T.forM [0..n-1] (getAppArg ctx a)
 
 -- TODO: Z3_is_eq_ast
 
