@@ -221,6 +221,7 @@ module Z3.Monad
   , getAppDecl
   , getAppNumArgs
   , getAppArg
+  , getAppArgs
   , getSort
   , getBoolValue
   , getAstKind
@@ -1396,6 +1397,18 @@ getAppNumArgs = liftFun1 Base.getAppNumArgs
 -- | Return the i-th argument of the given application.
 getAppArg :: MonadZ3 z3 => App -> Int -> z3 AST
 getAppArg = liftFun2 Base.getAppArg
+
+-- | Return a list of all the arguments
+getAppArgs :: MonadZ3 z3 => App -> z3 [AST]
+getAppArgs a = do
+  n <- getAppNumArgs a
+  getAppArgs' 0 n where
+    getAppArgs' :: MonadZ3 z3 => Int -> Int -> z3 [AST]
+    getAppArgs' i n | i >= n    = return []
+                    | otherwise = do
+                      ai <- getAppArg a i
+                      as <- getAppArgs' (i + 1) n
+                      return (ai : as)
 
 -- | Return the sort of an AST node.
 getSort :: MonadZ3 z3 => AST -> z3 Sort
