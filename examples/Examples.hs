@@ -7,6 +7,7 @@ import qualified Example.Monad.DataTypes
 import qualified Example.Monad.FuncModel
 import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
+import qualified Example.Monad.Interpolation
 
 import System.Environment
 
@@ -28,6 +29,9 @@ examples =
     )
   , ("tuple"
     , Example.Monad.Tuple.run
+    )
+  , ("interpolation"
+    , Example.Monad.Interpolation.run
     )
   ]
 
