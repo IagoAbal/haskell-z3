@@ -98,6 +98,14 @@ Executable examples
   Hs-source-dirs:      examples
   Main-Is:             Examples.hs
 
+  Other-Modules:       Example.Monad.Queens4
+                       Example.Monad.Queens4All
+                       Example.Monad.DataTypes
+                       Example.Monad.FuncModel
+                       Example.Monad.ToSMTLib
+                       Example.Monad.Tuple
+                       Example.Monad.Interpolation
+
 Test-suite spec
 
     Type:               exitcode-stdio-1.0

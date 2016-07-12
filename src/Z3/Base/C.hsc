@@ -1014,6 +1014,52 @@ foreign import ccall unsafe "Z3_params_to_string"
     z3_params_to_string :: Ptr Z3_context -> Ptr Z3_params -> IO Z3_string
 
 ---------------------------------------------------------------------
+-- * Interpolation
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga0d5e342cd83ed43185bcfdc583513959>
+foreign import ccall unsafe "Z3_mk_interpolant"
+    z3_mk_interpolant :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1fd3d3fe7bc4426c4787c3cc8cf92864>
+foreign import ccall unsafe "Z3_mk_interpolation_context"
+    z3_mk_interpolation_context :: Ptr Z3_config -> IO (Ptr Z3_context)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad4417737993c62d39a6624118427f506>
+foreign import ccall unsafe "Z3_get_interpolant"
+    z3_get_interpolant :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast
+                       -> Ptr Z3_params -> IO (Ptr Z3_ast_vector)
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf62f6b456349886273e15d3cfe8656fe>
+foreign import ccall unsafe "Z3_compute_interpolant"
+    z3_compute_interpolant :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_params
+                           -> Ptr (Ptr Z3_ast_vector) -> Ptr (Ptr Z3_model)
+                           -> IO Z3_lbool
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2bf6a92d53d65fc32163792bedd5d31f>
+foreign import ccall unsafe "Z3_read_interpolation_problem"
+    z3_read_interpolation_problem :: Ptr Z3_context -> Ptr CUInt -> Ptr (Ptr Z3_ast)
+                                  -> Ptr (Ptr CUInt) -> Ptr CChar -> Ptr Z3_string
+                                  -- TODO: report "inexact" result type
+                                  -> Ptr CUInt -> Ptr (Ptr Z3_ast) -> IO Z3_bool
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gadf50d7093abe5a892593baef552bbf89>
+foreign import ccall unsafe "Z3_check_interpolant"
+    z3_check_interpolant :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> Ptr CUInt
+                         -> Ptr (Ptr Z3_ast) -> Ptr Z3_string -> CUInt
+                         -- TODO: report "inexact" result type
+                         -> Ptr (Ptr Z3_ast) -> IO Z3_lbool
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gad45c5746cd1eefe4f2fc6df956c9cd8e>
+foreign import ccall unsafe "Z3_interpolation_profile"
+    z3_interpolation_profile :: Ptr Z3_context -> IO Z3_string
+
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga2a8ee59130e23e10568a1f70e387c608>
+foreign import ccall unsafe "Z3_write_interpolation_problem"
+    z3_write_interpolation_problem :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast)
+                                   -> Ptr CUInt -> Ptr CChar -> CUInt
+                                   -> Ptr (Ptr Z3_ast) -> IO ()
+
+---------------------------------------------------------------------
 -- * Solvers
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga5735499ef0b46846c5d45982eaa0e74c>
