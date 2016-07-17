@@ -880,11 +880,13 @@ mkXor = liftFun2 z3_mk_xor
 
 -- | Create an AST node representing args[0] and ... and args[num_args-1].
 mkAnd :: Context -> [AST] -> IO AST
-mkAnd = liftAstN "Z3.Base.mkAnd: empty list of expressions" z3_mk_and
+mkAnd ctx [] = mkTrue ctx
+mkAnd ctx as = marshal z3_mk_and ctx $ marshalArrayLen as
 
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
 mkOr :: Context -> [AST] -> IO AST
-mkOr = liftAstN "Z3.Base.mkOr: empty list of expressions" z3_mk_or
+mkOr ctx [] = mkFalse ctx
+mkOr ctx os = marshal z3_mk_or ctx $ marshalArrayLen os
 
 -------------------------------------------------
 -- ** Helpers
