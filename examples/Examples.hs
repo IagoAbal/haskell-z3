@@ -5,6 +5,7 @@ import qualified Example.Monad.Queens4
 import qualified Example.Monad.Queens4All
 import qualified Example.Monad.DataTypes
 import qualified Example.Monad.FuncModel
+import qualified Example.Monad.MutuallyRecursive
 import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
 import qualified Example.Monad.Interpolation
@@ -23,6 +24,9 @@ examples =
     )
   , ("funcmodel"
     , Example.Monad.FuncModel.run
+    )
+  , ("mutuallyrecursive"
+    , Example.Monad.MutuallyRecursive.run
     )
   , ("smtlib"
     , Example.Monad.ToSMTLib.run

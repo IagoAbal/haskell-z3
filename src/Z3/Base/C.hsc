@@ -52,6 +52,8 @@ data Z3_pattern
 
 data Z3_constructor
 
+data Z3_constructor_list
+
 data Z3_model
 
 data Z3_func_interp
@@ -226,7 +228,7 @@ foreign import ccall unsafe "Z3_mk_tuple_sort"
                      -> Ptr (Ptr Z3_func_decl)
                      -> IO (Ptr Z3_sort)
 
--- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
+-- | Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
 foreign import ccall unsafe "Z3_mk_constructor"
     z3_mk_constructor :: Ptr Z3_context
                       -> Ptr Z3_symbol
@@ -237,19 +239,40 @@ foreign import ccall unsafe "Z3_mk_constructor"
                       -> Ptr CUInt
                       -> IO (Ptr Z3_constructor)
 
--- Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga63816efdbce93734c72f395b6a6a9e35>
+-- | Reference <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga63816efdbce93734c72f395b6a6a9e35>
 foreign import ccall unsafe "Z3_del_constructor"
     z3_del_constructor :: Ptr Z3_context -> Ptr Z3_constructor -> IO ()
 
-
--- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab6809d53327d807da9158abdf75df387>
+-- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gab6809d53327d807da9158abdf75df387>
 foreign import ccall unsafe "Z3_mk_datatype"
     z3_mk_datatype :: Ptr Z3_context
                    -> Ptr Z3_symbol
                    -> CUInt
                    -> Ptr (Ptr Z3_constructor)
                    -> IO (Ptr Z3_sort)
-                   
+
+-- | Reference <http://z3prover.github.io/api/html/group__capi.html#gac9305d5d4eb1ce68d17300f5af19fafd>
+foreign import ccall unsafe "Z3_mk_constructor_list"
+    z3_mk_constructor_list :: Ptr Z3_context
+                           -> CUInt
+                           -> Ptr (Ptr Z3_constructor)
+                           -> IO (Ptr Z3_constructor_list)
+
+-- | Reference <http://z3prover.github.io/api/html/group__capi.html#gaa7a2e823e23fdfba407ea5088c8d1709>
+foreign import ccall unsafe "Z3_del_constructor_list"
+    z3_del_constructor_list :: Ptr Z3_context
+                            -> Ptr (Z3_constructor_list)
+                            -> IO ()
+
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gac9305d5d4eb1ce68d17300f5af19fafd>
+foreign import ccall unsafe "Z3_mk_datatypes"
+    z3_mk_datatypes :: Ptr Z3_context
+                    -> CUInt
+                    -> Ptr (Ptr Z3_symbol)
+                    -> Ptr (Ptr Z3_sort)
+                    -> Ptr (Ptr Z3_constructor_list)
+                    -> IO ()
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga6865879523e7e882d7e50a2d8445ac8b>
 foreign import ccall unsafe "Z3_mk_set_sort"
     z3_mk_set_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)

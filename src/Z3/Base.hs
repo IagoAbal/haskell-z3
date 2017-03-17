@@ -105,6 +105,7 @@ module Z3.Base (
   , mkTupleSort
   , mkConstructor
   , mkDatatype
+  , mkDatatypes
   , mkSetSort
 
   -- * Constants and Applications
@@ -422,6 +423,10 @@ newtype Pattern = Pattern { unPattern :: ForeignPtr Z3_pattern }
 newtype Constructor = Constructor { unConstructor :: ForeignPtr Z3_constructor }
     deriving (Eq, Ord, Show)
 
+-- | A list of type contructors for (recursive) datatypes.
+newtype ConstructorList = ConstructorList { unConstructorList :: ForeignPtr Z3_constructor_list }
+    deriving (Eq, Ord, Show)
+
 -- | A model for the constraints asserted into the logical context.
 newtype Model = Model { unModel :: ForeignPtr Z3_model }
     deriving Eq
@@ -715,12 +720,37 @@ mkDatatype :: Context
 mkDatatype c sym consList = marshalArrayLen consList $ \ n consPtrs -> do
   toHsCheckError c $ \cPtr -> z3_mk_datatype cPtr (unSymbol sym) n consPtrs
 
+-- | Create list of constructors
+mkConstructorList :: Context                      -- ^ Context
+                  -> [Constructor]                -- ^ List of Constructors
+                  -> IO ConstructorList
+mkConstructorList c consList = marshalArrayLen consList $ \ n consPtrs -> do
+  toHsCheckError c $ \cPtr -> z3_mk_constructor_list cPtr n consPtrs
+
+-- | Create mutually recursive datatypes, such as a tree and forest.
+--
+-- Returns the datatype sorts
+mkDatatypes :: Context
+            -> [Symbol]
+            -> [[Constructor]]
+            -> IO ([Sort])
+mkDatatypes c syms consLists =
+  if length consLists == n then do
+    consLists' <- mapM (mkConstructorList c) consLists
+
+    withContextError c $ \cPtr ->
+      marshalArrayLen syms $ \ symLen symsPtr ->
+        marshalArray consLists' $ \ consPtr ->
+          allocaArray n $ \ sortsPtr -> do
+            z3_mk_datatypes cPtr symLen symsPtr sortsPtr consPtr
+            peekArrayToHs c n sortsPtr
+    else
+      error "Z3.Base.mkDatatypes: lists of different length"
+  where n = length syms
+
 -- | Create an set type with a given domain type
 mkSetSort :: Context -> Sort -> IO Sort
 mkSetSort = liftFun1 z3_mk_set_sort
-
-
--- TODO: from Z3_mk_constructor_list on
 
 ---------------------------------------------------------------------
 -- * Constants and Applications
@@ -2745,6 +2775,10 @@ instance Marshal Pattern (Ptr Z3_pattern) where
 instance Marshal Constructor (Ptr Z3_constructor) where
   c2h = mkC2hRefCount Constructor dummy_inc_ref z3_del_constructor
   h2c cns = withForeignPtr (unConstructor cns)
+
+instance Marshal ConstructorList (Ptr Z3_constructor_list) where
+  c2h = mkC2hRefCount ConstructorList dummy_inc_ref z3_del_constructor_list
+  h2c cl = withForeignPtr (unConstructorList cl)
 
 instance Marshal Solver (Ptr Z3_solver) where
   c2h = mkC2hRefCount Solver z3_solver_inc_ref z3_solver_dec_ref
