@@ -102,6 +102,7 @@ Executable examples
                        Example.Monad.Queens4All
                        Example.Monad.DataTypes
                        Example.Monad.FuncModel
+                       Example.Monad.MutuallyRecursive
                        Example.Monad.ToSMTLib
                        Example.Monad.Tuple
                        Example.Monad.Interpolation
