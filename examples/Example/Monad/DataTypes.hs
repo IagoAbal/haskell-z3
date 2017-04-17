@@ -63,3 +63,29 @@ datatypeScript = do
   mkNot p5 >>= assert
   check >>= liftIO . print
   pop 1
+
+  liftIO $ putStrLn "we expect a = cons(x, cons(y, nil)), x = y != Nil"
+
+  [isNil, isCons] <- getDatatypeSortRecognizers cell
+  [[], [car, cdr]] <- getDatatypeSortConstructorAccessors cell
+
+  a <- mkFreshConst "a" cell
+  b <- mkApp cdr [a]
+  c <- mkApp cdr [b]
+
+  carA <- mkApp car [a]
+  carB <- mkApp car [b]
+
+  push
+  mkApp isCons [a] >>= assert
+  mkApp isCons [b] >>= assert
+  mkApp isNil [c] >>= assert
+
+  mkApp isCons [carA] >>= assert
+  mkEq carA carB >>= assert
+
+  (ch, m) <- getModel
+
+  case m of Just m' -> showModel m' >>= liftIO . putStrLn
+            otherwise -> liftIO . print $ ch
+  pop 1
