@@ -41,6 +41,7 @@ module Z3.Monad
   , FuncEntry
   , Params
   , Solver
+  , SortKind(..)
   , ASTKind(..)
   -- ** Satisfiability result
   , Result(..)
@@ -215,10 +216,15 @@ module Z3.Monad
 
   -- * Accessors
   , getSymbolString
+  , getSortKind
   , getBvSortSize
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
+  , getDatatypeSortConstructorAccessors
   , getDeclName
+  , getArity
+  , getDomain
+  , getRange
   , appToAst
   , getAppDecl
   , getAppNumArgs
@@ -343,6 +349,7 @@ import Z3.Base
   , Version(..)
   , Params
   , Solver
+  , SortKind(..)
   , ASTKind(..)
   )
 import qualified Z3.Base as Base
@@ -1387,6 +1394,12 @@ mkExists = liftFun4 Base.mkExists
 getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
 getSymbolString = liftFun1 Base.getSymbolString
 
+-- | Return the sort kind.
+--
+-- Reference: <http://z3prover.github.io/api/html/group__capi.html#gacd85d48842c7bfaa696596d16875681a>
+getSortKind :: MonadZ3 z3 => Sort -> z3 SortKind
+getSortKind = liftFun1 Base.getSortKind
+
 -- | Return the size of the given bit-vector sort.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
@@ -1405,11 +1418,32 @@ getDatatypeSortRecognizers :: MonadZ3 z3
                            -> z3 [FuncDecl]  -- ^ Constructor recognizers.
 getDatatypeSortRecognizers = liftFun1 Base.getDatatypeSortRecognizers
 
+-- | Get list of accessors for datatype.
+getDatatypeSortConstructorAccessors :: MonadZ3 z3
+                           => Sort           -- ^ Datatype sort.
+                           -> z3 [[FuncDecl]]  -- ^ Constructor recognizers.
+getDatatypeSortConstructorAccessors = liftFun1 Base.getDatatypeSortConstructorAccessors
+
 -- | Return the constant declaration name as a symbol.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga741b1bf11cb92aa2ec9ef2fef73ff129>
 getDeclName :: MonadZ3 z3 => FuncDecl -> z3 Symbol
 getDeclName = liftFun1 Base.getDeclName
+
+-- | Returns the number of parameters of the given declaration
+getArity :: MonadZ3 z3 => FuncDecl -> z3 Int
+getArity = liftFun1 Base.getArity
+
+-- | Returns the sort of the i-th parameter of the given function declaration
+getDomain :: MonadZ3 z3
+             => FuncDecl         -- ^ A function declaration
+             -> Int              -- ^ i
+             -> z3 Sort
+getDomain = liftFun2 Base.getDomain
+
+-- | Returns the range of the given declaration.
+getRange :: MonadZ3 z3 => FuncDecl -> z3 Sort
+getRange = liftFun1 Base.getRange
 
 -- | Convert an app into AST. This is just type casting.
 appToAst :: MonadZ3 z3 => App -> z3 AST

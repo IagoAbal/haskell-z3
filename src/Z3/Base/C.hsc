@@ -120,6 +120,34 @@ type Z3_error_code = CInt
   , z3_exception         = Z3_EXCEPTION
   }
 
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga4cd6ad05aba48f4b679f0c13310ed2a4>
+type Z3_sort_kind = CInt
+z3_uninterpreted_sort :: Z3_sort_kind
+z3_uninterpreted_sort = #const Z3_UNINTERPRETED_SORT
+z3_bool_sort :: Z3_sort_kind
+z3_bool_sort = #const Z3_BOOL_SORT
+z3_int_sort :: Z3_sort_kind
+z3_int_sort = #const Z3_INT_SORT
+z3_real_sort :: Z3_sort_kind
+z3_real_sort = #const Z3_REAL_SORT
+z3_bv_sort :: Z3_sort_kind
+z3_bv_sort = #const Z3_BV_SORT
+z3_array_sort :: Z3_sort_kind
+z3_array_sort = #const Z3_ARRAY_SORT
+z3_datatype_sort :: Z3_sort_kind
+z3_datatype_sort = #const Z3_DATATYPE_SORT
+z3_relation_sort :: Z3_sort_kind
+z3_relation_sort = #const Z3_RELATION_SORT
+z3_finite_domain_sort :: Z3_sort_kind
+z3_finite_domain_sort = #const Z3_FINITE_DOMAIN_SORT
+z3_floating_point_sort :: Z3_sort_kind
+z3_floating_point_sort = #const Z3_FLOATING_POINT_SORT
+z3_rounding_mode_sort :: Z3_sort_kind
+z3_rounding_mode_sort = #const Z3_ROUNDING_MODE_SORT
+z3_unknown_sort :: Z3_sort_kind
+z3_unknown_sort = #const Z3_UNKNOWN_SORT
+
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga015148ad21a032e79a496629651dedb8>
 type Z3_ast_kind = CInt
 z3_numeral_ast :: Z3_ast_kind
@@ -814,6 +842,10 @@ foreign import ccall unsafe "Z3_get_decl_name"
 foreign import ccall unsafe "Z3_get_symbol_string"
     z3_get_symbol_string :: Ptr Z3_context -> Ptr Z3_symbol -> IO Z3_string
 
+-- Reference: <http://z3prover.github.io/api/html/group__capi.html#gacd85d48842c7bfaa696596d16875681a>
+foreign import ccall unsafe "Z3_get_sort_kind"
+    z3_get_sort_kind :: Ptr Z3_context -> Ptr Z3_sort -> IO Z3_sort_kind
+
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 foreign import ccall unsafe "Z3_get_bv_sort_size"
     z3_get_bv_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
@@ -833,6 +865,18 @@ foreign import ccall unsafe "Z3_get_bool_value"
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga94617ef18fa7157e1a3f85db625d2f4b>
 foreign import ccall unsafe "Z3_get_numeral_string"
     z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
+
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga203f32e3b904955f703f61f91a8626a4>
+foreign import ccall unsafe "Z3_get_arity"
+    z3_get_arity :: Ptr Z3_context -> Ptr Z3_func_decl -> IO CUInt
+
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gad025402a9cac1a8d8facddba3f8cbddc>
+foreign import ccall unsafe "Z3_get_domain"
+    z3_get_domain :: Ptr Z3_context -> Ptr Z3_func_decl -> CUInt -> IO (Ptr Z3_sort)
+
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga913ecf28cd4bddc8255f77f80b6aafe9>
+foreign import ccall unsafe "Z3_get_range"
+    z3_get_range :: Ptr Z3_context -> Ptr Z3_func_decl -> IO (Ptr Z3_sort)
 
 -- | Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
 foreign import ccall unsafe "Z3_to_app"

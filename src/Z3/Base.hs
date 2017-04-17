@@ -68,6 +68,7 @@ module Z3.Base (
   , FuncEntry
   , Params
   , Solver
+  , SortKind(..)
   , ASTKind(..)
   -- ** Satisfiability result
   , Result(..)
@@ -253,10 +254,15 @@ module Z3.Base (
 
   -- * Accessors
   , getSymbolString
+  , getSortKind
   , getBvSortSize
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
+  , getDatatypeSortConstructorAccessors
   , getDeclName
+  , getArity
+  , getDomain
+  , getRange
   , appToAst
   , getAppDecl
   , getAppNumArgs
@@ -462,6 +468,22 @@ data Result
     | Undef
     deriving (Eq, Ord, Read, Show)
 
+-- | Different kinds of Z3 types.
+data SortKind
+    = Z3_UNINTERPRETED_SORT
+    | Z3_BOOL_SORT
+    | Z3_INT_SORT
+    | Z3_REAL_SORT
+    | Z3_BV_SORT
+    | Z3_ARRAY_SORT
+    | Z3_DATATYPE_SORT
+    | Z3_RELATION_SORT
+    | Z3_FINITE_DOMAIN_SORT
+    | Z3_FLOATING_POINT_SORT
+    | Z3_ROUNDING_MODE_SORT
+    | Z3_UNKNOWN_SORT
+    deriving (Eq, Show)
+
 -- | Different kinds of Z3 AST nodes.
 data ASTKind
     = Z3_NUMERAL_AST
@@ -471,6 +493,7 @@ data ASTKind
     | Z3_SORT_AST
     | Z3_FUNC_DECL_AST
     | Z3_UNKNOWN_AST
+    deriving (Eq, Show)
 
 ---------------------------------------------------------------------
 -- * Configuration
@@ -1574,7 +1597,25 @@ getSymbolString = liftFun1 z3_get_symbol_string
 
 -- TODO: Z3_is_eq_sort
 
--- TODO: Z3_get_sort_kind
+-- | Return the sort kind of the given sort.
+getSortKind :: Context -> Sort -> IO SortKind
+getSortKind ctx sort = toSortKind <$> liftFun1 z3_get_sort_kind ctx sort
+  where toSortKind :: Z3_sort_kind -> SortKind
+        toSortKind k
+          | k == z3_uninterpreted_sort      = Z3_UNINTERPRETED_SORT
+          | k == z3_bool_sort               = Z3_BOOL_SORT
+          | k == z3_int_sort                = Z3_INT_SORT
+          | k == z3_real_sort               = Z3_REAL_SORT
+          | k == z3_bv_sort                 = Z3_BV_SORT
+          | k == z3_array_sort              = Z3_ARRAY_SORT
+          | k == z3_datatype_sort           = Z3_DATATYPE_SORT
+          | k == z3_relation_sort           = Z3_RELATION_SORT
+          | k == z3_finite_domain_sort      = Z3_FINITE_DOMAIN_SORT
+          | k == z3_floating_point_sort     = Z3_FLOATING_POINT_SORT
+          | k == z3_rounding_mode_sort      = Z3_ROUNDING_MODE_SORT
+          | k == z3_unknown_sort            = Z3_UNKNOWN_SORT
+          | otherwise                 =
+              error "Z3.Base.getSortKind: unknown `Z3_sort_kind'"
 
 -- | Return the size of the given bit-vector sort.
 getBvSortSize :: Context -> Sort -> IO Int
@@ -1592,7 +1633,6 @@ getBvSortSize = liftFun1 z3_get_bv_sort_size
 
 -- TODO: Z3_get_tuple_sort_field_decl
 
--- TODO: Needs proper review
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: Context
                             -> Sort           -- ^ Datatype sort.
@@ -1600,13 +1640,12 @@ getDatatypeSortConstructors :: Context
 getDatatypeSortConstructors c dtSort =
   withContextError c $ \cPtr ->
   h2c dtSort $ \dtSortPtr -> do
-  numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
-  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+    numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+    T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
   where
-    getConstructor dtSortPtr idx = do
+    getConstructor dtSortPtr idx =
       toHsCheckError c $ \cPtr -> z3_get_datatype_sort_constructor cPtr dtSortPtr idx
 
--- TODO: Needs proper review
 -- | Get list of recognizers for datatype.
 getDatatypeSortRecognizers :: Context
                            -> Sort           -- ^ Datatype sort.
@@ -1614,14 +1653,34 @@ getDatatypeSortRecognizers :: Context
 getDatatypeSortRecognizers c dtSort =
   withContextError c $ \cPtr ->
   h2c dtSort $ \dtSortPtr -> do
-  numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
-  T.mapM (getConstructor dtSortPtr) [0..(numCons-1)]
+    numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+    T.mapM (getRecognizer dtSortPtr) [0..(numCons-1)]
   where
-    -- TODO: Maybe this should be renamed to getRecognizer :-)
-    getConstructor dtSortPtr idx = do
+    getRecognizer dtSortPtr idx =
       toHsCheckError c $ \cPtr -> z3_get_datatype_sort_recognizer cPtr dtSortPtr idx
 
--- TODO: Z3_get_datatype_sort_constructor_accessor
+-- | Get list of accessors for the datatype constructor.
+getDatatypeSortConstructorAccessors :: Context
+                                    -> Sort             -- ^ Datatype sort.
+                                    -> IO [[FuncDecl]]  -- ^ Constructor accessors.
+getDatatypeSortConstructorAccessors c dtSort =
+  withContextError c $ \cPtr ->
+  h2c dtSort $ \dtSortPtr -> do
+    numCons <- checkError cPtr $ z3_get_datatype_sort_num_constructors cPtr dtSortPtr
+    T.mapM (getAccessors dtSortPtr) [0..(numCons-1)]
+  where
+    getConstructor dtSortPtr idx_c =
+      withContext c $ \cPtr -> z3_get_datatype_sort_constructor cPtr dtSortPtr idx_c
+
+    getAccessors dtSortPtr idx_c = do
+      consPtr <- getConstructor dtSortPtr idx_c
+      numAs <- toHsCheckError c $ \cPtr -> z3_get_arity cPtr consPtr
+      if numAs > 0  -- NB: (0::CUInt) - 1 == 0
+        then T.mapM (\idx_a -> getAccessors' dtSortPtr idx_c idx_a) [0..(numAs - 1)]
+        else return []
+
+    getAccessors' dtSortPtr idx_c idx_a =
+      toHsCheckError c $ \cPtr -> z3_get_datatype_sort_constructor_accessor cPtr dtSortPtr idx_c idx_a
 
 -- TODO: Z3_get_relation_arity
 
@@ -1642,7 +1701,20 @@ getDeclName c decl = h2c decl $ \declPtr ->
 
 -- TODO: Z3_get_domain_size
 
--- TODO: Z3_get_range
+-- | Returns the number of parameters of the given declaration
+getArity :: Context -> FuncDecl -> IO Int
+getArity = liftFun1 z3_get_arity
+
+-- | Returns the sort of the i-th parameter of the given function declaration
+getDomain :: Context
+             -> FuncDecl         -- ^ A function declaration
+             -> Int              -- ^ i
+             -> IO Sort
+getDomain = liftFun2 z3_get_domain
+
+-- | Returns the range of the given declaration.
+getRange :: Context -> FuncDecl -> IO Sort
+getRange = liftFun1 z3_get_range
 
 -- TODO: Z3_get_decl_num_parameters
 
