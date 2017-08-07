@@ -13,7 +13,7 @@
 -- Low-level bindings to Z3 API.
 --
 -- There is (mostly) a one-to-one correspondence with Z3 C API, thus see
--- <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html>
+-- <http://z3prover.github.io/api/html/group__capi.html>
 -- for further details.
 
 {- HACKING
@@ -1468,7 +1468,7 @@ mkPattern c es = marshal z3_mk_pattern c $ marshalArrayLen es
 --
 -- Bound variables are indexed by de-Bruijn indices.
 --
--- See <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1d4da8849fca699b345322f8ee1fa31e>
+-- See <http://z3prover.github.io/api/html/group__capi.html#ga1d4da8849fca699b345322f8ee1fa31e>
 mkBound :: Context
             -> Int    -- ^ de-Bruijn index.
             -> Sort
