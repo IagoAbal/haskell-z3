@@ -2220,7 +2220,7 @@ data Z3Error = Z3Error
   deriving Typeable
 
 instance Show Z3Error where
-  show (Z3Error _ s) = s
+  show (Z3Error _ s) = "Z3 error: " ++ s
 
 -- | Z3 error codes.
 data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
