@@ -11,11 +11,10 @@ import qualified Data.Traversable as T
 import Z3.Monad
 
 run :: IO ()
-run = evalZ3With Nothing opts script >>= \mbSol ->
+run = evalZ3 script >>= \mbSol ->
         case mbSol of
              Nothing  -> error "No solution found."
              Just sol -> putStr "Solution: " >> print sol
-  where opts = opt "MODEL" True +? opt "MODEL_COMPLETION" True
 
 script :: Z3 (Maybe [Integer])
 script = do
