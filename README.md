@@ -72,9 +72,8 @@ Here is an example script that solves the 4-queen puzzle:
 In order to run this SMT script:
 
     main :: IO ()
-    main = evalZ3With Nothing opts script >>= \mbSol ->
+    main = evalZ3 script >>= \mbSol ->
             case mbSol of
                  Nothing  -> error "No solution found."
                  Just sol -> putStr "Solution: " >> print sol
-      where opts = opt "MODEL" True +? opt "MODEL_COMPLETION" True
 
