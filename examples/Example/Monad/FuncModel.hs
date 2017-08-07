@@ -26,6 +26,8 @@ toRetType (FuncModel fs elsePart) =
 
 -- * Arrays
 
+-- FIXME: This script crashes when calling 'convertArr', which mysteriously now
+-- returns 'Nothing'. It seems that 'isAsArray' is returning 'False' for 'a1'.
 arrayScript :: Z3 (RetType, RetType)
 arrayScript =
     do intSort <- mkIntSort

@@ -12,10 +12,9 @@ import Z3.Monad
 
 run :: IO ()
 run = do
-  sols <- evalZ3With Nothing opts script
+  sols <- evalZ3 script
   putStrLn "Solutions: "
   mapM_ print sols
-  where opts = opt "MODEL" True +? opt "MODEL_COMPLETION" True
 
 
 type Solution = [Integer]
