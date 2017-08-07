@@ -1,8 +1,8 @@
 Name:                z3
-Version:             4.1.0
+Version:             4.1.1
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
-    Bindings for the (now open source!) Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
+    Bindings for the Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
     .
     * "Z3.Base.C" provides the raw foreign imports from Z3's C API.
     .
@@ -29,7 +29,7 @@ License-file:        LICENSE
 Author:              Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
 Maintainer:          Iago Abal <mail@iagoabal.eu>
-Copyright:           2012-2015, Iago Abal, David Castro
+Copyright:           2012-2017, Iago Abal, David Castro
 Category:            Math, SMT, Theorem Provers, Formal Methods, Bit vectors
 Build-type:          Simple
 Cabal-version:       >= 1.8
