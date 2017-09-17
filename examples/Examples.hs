@@ -6,6 +6,8 @@ import qualified Example.Monad.Queens4All
 import qualified Example.Monad.DataTypes
 import qualified Example.Monad.FuncModel
 import qualified Example.Monad.MutuallyRecursive
+import qualified Example.Monad.Quantifiers
+import qualified Example.Monad.QuantifierElimination
 import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
 import qualified Example.Monad.Interpolation
@@ -22,20 +24,26 @@ examples =
   , ("datatypes"
     , Example.Monad.DataTypes.run
     )
-  , ("funcmodel"
+  , ("funcModel"
     , Example.Monad.FuncModel.run
     )
-  , ("mutuallyrecursive"
+  , ("interpolation"
+    , Example.Monad.Interpolation.run
+    )
+  , ("mutuallyRecursive"
     , Example.Monad.MutuallyRecursive.run
+    )
+  , ("quantifiers"
+    , Example.Monad.Quantifiers.run
+    )
+  , ("quantifierElimination"
+    , Example.Monad.QuantifierElimination.run
     )
   , ("smtlib"
     , Example.Monad.ToSMTLib.run
     )
   , ("tuple"
     , Example.Monad.Tuple.run
-    )
-  , ("interpolation"
-    , Example.Monad.Interpolation.run
     )
   ]
 

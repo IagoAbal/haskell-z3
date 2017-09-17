@@ -70,6 +70,9 @@ module Z3.Base (
   , Solver
   , SortKind(..)
   , ASTKind(..)
+  , Tactic
+  , ApplyResult
+  , Goal
   -- ** Satisfiability result
   , Result(..)
 
@@ -269,6 +272,8 @@ module Z3.Base (
   , getAppArg
   , getAppArgs
   , getSort
+  , getArraySortDomain
+  , getArraySortRange
   , getBoolValue
   , getAstKind
   , isApp
@@ -276,11 +281,29 @@ module Z3.Base (
   , getNumeralString
   , simplify
   , simplifyEx
+  , getIndexValue
+  , isQuantifierForall
+  , isQuantifierExists
+  , getQuantifierWeight
+  , getQuantifierNumPatterns
+  , getQuantifierPatternAST
+  , getQuantifierPatterns
+  , getQuantifierNumNoPatterns
+  , getQuantifierNoPatternAST
+  , getQuantifierNoPatterns
+  , getQuantifierNumBound
+  , getQuantifierBoundName
+  , getQuantifierBoundSort
+  , getQuantifierBoundVars
+  , getQuantifierBody
   -- ** Helpers
   , getBool
   , getInt
   , getReal
   , getBv
+
+  -- * Modifiers
+  , substituteVars
 
   -- * Models
   , modelEval
@@ -308,6 +331,24 @@ module Z3.Base (
   , evalT
   , FuncModel (..)
   , evalFunc
+
+  -- * Tactics
+  , mkTactic
+  , andThenTactic
+  , orElseTactic
+  , skipTactic
+  , tryForTactic
+  , mkQuantifierEliminationTactic
+  , mkAndInverterGraphTactic
+  , applyTactic
+  , getApplyResultNumSubgoals
+  , getApplyResultSubgoal
+  , getApplyResultSubgoals
+  , mkGoal
+  , goalAssert
+  , getGoalSize
+  , getGoalFormula
+  , getGoalFormulas
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -443,6 +484,18 @@ newtype FuncInterp = FuncInterp { unFuncInterp :: ForeignPtr Z3_func_interp }
 
 -- | Representation of the value of a 'Z3_func_interp' at a particular point.
 newtype FuncEntry = FuncEntry { unFuncEntry :: ForeignPtr Z3_func_entry }
+    deriving Eq
+
+-- | A tactic
+newtype Tactic = Tactic { unTactic :: ForeignPtr Z3_tactic }
+    deriving Eq
+
+-- | A goal (aka problem)
+newtype Goal = Goal { unGoal :: ForeignPtr Z3_goal }
+    deriving Eq
+
+-- | A result of applying a tactic
+newtype ApplyResult = ApplyResult { unApplyResult :: ForeignPtr Z3_apply_result }
     deriving Eq
 
 -- | A Z3 parameter set.
@@ -1625,7 +1678,11 @@ getBvSortSize = liftFun1 z3_get_bv_sort_size
 
 -- TODO: Z3_get_array_sort_size
 
--- TODO: Z3_get_array_sort_range
+getArraySortDomain :: Context -> Sort -> IO Sort
+getArraySortDomain = liftFun1 z3_get_array_sort_domain
+
+getArraySortRange :: Context -> Sort -> IO Sort
+getArraySortRange = liftFun1 z3_get_array_sort_range
 
 -- TODO: Z3_get_tuple_sort_mk_decl
 
@@ -1845,27 +1902,59 @@ getNumeralString = liftFun1 z3_get_numeral_string
 
 -- TODO: Z3_get_pattern
 
--- TODO: Z3_get_index_value
+getIndexValue :: Context -> AST -> IO Int
+getIndexValue = liftFun1 z3_get_index_value
 
--- TODO: Z3_is_quantifier_forall
+isQuantifierForall :: Context -> AST -> IO Bool
+isQuantifierForall = liftFun1 z3_is_quantifier_forall
 
--- TODO: Z3_get_quantifier_weight
+isQuantifierExists :: Context -> AST -> IO Bool
+isQuantifierExists ctx = fmap not . isQuantifierForall ctx
 
--- TODO: Z3_get_quantifier_num_patterns
+getQuantifierWeight :: Context -> AST -> IO Int
+getQuantifierWeight = liftFun1 z3_get_quantifier_weight
 
--- TODO: Z3_get_quantifier_pattern_ast
+getQuantifierNumPatterns :: Context -> AST -> IO Int
+getQuantifierNumPatterns = liftFun1 z3_get_quantifier_num_patterns
 
--- TODO: Z3_get_quantifier_num_no_patterns
+getQuantifierPatternAST :: Context -> AST -> Int -> IO AST
+getQuantifierPatternAST = liftFun2 z3_get_quantifier_pattern_ast
 
--- TODO: Z3_get_quantifier_no_pattern_ast
+getQuantifierPatterns :: Context -> AST -> IO [AST]
+getQuantifierPatterns ctx a = do
+  n <- getQuantifierNumPatterns ctx a
+  T.forM [0..n-1] (getQuantifierPatternAST ctx a)
 
--- TODO: Z3_get_quantifier_num_bound
+getQuantifierNumNoPatterns :: Context -> AST -> IO Int
+getQuantifierNumNoPatterns = liftFun1 z3_get_quantifier_num_no_patterns
 
--- TODO: Z3_get_quantifier_bound_name
+getQuantifierNoPatternAST :: Context -> AST -> Int -> IO AST
+getQuantifierNoPatternAST = liftFun2 z3_get_quantifier_no_pattern_ast
 
--- TODO: Z3_get_quantifier_bound_sort
+getQuantifierNoPatterns :: Context -> AST -> IO [AST]
+getQuantifierNoPatterns ctx a = do
+  n <- getQuantifierNumNoPatterns ctx a
+  T.forM [0..n-1] (getQuantifierNoPatternAST ctx a)
 
--- TODO: Z3_get_quantifier_body
+getQuantifierNumBound :: Context -> AST -> IO Int
+getQuantifierNumBound = liftFun1 z3_get_quantifier_num_bound
+
+getQuantifierBoundName :: Context -> AST -> Int -> IO Symbol
+getQuantifierBoundName = liftFun2 z3_get_quantifier_bound_name
+
+getQuantifierBoundSort :: Context -> AST -> Int -> IO Sort
+getQuantifierBoundSort = liftFun2 z3_get_quantifier_bound_sort
+
+getQuantifierBoundVars :: Context -> AST -> IO [AST]
+getQuantifierBoundVars ctx a = do
+  n <- getQuantifierNumBound ctx a
+  T.forM [0..n-1] $ \i -> do
+    b <- getQuantifierBoundName ctx a i
+    s <- getQuantifierBoundSort ctx a i
+    mkVar ctx b s
+
+getQuantifierBody :: Context -> AST -> IO AST
+getQuantifierBody = liftFun1 z3_get_quantifier_body
 
 simplify :: Context -> AST -> IO AST
 simplify = liftFun1 z3_simplify
@@ -1915,6 +2004,13 @@ getBv c a signed = getInt c =<< mkBv2int c a signed
 -- Modifiers
 
 -- TODO Modifiers
+
+substituteVars :: Context -> AST -> [AST] -> IO AST
+substituteVars ctx a vars =
+  marshal z3_substitute_vars ctx $ \f ->
+    h2c a $ \aPtr ->
+    marshalArrayLen vars $ \varsNum varsArr ->
+      f aPtr varsNum varsArr
 
 ---------------------------------------------------------------------
 -- Models
@@ -2200,6 +2296,61 @@ benchmarkToSMTLibString ctx name logic status attr assump form =
     marshalArrayLen assump $ \assumpNum assumpArr ->
     h2c form $ \formPtr ->
       f namePtr logicPtr statusPtr attrPtr assumpNum assumpArr formPtr
+
+---------------------------------------------------------------------
+-- Tactics
+
+mkTactic :: Context -> String -> IO Tactic
+mkTactic = liftFun1 z3_mk_tactic
+
+andThenTactic :: Context -> Tactic -> Tactic -> IO Tactic
+andThenTactic = liftFun2 z3_tactic_and_then
+
+orElseTactic :: Context -> Tactic -> Tactic -> IO Tactic
+orElseTactic = liftFun2 z3_tactic_or_else
+
+skipTactic :: Context -> IO Tactic
+skipTactic = liftFun0 z3_tactic_skip
+
+tryForTactic :: Context -> Tactic -> Int -> IO Tactic
+tryForTactic = liftFun2 z3_tactic_try_for
+
+mkQuantifierEliminationTactic :: Context -> IO Tactic
+mkQuantifierEliminationTactic ctx = mkTactic ctx "qe"
+
+mkAndInverterGraphTactic :: Context -> IO Tactic
+mkAndInverterGraphTactic ctx = mkTactic ctx "aig"
+
+applyTactic :: Context -> Tactic -> Goal -> IO ApplyResult
+applyTactic = liftFun2 z3_tactic_apply
+
+getApplyResultNumSubgoals :: Context -> ApplyResult -> IO Int
+getApplyResultNumSubgoals = liftFun1 z3_apply_result_get_num_subgoals
+
+getApplyResultSubgoal :: Context -> ApplyResult -> Int -> IO Goal
+getApplyResultSubgoal = liftFun2 z3_apply_result_get_subgoal
+
+getApplyResultSubgoals :: Context -> ApplyResult -> IO [Goal]
+getApplyResultSubgoals ctx a = do
+  n <- getApplyResultNumSubgoals ctx a
+  T.forM [0..n-1] (getApplyResultSubgoal ctx a)
+
+mkGoal :: Context -> Bool -> Bool -> Bool -> IO Goal
+mkGoal = liftFun3 z3_mk_goal
+
+goalAssert :: Context -> Goal -> AST -> IO ()
+goalAssert = liftFun2 z3_goal_assert
+
+getGoalSize :: Context -> Goal -> IO Int
+getGoalSize = liftFun1 z3_goal_size
+
+getGoalFormula :: Context -> Goal -> Int -> IO AST
+getGoalFormula = liftFun2 z3_goal_formula
+
+getGoalFormulas :: Context -> Goal -> IO [AST]
+getGoalFormulas ctx g = do
+  n <- getGoalSize ctx g
+  T.forM [0..n-1] (getGoalFormula ctx g)
 
 ---------------------------------------------------------------------
 -- Parser interface
@@ -2856,6 +3007,17 @@ instance Marshal Solver (Ptr Z3_solver) where
   c2h = mkC2hRefCount Solver z3_solver_inc_ref z3_solver_dec_ref
   h2c slv = withForeignPtr (unSolver slv)
 
+instance Marshal Tactic (Ptr Z3_tactic) where
+  c2h = mkC2hRefCount Tactic z3_tactic_inc_ref z3_tactic_dec_ref
+  h2c tac = withForeignPtr (unTactic tac)
+
+instance Marshal ApplyResult (Ptr Z3_apply_result) where
+  c2h = mkC2hRefCount ApplyResult z3_apply_result_inc_ref z3_apply_result_dec_ref
+  h2c apl = withForeignPtr (unApplyResult apl)
+
+instance Marshal Goal (Ptr Z3_goal) where
+  c2h = mkC2hRefCount Goal z3_goal_inc_ref z3_goal_dec_ref
+  h2c goa = withForeignPtr (unGoal goa)
 
 marshal :: Marshal rh rc => (Ptr Z3_context -> t) ->
               Context -> (t -> IO rc) -> IO rh

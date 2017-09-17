@@ -102,10 +102,12 @@ Executable examples
                        Example.Monad.Queens4All
                        Example.Monad.DataTypes
                        Example.Monad.FuncModel
+                       Example.Monad.Interpolation
                        Example.Monad.MutuallyRecursive
+                       Example.Monad.Quantifiers
+                       Example.Monad.QuantifierElimination
                        Example.Monad.ToSMTLib
                        Example.Monad.Tuple
-                       Example.Monad.Interpolation
 
 Test-suite spec
 

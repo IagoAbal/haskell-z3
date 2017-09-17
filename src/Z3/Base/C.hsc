@@ -56,6 +56,12 @@ data Z3_constructor_list
 
 data Z3_model
 
+data Z3_goal
+
+data Z3_tactic
+
+data Z3_apply_result
+
 data Z3_func_interp
 
 data Z3_func_entry
@@ -858,6 +864,14 @@ foreign import ccall unsafe "Z3_app_to_ast"
 foreign import ccall unsafe "Z3_get_sort"
     z3_get_sort :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_sort)
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6ffa46d55e4632d761db4dfae7441c09>
+foreign import ccall unsafe "Z3_get_array_sort_domain"
+    z3_get_array_sort_domain :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaa6f84f1b2b178f6fe5bc3b9a5762a73b>
+foreign import ccall unsafe "Z3_get_array_sort_range"
+    z3_get_array_sort_range :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
 foreign import ccall unsafe "Z3_get_bool_value"
     z3_get_bool_value :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_lbool
@@ -894,7 +908,52 @@ foreign import ccall unsafe "Z3_simplify"
 foreign import ccall unsafe "Z3_simplify_ex"
   z3_simplify_ex :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_params -> IO (Ptr Z3_ast)
 
--- TODO Modifiers
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac47b42af13aee024d34bb37ffaa0ad75>
+foreign import ccall unsafe "Z3_is_quantifier_forall"
+  z3_is_quantifier_forall :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaa5820368b5ae944bd17f10c2f8247c11>
+foreign import ccall unsafe "Z3_get_quantifier_weight"
+  z3_get_quantifier_weight :: Ptr Z3_context -> Ptr Z3_ast -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3e5cb3bd6e9b9de0d6e6a6e80eb36bba>
+foreign import ccall unsafe "Z3_get_quantifier_num_patterns"
+  z3_get_quantifier_num_patterns :: Ptr Z3_context -> Ptr Z3_ast -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gad48dd00ca5ebce768c66dca447f50037>
+foreign import ccall unsafe "Z3_get_quantifier_pattern_ast"
+  z3_get_quantifier_pattern_ast :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6b2c35b148f0bb05e9ebf8ab17c2b16e>
+foreign import ccall unsafe "Z3_get_quantifier_num_no_patterns"
+  z3_get_quantifier_num_no_patterns :: Ptr Z3_context -> Ptr Z3_ast -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga7b68758cbe05352eca541e4028f9a8d8>
+foreign import ccall unsafe "Z3_get_quantifier_no_pattern_ast"
+  z3_get_quantifier_no_pattern_ast :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac85bd38ea5c41ec9e0e956a8a1734a7d>
+foreign import ccall unsafe "Z3_get_quantifier_num_bound"
+  z3_get_quantifier_num_bound :: Ptr Z3_context -> Ptr Z3_ast -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3e6914c9186de8e588da66af78aa271f>
+foreign import ccall unsafe "Z3_get_quantifier_bound_name"
+  z3_get_quantifier_bound_name :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_symbol)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gae9a7280ad96d05c8266aad869efb9b25>
+foreign import ccall unsafe "Z3_get_quantifier_bound_sort"
+  z3_get_quantifier_bound_sort :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_sort)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga94b1bdd4d3351afc860f6cbd2a2ada9f>
+foreign import ccall unsafe "Z3_get_quantifier_body"
+  z3_get_quantifier_body :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+---------------------------------------------------------------------
+-- * Modifiers
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gad6e8afe205259b3d924f460d22665e90>
+foreign import ccall unsafe "Z3_substitute_vars"
+    z3_substitute_vars :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 ---------------------------------------------------------------------
 -- * AST vectors
@@ -1034,6 +1093,10 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 -- TODO Constraints: Z3_check_assumptions
 -- TODO Constraints: Z3_get_implied_equalities
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gab3c5c7eadcfd209eec72ec0ac0ad2e96>
+foreign import ccall unsafe "Z3_get_index_value"
+    z3_get_index_value :: Ptr Z3_context -> Ptr Z3_ast -> IO CUInt
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gaf36d49862a8c0d20dd5e6508eef5f8af>
 foreign import ccall unsafe "Z3_model_to_string"
     z3_model_to_string :: Ptr Z3_context -> Ptr Z3_model -> IO Z3_string
@@ -1125,6 +1188,81 @@ foreign import ccall unsafe "Z3_write_interpolation_problem"
     z3_write_interpolation_problem :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast)
                                    -> Ptr CUInt -> Ptr CChar -> CUInt
                                    -> Ptr (Ptr Z3_ast) -> IO ()
+
+---------------------------------------------------------------------
+-- * Tactics
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaa4b9d53ba194d2d3a8bb2f55bec7e78e>
+foreign import ccall unsafe "Z3_mk_tactic"
+    z3_mk_tactic :: Ptr Z3_context -> Ptr CChar -> IO (Ptr Z3_tactic)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf53dac8f6c9b615cd21b9a2eeb006005>
+foreign import ccall unsafe "Z3_tactic_and_then"
+    z3_tactic_and_then :: Ptr Z3_context -> Ptr Z3_tactic -> Ptr Z3_tactic -> IO (Ptr Z3_tactic)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gad9964357958dd12ab20f0b315ddc219b>
+foreign import ccall unsafe "Z3_tactic_or_else"
+    z3_tactic_or_else :: Ptr Z3_context -> Ptr Z3_tactic -> Ptr Z3_tactic -> IO (Ptr Z3_tactic)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gab940c1401643ece97517ff27838313c4>
+foreign import ccall unsafe "Z3_tactic_skip"
+    z3_tactic_skip :: Ptr Z3_context -> IO (Ptr Z3_tactic)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac0670bd04fa76af71b2abbc2f8b62889>
+foreign import ccall unsafe "Z3_tactic_try_for"
+    z3_tactic_try_for :: Ptr Z3_context -> Ptr Z3_tactic -> CUInt -> IO (Ptr Z3_tactic)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gabd0874d8777b3bc426782a87c04206b9>
+foreign import ccall unsafe "Z3_tactic_inc_ref"
+    z3_tactic_inc_ref :: Ptr Z3_context -> Ptr Z3_tactic -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga8feaef3d36dcb136fa7812a8c10cf178>
+foreign import ccall unsafe "Z3_tactic_dec_ref"
+    z3_tactic_dec_ref :: Ptr Z3_context -> Ptr Z3_tactic -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac9e9da38d6a9acff293bc22bf0cf1a20>
+foreign import ccall unsafe "Z3_tactic_apply"
+    z3_tactic_apply :: Ptr Z3_context -> Ptr Z3_tactic -> Ptr Z3_goal -> IO (Ptr Z3_apply_result)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga1f182e7ef80015e8f2dcde219371aedc>
+foreign import ccall unsafe "Z3_apply_result_inc_ref"
+    z3_apply_result_inc_ref :: Ptr Z3_context -> Ptr Z3_apply_result -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac0fa60e39840a704f201ced90cde0ef9>
+foreign import ccall unsafe "Z3_apply_result_dec_ref"
+    z3_apply_result_dec_ref :: Ptr Z3_context -> Ptr Z3_apply_result -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga5ab8e77bdbfecc6f8845734cd7a729f7>
+foreign import ccall unsafe "Z3_apply_result_get_num_subgoals"
+    z3_apply_result_get_num_subgoals :: Ptr Z3_context -> Ptr Z3_apply_result -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac4f8342eed2de1c1caaa2fbf492439a9>
+foreign import ccall unsafe "Z3_apply_result_get_subgoal"
+    z3_apply_result_get_subgoal :: Ptr Z3_context -> Ptr Z3_apply_result -> CUInt -> IO (Ptr Z3_goal)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga631394a36c83a1e0db7825fe92d8aebe>
+foreign import ccall unsafe "Z3_mk_goal"
+    z3_mk_goal :: Ptr Z3_context -> Z3_bool -> Z3_bool -> Z3_bool -> IO (Ptr Z3_goal)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga63a581c33213fb14efe9e6175c74546b>
+foreign import ccall unsafe "Z3_goal_inc_ref"
+    z3_goal_inc_ref :: Ptr Z3_context -> Ptr Z3_goal -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gad65f4f9f7035b6eef161ee93bb694e52>
+foreign import ccall unsafe "Z3_goal_dec_ref"
+    z3_goal_dec_ref :: Ptr Z3_context -> Ptr Z3_goal -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3052a11993ce35250f108c365bc09ff7>
+foreign import ccall unsafe "Z3_goal_assert"
+    z3_goal_assert :: Ptr Z3_context -> Ptr Z3_goal -> Ptr Z3_ast -> IO ()
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga5badc99b0a1e154ef3cef17ff35fd021>
+foreign import ccall unsafe "Z3_goal_size"
+    z3_goal_size :: Ptr Z3_context -> Ptr Z3_goal -> IO CUInt
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaec43d4d20ed7e7bf4c7a57d37dc3bfc6>
+foreign import ccall unsafe "Z3_goal_formula"
+    z3_goal_formula :: Ptr Z3_context -> Ptr Z3_goal -> CUInt -> IO (Ptr Z3_ast)
 
 ---------------------------------------------------------------------
 -- * Solvers
