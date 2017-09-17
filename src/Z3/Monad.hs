@@ -231,6 +231,8 @@ module Z3.Monad
   , getAppArg
   , getAppArgs
   , getSort
+  , getArraySortDomain
+  , getArraySortRange
   , getBoolValue
   , getAstKind
   , isApp
@@ -238,11 +240,29 @@ module Z3.Monad
   , getNumeralString
   , simplify
   , simplifyEx
+  , getIndexValue
+  , isQuantifierForall
+  , isQuantifierExists
+  , getQuantifierWeight
+  , getQuantifierNumPatterns
+  , getQuantifierPatternAST
+  , getQuantifierPatterns
+  , getQuantifierNumNoPatterns
+  , getQuantifierNoPatternAST
+  , getQuantifierNoPatterns
+  , getQuantifierNumBound
+  , getQuantifierBoundName
+  , getQuantifierBoundSort
+  , getQuantifierBoundVars
+  , getQuantifierBody
   -- ** Helpers
   , getBool
   , getInt
   , getReal
   , getBv
+
+  -- * Modifiers
+  , substituteVars
 
   -- * Models
   , modelEval
@@ -270,6 +290,24 @@ module Z3.Monad
   , mapEval
   , FuncModel(..)
   , evalFunc
+
+  -- * Tactics
+  , mkTactic
+  , andThenTactic
+  , orElseTactic
+  , skipTactic
+  , tryForTactic
+  , mkQuantifierEliminationTactic
+  , mkAndInverterGraphTactic
+  , applyTactic
+  , getApplyResultNumSubgoals
+  , getApplyResultSubgoal
+  , getApplyResultSubgoals
+  , mkGoal
+  , goalAssert
+  , getGoalSize
+  , getGoalFormula
+  , getGoalFormulas
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -351,6 +389,9 @@ import Z3.Base
   , Solver
   , SortKind(..)
   , ASTKind(..)
+  , Tactic
+  , ApplyResult
+  , Goal
   )
 import qualified Z3.Base as Base
 
@@ -1469,6 +1510,12 @@ getAppArgs = liftFun1 Base.getAppArgs
 getSort :: MonadZ3 z3 => AST -> z3 Sort
 getSort = liftFun1 Base.getSort
 
+getArraySortDomain :: MonadZ3 z3 => Sort -> z3 Sort
+getArraySortDomain = liftFun1 Base.getArraySortDomain
+
+getArraySortRange :: MonadZ3 z3 => Sort -> z3 Sort
+getArraySortRange = liftFun1 Base.getArraySortRange
+
 -- | Returns @Just True@, @Just False@, or @Nothing@ for /undefined/.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
@@ -1492,6 +1539,51 @@ toApp = liftFun1 Base.toApp
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: MonadZ3 z3 => AST -> z3 String
 getNumeralString = liftFun1 Base.getNumeralString
+
+getIndexValue :: MonadZ3 z3 => AST -> z3 Int
+getIndexValue = liftFun1 Base.getIndexValue
+
+isQuantifierForall :: MonadZ3 z3 => AST -> z3 Bool
+isQuantifierForall = liftFun1 Base.isQuantifierForall
+
+isQuantifierExists :: MonadZ3 z3 => AST -> z3 Bool
+isQuantifierExists = liftFun1 Base.isQuantifierExists
+
+getQuantifierWeight :: MonadZ3 z3 => AST -> z3 Int
+getQuantifierWeight = liftFun1 Base.getQuantifierWeight
+
+getQuantifierNumPatterns :: MonadZ3 z3 => AST -> z3 Int
+getQuantifierNumPatterns = liftFun1 Base.getQuantifierNumPatterns
+
+getQuantifierPatternAST :: MonadZ3 z3 => AST -> Int -> z3 AST
+getQuantifierPatternAST = liftFun2 Base.getQuantifierPatternAST
+
+getQuantifierPatterns :: MonadZ3 z3 => AST -> z3 [AST]
+getQuantifierPatterns = liftFun1 Base.getQuantifierPatterns
+
+getQuantifierNumNoPatterns :: MonadZ3 z3 => AST -> z3 Int
+getQuantifierNumNoPatterns = liftFun1 Base.getQuantifierNumNoPatterns
+
+getQuantifierNoPatternAST :: MonadZ3 z3 => AST -> Int -> z3 AST
+getQuantifierNoPatternAST = liftFun2 Base.getQuantifierNoPatternAST
+
+getQuantifierNoPatterns :: MonadZ3 z3 => AST -> z3 [AST]
+getQuantifierNoPatterns = liftFun1 Base.getQuantifierNoPatterns
+
+getQuantifierNumBound :: MonadZ3 z3 => AST -> z3 Int
+getQuantifierNumBound = liftFun1 Base.getQuantifierNumBound
+
+getQuantifierBoundName :: MonadZ3 z3 => AST -> Int -> z3 Symbol
+getQuantifierBoundName = liftFun2 Base.getQuantifierBoundName
+
+getQuantifierBoundSort :: MonadZ3 z3 => AST -> Int -> z3 Sort
+getQuantifierBoundSort = liftFun2 Base.getQuantifierBoundSort
+
+getQuantifierBoundVars :: MonadZ3 z3 => AST -> z3 [AST]
+getQuantifierBoundVars = liftFun1 Base.getQuantifierBoundVars
+
+getQuantifierBody :: MonadZ3 z3 => AST -> z3 AST
+getQuantifierBody = liftFun1 Base.getQuantifierBody
 
 -- | Simplify the expression.
 --
@@ -1527,6 +1619,13 @@ getBv :: MonadZ3 z3 => AST
                     -> Bool  -- ^ signed?
                     -> z3 Integer
 getBv = liftFun2 Base.getBv
+
+
+---------------------------------------------------------------------
+-- Modifiers
+
+substituteVars :: MonadZ3 z3 => AST -> [AST] -> z3 AST
+substituteVars = liftFun2 Base.substituteVars
 
 ---------------------------------------------------------------------
 -- Models
@@ -1683,6 +1782,57 @@ mapEval f m = fmap T.sequence . T.mapM (f m)
 -- | Get function as a list of argument/value pairs.
 evalFunc :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncModel)
 evalFunc = liftFun2 Base.evalFunc
+
+---------------------------------------------------------------------
+-- Tactics
+
+mkTactic :: MonadZ3 z3 => String -> z3 Tactic
+mkTactic = liftFun1 Base.mkTactic
+
+andThenTactic :: MonadZ3 z3 => Tactic -> Tactic -> z3 Tactic
+andThenTactic = liftFun2 Base.andThenTactic
+
+orElseTactic :: MonadZ3 z3 => Tactic -> Tactic -> z3 Tactic
+orElseTactic = liftFun2 Base.andThenTactic
+
+skipTactic :: MonadZ3 z3 => z3 Tactic
+skipTactic = liftScalar Base.skipTactic
+
+tryForTactic :: MonadZ3 z3 => Tactic -> Int -> z3 Tactic
+tryForTactic = liftFun2 Base.tryForTactic
+
+mkQuantifierEliminationTactic :: MonadZ3 z3 => z3 Tactic
+mkQuantifierEliminationTactic = liftScalar Base.mkQuantifierEliminationTactic
+
+mkAndInverterGraphTactic :: MonadZ3 z3 => z3 Tactic
+mkAndInverterGraphTactic = liftScalar Base.mkAndInverterGraphTactic
+
+applyTactic :: MonadZ3 z3 => Tactic -> Goal -> z3 ApplyResult
+applyTactic = liftFun2 Base.applyTactic
+
+getApplyResultNumSubgoals :: MonadZ3 z3 => ApplyResult -> z3 Int
+getApplyResultNumSubgoals = liftFun1 Base.getApplyResultNumSubgoals
+
+getApplyResultSubgoal :: MonadZ3 z3 => ApplyResult -> Int -> z3 Goal
+getApplyResultSubgoal = liftFun2 Base.getApplyResultSubgoal
+
+getApplyResultSubgoals :: MonadZ3 z3 => ApplyResult -> z3 [Goal]
+getApplyResultSubgoals = liftFun1 Base.getApplyResultSubgoals
+
+mkGoal :: MonadZ3 z3 => Bool -> Bool -> Bool -> z3 Goal
+mkGoal = liftFun3 Base.mkGoal
+
+goalAssert :: MonadZ3 z3 => Goal -> AST -> z3 ()
+goalAssert = liftFun2 Base.goalAssert
+
+getGoalSize :: MonadZ3 z3 => Goal -> z3 Int
+getGoalSize = liftFun1 Base.getGoalSize
+
+getGoalFormula :: MonadZ3 z3 => Goal -> Int -> z3 AST
+getGoalFormula = liftFun2 Base.getGoalFormula
+
+getGoalFormulas :: MonadZ3 z3 => Goal -> z3 [AST]
+getGoalFormulas = liftFun1 Base.getGoalFormulas
 
 ---------------------------------------------------------------------
 -- String Conversion
