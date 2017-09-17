@@ -1,6 +1,13 @@
 
 # Release Notes
 
+## 4.1.2
+
+This minor release extends the supported quantifiers API, and adds
+partial support for Z3's proof tactics.
+
+* Improved support for theorem proving with quantifiers. (Jakub Daniel)
+
 ## 4.1.1
 
 Another small release, made possible thanks to third-party contributions.
