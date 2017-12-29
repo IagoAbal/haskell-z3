@@ -318,6 +318,11 @@ module Z3.Monad
   , funcDeclToString
   , benchmarkToSMTLibString
 
+  -- * Parser interface
+  , parseSMTLib2String
+  , parseSMTLib2File
+  , getParserError
+
   -- * Error Handling
   , Base.Z3Error(..)
   , Base.Z3ErrorCode(..)
@@ -432,6 +437,12 @@ liftFun3 f a b c = getContext >>= \ctx -> liftIO (f ctx a b c)
 liftFun4 :: MonadZ3 z3 => (Base.Context -> a -> b -> c -> d -> IO e)
                 -> a -> b -> c -> d -> z3 e
 liftFun4 f a b c d = getContext >>= \ctx -> liftIO (f ctx a b c d)
+
+liftFun5 :: MonadZ3 z3 =>
+              (Base.Context -> a1 -> a2 -> a3 -> a4 -> a5 -> IO b)
+                -> a1 -> a2 -> a3 -> a4 -> a5-> z3 b
+liftFun5 f x1 x2 x3 x4 x5 =
+  getContext >>= \ctx -> liftIO (f ctx x1 x2 x3 x4 x5)
 
 liftFun6 :: MonadZ3 z3 =>
               (Base.Context -> a1 -> a2 -> a3 -> a4 -> a5 -> a6 -> IO b)
@@ -1869,6 +1880,37 @@ benchmarkToSMTLibString :: MonadZ3 z3 =>
                             -> AST      -- ^ formula
                             -> z3 String
 benchmarkToSMTLibString = liftFun6 Base.benchmarkToSMTLibString
+
+
+---------------------------------------------------------------------
+-- Parser interface
+
+-- | Parse SMT expressions from a string
+--
+-- The sort and declaration arguments allow parsing in a context in which variables and functions have already been declared. They are almost never used.
+parseSMTLib2String :: MonadZ3 z3 =>
+                      String     -- ^ string to parse
+                   -> [Symbol]   -- ^ sort names
+                   -> [Sort]     -- ^ sorts
+                   -> [Symbol]   -- ^ declaration names
+                   -> [FuncDecl] -- ^ declarations
+                   -> z3 AST
+parseSMTLib2String = liftFun5 Base.parseSMTLib2String
+
+-- | Parse SMT expressions from a file
+--
+-- The sort and declaration arguments allow parsing in a context in which variables and functions have already been declared. They are almost never used.
+parseSMTLib2File :: MonadZ3 z3 =>
+                    String     -- ^ string to parse
+                 -> [Symbol]   -- ^ sort names
+                 -> [Sort]     -- ^ sorts
+                 -> [Symbol]   -- ^ declaration names
+                 -> [FuncDecl] -- ^ declarations
+                 -> z3 AST
+parseSMTLib2File = liftFun5 Base.parseSMTLib2File
+
+getParserError :: MonadZ3 z3 => z3 String
+getParserError = liftScalar Base.getParserError
 
 ---------------------------------------------------------------------
 -- Miscellaneous

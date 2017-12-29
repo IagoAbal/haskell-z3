@@ -359,6 +359,11 @@ module Z3.Base (
   , funcDeclToString
   , benchmarkToSMTLibString
 
+  -- * Parser interface
+  , parseSMTLib2String
+  , parseSMTLib2File
+  , getParserError
+
   -- * Error Handling
   , Z3Error(..)
   , Z3ErrorCode(..)
@@ -2352,7 +2357,41 @@ getGoalFormulas ctx g = do
 ---------------------------------------------------------------------
 -- Parser interface
 
--- TODO
+parseSMTLib2String :: Context
+                   -> String     -- ^ string to parse
+                   -> [Symbol]   -- ^ sort names
+                   -> [Sort]     -- ^ sorts
+                   -> [Symbol]   -- ^ declaration names
+                   -> [FuncDecl] -- ^ declarations
+                   -> IO AST
+parseSMTLib2String ctx str sortNames sorts declNames decls =
+  marshal z3_parse_smtlib2_string ctx $ \f ->
+    withCString str $ \cstr ->
+    marshalArrayLen sorts $ \sortNum sortArr ->
+    marshalArray sortNames $ \sortNameArr ->
+    marshalArrayLen decls $ \declNum declArr ->
+    marshalArray declNames $ \declNameArr ->
+      f cstr sortNum sortNameArr sortArr declNum declNameArr declArr
+
+parseSMTLib2File :: Context
+                 -> String     -- ^ file name
+                 -> [Symbol]   -- ^ sort names
+                 -> [Sort]     -- ^ sorts
+                 -> [Symbol]   -- ^ declaration names
+                 -> [FuncDecl] -- ^ declarations
+                 -> IO AST
+parseSMTLib2File ctx file sortNames sorts declNames decls =
+  marshal z3_parse_smtlib2_string ctx $ \f ->
+    withCString file $ \fileName ->
+    marshalArrayLen sorts $ \sortNum sortArr ->
+    marshalArray sortNames $ \sortNameArr ->
+    marshalArrayLen decls $ \declNum declArr ->
+    marshalArray declNames $ \declNameArr ->
+      f fileName sortNum sortNameArr sortArr declNum declNameArr declArr
+
+
+getParserError :: Context -> IO String
+getParserError = liftFun0 z3_get_parser_error
 
 ---------------------------------------------------------------------
 -- Error handling
