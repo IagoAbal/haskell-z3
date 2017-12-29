@@ -686,7 +686,7 @@ foreign import ccall unsafe "Z3_mk_full_set"
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga856c3d0e28ce720f53912c2bbdd76175>
 foreign import ccall unsafe "Z3_mk_set_add"
     z3_mk_set_add :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
-    
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga80e883f39dd3b88f9d0745c8a5b91d1d>
 foreign import ccall unsafe "Z3_mk_set_del"
     z3_mk_set_del :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -1378,6 +1378,37 @@ foreign import ccall unsafe "Z3_benchmark_to_smtlib_string"
                                       -> Ptr (Ptr Z3_ast) -- ^ assumptions
                                       -> Ptr Z3_ast       -- ^ formula
                                       -> IO Z3_string
+
+---------------------------------------------------------------------
+-- * Parser Interface
+
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga74e6e5107c4143be3929e80bdaf73d6d>
+foreign import ccall unsafe "Z3_parse_smtlib2_string"
+  z3_parse_smtlib2_string :: Ptr Z3_context
+                          -> Z3_string
+                          -> CUInt
+                          -> Ptr (Ptr Z3_symbol)
+                          -> Ptr (Ptr Z3_sort)
+                          -> CUInt
+                          -> Ptr (Ptr Z3_symbol)
+                          -> Ptr (Ptr Z3_func_decl)
+                          -> IO (Ptr Z3_ast)
+
+-- | Referece <http://z3prover.github.io/api/html/group__capi.html#ga6168be4babb03fbbccff1fa7df451300>
+foreign import ccall unsafe "Z3_parse_smtlib2_file"
+  z3_parse_smtlib2_file :: Ptr Z3_context
+                        -> Z3_string
+                        -> CUInt
+                        -> Ptr (Ptr Z3_symbol)
+                        -> Ptr (Ptr Z3_sort)
+                        -> CUInt
+                        -> Ptr (Ptr Z3_symbol)
+                        -> Ptr (Ptr Z3_func_decl)
+                        -> IO (Ptr Z3_ast)
+
+-- | Referece <http://z3prover.github.io/api/html/group__capi.html#ga96b11da43464071c4ec35418d1cc3483>
+foreign import ccall unsafe "Z3_get_parser_error"
+  z3_get_parser_error :: Ptr Z3_context -> IO Z3_string
 
 ---------------------------------------------------------------------
 -- * Error Handling
