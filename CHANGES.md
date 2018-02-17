@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 4.2.0
+
+This release removes support for SMT-LIB 1.x in order to be compatible with Z3 4.6.
+
 ## 4.1.2
 
 This minor release extends the supported quantifiers API, and adds
