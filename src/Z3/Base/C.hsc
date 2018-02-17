@@ -103,8 +103,6 @@ z3_print_smtlib_full :: Z3_ast_print_mode
 z3_print_smtlib_full = #const Z3_PRINT_SMTLIB_FULL
 z3_print_low_level :: Z3_ast_print_mode
 z3_print_low_level = #const Z3_PRINT_LOW_LEVEL
-z3_print_smtlib_compliant :: Z3_ast_print_mode
-z3_print_smtlib_compliant = #const Z3_PRINT_SMTLIB_COMPLIANT
 z3_print_smtlib2_compliant :: Z3_ast_print_mode
 z3_print_smtlib2_compliant = #const Z3_PRINT_SMTLIB2_COMPLIANT
 
