@@ -1006,6 +1006,55 @@ foreign import ccall unsafe "Z3_model_eval"
                   -> Ptr (Ptr Z3_ast)
                   -> IO Z3_bool
 
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga01bc2993f3eb358f7bd3b2d2d4cf5e51
+foreign import ccall unsafe "Z3_model_get_const_interp"
+    z3_model_get_const_interp :: Ptr Z3_context
+                             -> Ptr Z3_model
+                             -> Ptr Z3_func_decl
+                             -> IO (Ptr Z3_ast)
+
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#gaf5e9adb229e98b29cbeb7cebf41433a3
+foreign import ccall unsafe "Z3_model_get_func_interp"
+    z3_model_get_func_interp :: Ptr Z3_context
+                             -> Ptr Z3_model
+                             -> Ptr Z3_func_decl
+                             -> IO (Ptr Z3_func_interp)
+
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga3c7f8f6ce7c9f30710d3b73fa091f6b3
+foreign import ccall unsafe "Z3_model_has_interp"
+    z3_model_has_interp :: Ptr Z3_context
+                        -> Ptr Z3_model
+                        -> Ptr Z3_func_decl
+                        -> IO Z3_bool
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga3ff26c1c0f55d17ebf2c152a74eac743
+foreign import ccall unsafe "Z3_model_get_num_consts"
+    z3_model_get_num_consts :: Ptr Z3_context
+                            -> Ptr Z3_model
+                            -> IO CUInt
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#gaab062a06c0789b432885f4813dd9633b
+foreign import ccall unsafe "Z3_model_get_num_funcs"
+    z3_model_get_num_funcs :: Ptr Z3_context
+                           -> Ptr Z3_model
+                           -> IO CUInt
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga8e70ac56fe6748301b7776191395184a
+foreign import ccall unsafe "Z3_model_get_const_decl"
+    z3_model_get_const_decl :: Ptr Z3_context
+                            -> Ptr Z3_model
+                            -> CUInt
+                            -> IO (Ptr Z3_func_decl)
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga2a1a4524289574ae34ce2eecdade84d7
+foreign import ccall unsafe "Z3_model_get_func_decl"
+    z3_model_get_func_decl :: Ptr Z3_context
+                           -> Ptr Z3_model
+                           -> CUInt
+                           -> IO (Ptr Z3_func_decl)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 foreign import ccall unsafe "Z3_is_as_array"
     z3_is_as_array :: Ptr Z3_context
@@ -1018,12 +1067,21 @@ foreign import ccall unsafe "Z3_get_as_array_func_decl"
                               -> Ptr Z3_ast
                               -> IO (Ptr Z3_func_decl)
 
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
-foreign import ccall unsafe "Z3_model_get_func_interp"
-    z3_model_get_func_interp :: Ptr Z3_context
-                             -> Ptr Z3_model
-                             -> Ptr Z3_func_decl
-                             -> IO (Ptr Z3_func_interp)
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga1f30176bce864257bebb1fb30a103779
+foreign import ccall unsafe "Z3_add_func_interp"
+    z3_add_func_interp :: Ptr Z3_context
+                   -> Ptr Z3_model
+                   -> Ptr Z3_func_decl
+                   -> Ptr Z3_ast
+                   -> IO (Ptr Z3_func_interp)
+
+-- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga73b1de0ec17bb4f2e47d256a7628925c
+foreign import ccall unsafe "Z3_add_const_interp"
+    z3_add_const_interp :: Ptr Z3_context
+                   -> Ptr Z3_model
+                   -> Ptr Z3_func_decl
+                   -> Ptr Z3_ast
+                   -> IO ()
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga80218e1d50bdc4dac5ba18bd13a8ddfb>
 foreign import ccall unsafe "Z3_func_interp_inc_ref"

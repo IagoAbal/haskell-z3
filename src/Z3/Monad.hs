@@ -267,8 +267,18 @@ module Z3.Monad
   -- * Models
   , modelEval
   , evalArray
+  , getConstInterp
   , getFuncInterp
+  , hasInterp
+  , numConsts
+  , numFuncs
+  , getConstDecl
+  , getFuncDecl
+  , getConsts
+  , getFuncs
   , isAsArray
+  , addFuncInterp
+  , addConstInterp
   , getAsArrayFuncDecl
   , funcInterpGetNumEntries
   , funcInterpGetEntry
@@ -1658,6 +1668,9 @@ modelEval = liftFun3 Base.modelEval
 evalArray :: MonadZ3 z3 => Model -> AST -> z3 (Maybe FuncModel)
 evalArray = liftFun2 Base.evalArray
 
+getConstInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe AST)
+getConstInterp = liftFun2 Base.getConstInterp
+
 -- | Return the interpretation of the function f in the model m.
 -- Return NULL, if the model does not assign an interpretation for f.
 -- That should be interpreted as: the f does not matter.
@@ -1665,6 +1678,27 @@ evalArray = liftFun2 Base.evalArray
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gafb9cc5eca9564d8a849c154c5a4a8633>
 getFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncInterp)
 getFuncInterp = liftFun2 Base.getFuncInterp
+
+hasInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 Bool
+hasInterp = liftFun2 Base.hasInterp
+
+numConsts :: MonadZ3 z3 => Model -> z3 Word
+numConsts = liftFun1 Base.numConsts
+
+numFuncs :: MonadZ3 z3 => Model -> z3 Word
+numFuncs = liftFun1 Base.numFuncs
+
+getConstDecl :: MonadZ3 z3 => Model -> Word -> z3 FuncDecl
+getConstDecl = liftFun2 Base.getConstDecl
+
+getFuncDecl :: MonadZ3 z3 => Model -> Word -> z3 FuncDecl
+getFuncDecl = liftFun2 Base.getFuncDecl
+
+getConsts :: MonadZ3 z3 => Model -> z3 [FuncDecl]
+getConsts = liftFun1 Base.getConsts
+
+getFuncs :: MonadZ3 z3 => Model -> z3 [FuncDecl]
+getFuncs = liftFun1 Base.getFuncs
 
 -- | The (_ as-array f) AST node is a construct for assigning interpretations
 -- for arrays in Z3. It is the array such that forall indices i we have that
@@ -1674,6 +1708,13 @@ getFuncInterp = liftFun2 Base.getFuncInterp
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: MonadZ3 z3 => AST -> z3 Bool
 isAsArray = liftFun1 Base.isAsArray
+
+addFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> AST -> z3 FuncInterp
+addFuncInterp = liftFun3 Base.addFuncInterp
+
+addConstInterp :: MonadZ3 z3 => Model -> FuncDecl -> AST -> z3 ()
+addConstInterp = liftFun3 Base.addConstInterp
+
 
 -- | Return the function declaration f associated with a (_ as_array f) node.
 --

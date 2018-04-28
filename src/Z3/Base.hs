@@ -308,8 +308,18 @@ module Z3.Base (
   -- * Models
   , modelEval
   , evalArray
+  , getConstInterp
   , getFuncInterp
+  , hasInterp
+  , numConsts
+  , numFuncs
+  , getConstDecl
+  , getFuncDecl
+  , getConsts
+  , getFuncs
   , isAsArray
+  , addFuncInterp
+  , addConstInterp
   , getAsArrayFuncDecl
   , funcInterpGetNumEntries
   , funcInterpGetEntry
@@ -410,7 +420,7 @@ import Z3.Base.C
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
-import Control.Monad ( join, when, (>=>) )
+import Control.Monad ( join, when, (>=>), forM )
 import Data.Fixed ( Fixed, HasResolution )
 import Data.Int
 import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
@@ -2044,9 +2054,36 @@ modelEval ctx m a b =
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
 
--- TODO: Z3_model_get_const_interp
+getConstInterp :: Context -> Model -> FuncDecl -> IO (Maybe AST)
+getConstInterp ctx m fd = marshal z3_model_get_const_interp ctx $ \f ->
+  h2c m $ \mPtr ->
+  h2c fd $ \fdPtr ->
+    f mPtr fdPtr
 
--- TODO: Z3_model_has_interp
+hasInterp :: Context -> Model -> FuncDecl -> IO Bool
+hasInterp = liftFun2 z3_model_has_interp
+
+numConsts :: Context -> Model -> IO Word
+numConsts = liftFun1 z3_model_get_num_consts
+
+numFuncs :: Context -> Model -> IO Word
+numFuncs = liftFun1 z3_model_get_num_funcs
+
+getConstDecl :: Context -> Model -> Word -> IO FuncDecl
+getConstDecl = liftFun2 z3_model_get_const_decl
+
+getFuncDecl :: Context -> Model -> Word -> IO FuncDecl
+getFuncDecl = liftFun2 z3_model_get_func_decl
+
+getConsts :: Context -> Model -> IO [FuncDecl]
+getConsts ctx m = do
+  n <- numConsts ctx m
+  forM [0..n-1] $ \i -> getConstDecl ctx m i
+
+getFuncs :: Context -> Model -> IO [FuncDecl]
+getFuncs ctx m = do
+  n <- numFuncs ctx m
+  forM [0..n-1] $ \i -> getFuncDecl ctx m i
 
 -- | Evaluate an array as a function, if possible.
 evalArray :: Context -> Model -> AST -> IO (Maybe FuncModel)
@@ -2075,6 +2112,12 @@ getAsArrayFuncDecl = liftFun1 z3_get_as_array_func_decl
 -- if the a is an as-array AST node.
 isAsArray :: Context -> AST -> IO Bool
 isAsArray = liftFun1 z3_is_as_array
+
+addFuncInterp :: Context -> Model -> FuncDecl -> AST -> IO FuncInterp
+addFuncInterp = liftFun3 z3_add_func_interp
+
+addConstInterp :: Context -> Model -> FuncDecl -> AST -> IO ()
+addConstInterp = liftFun3 z3_add_const_interp
 
 
 getMapFromInterp :: Context -> FuncInterp -> IO [([AST], AST)]
