@@ -66,6 +66,8 @@ data Z3_func_interp
 
 data Z3_func_entry
 
+data Z3_fixedpoint
+
 data Z3_solver
 
 data Z3_params
@@ -1507,3 +1509,43 @@ foreign import ccall unsafe "Z3_get_error_msg_ex"
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga45fcd18a00379b13a536c5b6117190ae>
 foreign import ccall unsafe "Z3_get_version"
     z3_get_version :: Ptr CUInt -> Ptr CUInt -> Ptr CUInt -> Ptr CUInt -> IO ()
+
+---------------------------------------------------------------------
+-- * Fixedpoint facilities
+
+foreign import ccall unsafe "Z3_mk_fixedpoint"
+    z3_mk_fixedpoint :: Ptr Z3_context -> IO (Ptr Z3_fixedpoint)
+
+foreign import ccall unsafe "Z3_fixedpoint_push"
+    z3_fixedpoint_push :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_pop"
+    z3_fixedpoint_pop :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_inc_ref"
+    z3_fixedpoint_inc_ref :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_dec_ref"
+    z3_fixedpoint_dec_ref :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_set_params"
+    z3_fixedpoint_set_params :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_params -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_add_rule"
+    z3_fixedpoint_add_rule :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_ast -> Ptr Z3_symbol -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_register_relation"
+    z3_fixedpoint_register_relation :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_func_decl -> IO ()
+
+foreign import ccall unsafe "Z3_fixedpoint_get_answer"
+    z3_fixedpoint_get_answer :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO (Ptr Z3_ast)
+
+foreign import ccall unsafe "Z3_fixedpoint_get_assertions"
+    z3_fixedpoint_get_assertions :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO (Ptr Z3_ast_vector)
+
+foreign import ccall unsafe "Z3_fixedpoint_query_relations"
+    z3_fixedpoint_query_relations :: Ptr Z3_context
+                                  -> Ptr Z3_fixedpoint
+                                  -> CUInt
+                                  -> Ptr (Ptr Z3_func_decl)
+                                  -> IO Z3_lbool

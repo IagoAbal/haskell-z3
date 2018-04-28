@@ -341,6 +341,17 @@ module Z3.Monad
   , Version(..)
   , getVersion
 
+  -- * Fixedpoint
+  , Fixedpoint
+  , fixedpointPush
+  , fixedpointPop
+  , fixedpointAddRule
+  , fixedpointSetParams
+  , fixedpointRegisterRelation
+  , fixedpointQueryRelations
+  , fixedpointGetAnswer
+  , fixedpointGetAssertions
+
   -- * Interpolation
   , Base.InterpolationProblem(..)
   , mkInterpolant
@@ -402,6 +413,7 @@ import Z3.Base
   , Version(..)
   , Params
   , Solver
+  , Fixedpoint
   , SortKind(..)
   , ASTKind(..)
   , Tactic
@@ -481,6 +493,27 @@ liftSolver2 f a b = do
   slv <- getSolver
   liftIO $ f ctx slv a b
 
+liftFixedpoint0 :: MonadFixedpoint z3 =>
+       (Base.Context -> Base.Fixedpoint -> IO b)
+    -> z3 b
+liftFixedpoint0 f_s =
+  do ctx <- getContext
+     liftIO . f_s ctx =<< getFixedpoint
+
+liftFixedpoint1 :: MonadFixedpoint z3 =>
+       (Base.Context -> Base.Fixedpoint -> a -> IO b)
+    -> a -> z3 b
+liftFixedpoint1 f_s a =
+  do ctx <- getContext
+     liftIO . (\s -> f_s ctx s a) =<< getFixedpoint
+
+liftFixedpoint2 :: MonadFixedpoint z3 => (Base.Context -> Base.Fixedpoint -> a -> b -> IO c)
+                             -> a -> b -> z3 c
+liftFixedpoint2 f a b = do
+  ctx <- getContext
+  slv <- getFixedpoint
+  liftIO $ f ctx slv a b
+
 -------------------------------------------------
 -- A simple Z3 monad.
 
@@ -490,13 +523,17 @@ newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
 -- | Z3 environment.
 data Z3Env
   = Z3Env {
-      envSolver  :: Base.Solver
-    , envContext :: Base.Context
+      envSolver     :: Base.Solver
+    , envContext    :: Base.Context
+    , envFixedpoint :: Base.Fixedpoint
     }
 
 instance MonadZ3 Z3 where
   getSolver  = Z3 $ asks envSolver
   getContext = Z3 $ asks envContext
+
+instance MonadFixedpoint Z3 where
+  getFixedpoint = Z3 $ asks envFixedpoint
 
 -- | Eval a Z3 script.
 evalZ3With :: Maybe Logic -> Opts -> Z3 a -> IO a
@@ -515,7 +552,8 @@ newEnvWith mkContext mbLogic opts =
     setOpts cfg opts
     ctx <- mkContext cfg
     solver <- maybe (Base.mkSolver ctx) (Base.mkSolverForLogic ctx) mbLogic
-    return $ Z3Env solver ctx
+    fixedpoint <- Base.mkFixedpoint ctx
+    return $ Z3Env solver ctx fixedpoint
 
 -- | Create a new Z3 environment.
 newEnv :: Maybe Logic -> Opts -> IO Z3Env
@@ -1960,6 +1998,35 @@ getParserError = liftScalar Base.getParserError
 getVersion :: MonadZ3 z3 => z3 Version
 getVersion = liftIO Base.getVersion
 
+---------------------------------------------------------------------
+-- Fixedpoint
+
+class MonadZ3 m => MonadFixedpoint m where
+  getFixedpoint :: m Base.Fixedpoint
+
+fixedpointPush :: MonadFixedpoint z3 => z3 ()
+fixedpointPush = liftFixedpoint0 Base.fixedpointPush
+
+fixedpointPop :: MonadFixedpoint z3 => z3 ()
+fixedpointPop = liftFixedpoint0 Base.fixedpointPush
+
+fixedpointAddRule :: MonadFixedpoint z3 => AST -> Symbol -> z3 ()
+fixedpointAddRule = liftFixedpoint2 Base.fixedpointAddRule
+
+fixedpointSetParams :: MonadFixedpoint z3 => Params -> z3 ()
+fixedpointSetParams = liftFixedpoint1 Base.fixedpointSetParams
+
+fixedpointRegisterRelation :: MonadFixedpoint z3 => FuncDecl -> z3 ()
+fixedpointRegisterRelation = liftFixedpoint1 Base.fixedpointRegisterRelation
+
+fixedpointQueryRelations :: MonadFixedpoint z3 => [FuncDecl] -> z3 Result
+fixedpointQueryRelations = liftFixedpoint1 Base.fixedpointQueryRelations
+
+fixedpointGetAnswer :: MonadFixedpoint z3 => z3 AST
+fixedpointGetAnswer = liftFixedpoint0 Base.fixedpointGetAnswer
+
+fixedpointGetAssertions :: MonadFixedpoint z3 => z3 [AST]
+fixedpointGetAssertions = liftFixedpoint0 Base.fixedpointGetAssertions
 
 ---------------------------------------------------------------------
 -- * Interpolation
