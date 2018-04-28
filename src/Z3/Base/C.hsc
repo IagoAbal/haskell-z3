@@ -202,7 +202,7 @@ foreign import ccall unsafe "Z3_inc_ref"
   z3_inc_ref :: Ptr Z3_context -> Ptr Z3_ast -> IO ()
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga9cd52225142c085630495044acc68bd2>
-foreign import ccall unsafe "Z3_inc_ref"
+foreign import ccall unsafe "Z3_dec_ref"
   z3_dec_ref :: Ptr Z3_context -> Ptr Z3_ast -> IO ()
 
 ---------------------------------------------------------------------
