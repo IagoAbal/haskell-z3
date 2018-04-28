@@ -247,7 +247,10 @@ foreign import ccall unsafe "Z3_mk_bv_sort"
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gafe617994cce1b516f46128e448c84445>
 foreign import ccall unsafe "Z3_mk_array_sort"
-    z3_mk_array_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Ptr Z3_sort)
+    z3_mk_array_sort :: Ptr Z3_context
+                     -> Ptr Z3_sort  -- ^ domain
+                     -> Ptr Z3_sort  -- ^ range
+                     -> IO (Ptr Z3_sort)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga7156b9c0a76a28fae46c81f8e3cdf0f1>
 foreign import ccall unsafe "Z3_mk_tuple_sort"
@@ -654,11 +657,18 @@ foreign import ccall unsafe "Z3_mk_bvmul_no_underflow"
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga38f423f3683379e7f597a7fe59eccb67>
 foreign import ccall unsafe "Z3_mk_select"
-    z3_mk_select :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_select :: Ptr Z3_context
+                 -> Ptr Z3_ast  -- ^ aray
+                 -> Ptr Z3_ast  -- ^ index
+                 -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gae305a4f54b4a64f7e5973ae6ccb13593>
 foreign import ccall unsafe "Z3_mk_store"
-    z3_mk_store :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_store :: Ptr Z3_context
+                -> Ptr Z3_ast  -- ^ array
+                -> Ptr Z3_ast  -- ^ index
+                -> Ptr Z3_ast  -- ^ value to store at array[index]
+                -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga84ea6f0c32b99c70033feaa8f00e8f2d>
 foreign import ccall unsafe "Z3_mk_const_array"
