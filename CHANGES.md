@@ -1,6 +1,23 @@
 
 # Release Notes
 
+## 4.3
+
+### Fixes
+
+* Fixed memory leak due to typo in ```Z3.Base.C```. (Deian Stefan)
+
+### New API support
+
+* Added partial support for _Fixedpoint_ API. (David Heath)
+* Added more bindings to the _Models_ API. (Daniel Gröber)
+* Added _Parser interface_ API. (Tristan Knoth)
+
+### Misc
+
+* After many requests, I have moved the repository to GitHub: https://github.com/IagoAbal/haskell-z3.
+* From now on the revision number (aka patch level) 0 will be omitted (so x.y instead of x.y.0).
+
 ## 4.2.0
 
 This release removes support for SMT-LIB 1.x in order to be compatible with Z3 4.6.

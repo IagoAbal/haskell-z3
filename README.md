@@ -5,11 +5,11 @@ These are Haskell bindings for the Z3 theorem prover.
 We don't provide any high-level interface (e.g. in the form of a Haskell eDSL) here,
 these bindings are targeted to those who want to build verification tools on top of Z3 in Haskell.
 
-[Changelog here.](https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md)
+[Changelog here.](blob/master/CHANGES.md)
 
-[Examples here.](https://bitbucket.org/iago/z3-haskell/src/tip/examples)
+[Examples here.](tree/master/examples)
 
-[Do you want to contribute?](https://bitbucket.org/iago/z3-haskell/src/tip/HACKING.md)
+[Do you want to contribute?](blob/master/HACKING.md)
 
 ## Installation
 
