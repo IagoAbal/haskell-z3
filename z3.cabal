@@ -1,5 +1,5 @@
 Name:                z3
-Version:             4.2.0
+Version:             4.3
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
@@ -11,9 +11,9 @@ Description:
     .
     * "Z3.Monad" provides a convenient monadic wrapper for the common usage scenario.
     .
-    Examples: <https://bitbucket.org/iago/z3-haskell/src/tip/examples>
+    Examples: <https://github.com/IagoAbal/haskell-z3/tree/master/examples>
     .
-    Changelog: <https://bitbucket.org/iago/z3-haskell/src/tip/CHANGES.md>
+    Changelog: <https://github.com/IagoAbal/haskell-z3/blob/master/CHANGES.md>
     .
     Installation:
     .
@@ -23,7 +23,8 @@ Description:
     .
     (Hackage reports a build failure because Z3's library is missing.)
 
-Homepage:            http://bitbucket.org/iago/z3-haskell
+Homepage:            https://github.com/IagoAbal/haskell-z3
+Bug-reports:         https://github.com/IagoAbal/haskell-z3/issues
 License:             BSD3
 License-file:        LICENSE
 Author:              Iago Abal <mail@iagoabal.eu>,
@@ -37,8 +38,8 @@ Cabal-version:       >= 1.8
 Extra-source-files:  README.md CHANGES.md HACKING.md
 
 source-repository head
-  type:     mercurial
-  location: https://bitbucket.org/iago/z3-haskell
+  type:     git
+  location: git@github.com:IagoAbal/haskell-z3.git
 
 Library
     hs-source-dirs: src
