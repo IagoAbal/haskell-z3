@@ -105,6 +105,7 @@ Executable examples
                        Example.Monad.FuncModel
                        Example.Monad.Interpolation
                        Example.Monad.MutuallyRecursive
+                       Example.Monad.ParserInterface
                        Example.Monad.Quantifiers
                        Example.Monad.QuantifierElimination
                        Example.Monad.ToSMTLib
