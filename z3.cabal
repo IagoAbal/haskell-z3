@@ -90,7 +90,7 @@ Executable examples
   if flag(examples)
     Buildable:         True
     Build-depends:     base >=4.5,
-                       z3 >=0.4,
+                       z3,
                        containers,
                        mtl >2.1
   else
