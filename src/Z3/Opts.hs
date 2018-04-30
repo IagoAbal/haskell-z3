@@ -50,6 +50,7 @@ import qualified Z3.Base as Base
 
 import           Data.Fixed  ( Fixed )
 import qualified Data.Fixed as Fixed
+import           Data.Semigroup ( Semigroup (..) )
 import           Data.Monoid ( Monoid(..) )
 
 ---------------------------------------------------------------------
@@ -58,9 +59,12 @@ import           Data.Monoid ( Monoid(..) )
 -- | Z3 configuration.
 newtype Opts = Opts [Opt]
 
+instance Semigroup Opts where
+  Opts ps1 <> Opts ps2 = Opts (ps1 ++ ps2)
+
 instance Monoid Opts where
   mempty = Opts []
-  mappend (Opts ps1) (Opts ps2) = Opts (ps1++ps2)
+  mappend = (<>)
 
 singleton :: Opt -> Opts
 singleton o = Opts [o]
