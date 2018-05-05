@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 -- |
 -- Module    : Z3.Opts
@@ -50,8 +51,11 @@ import qualified Z3.Base as Base
 
 import           Data.Fixed  ( Fixed )
 import qualified Data.Fixed as Fixed
-import           Data.Semigroup ( Semigroup (..) )
 import           Data.Monoid ( Monoid(..) )
+
+#if MIN_VERSION_base(4,9,0)
+import           Data.Semigroup ( Semigroup (..) )
+#endif
 
 ---------------------------------------------------------------------
 -- Configuration
@@ -59,12 +63,18 @@ import           Data.Monoid ( Monoid(..) )
 -- | Z3 configuration.
 newtype Opts = Opts [Opt]
 
+#if MIN_VERSION_base(4,9,0)
 instance Semigroup Opts where
   Opts ps1 <> Opts ps2 = Opts (ps1 ++ ps2)
+#endif
 
 instance Monoid Opts where
   mempty = Opts []
+#if MIN_VERSION_base(4,9,0)
   mappend = (<>)
+#else
+  Opts ps1 `mappend` Opts ps2 = Opts (ps1 ++ ps2)
+#endif
 
 singleton :: Opt -> Opts
 singleton o = Opts [o]
