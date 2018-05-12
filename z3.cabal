@@ -67,7 +67,8 @@ Library
                          ForeignFunctionInterface
                          MultiParamTypeClasses
 
-    Other-extensions:    DeriveDataTypeable
+    Other-extensions:    CPP
+                         DeriveDataTypeable
                          EmptyDataDecls
                          GeneralizedNewtypeDeriving
                          PatternGuards
