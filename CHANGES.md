@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 4.3.1
+
+* Fix compatibility with base 4.11 due to SMP (M Farkas-Dyck)
+
 ## 4.3
 
 ### Fixes
