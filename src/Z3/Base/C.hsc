@@ -243,6 +243,10 @@ foreign import ccall unsafe "Z3_mk_int_sort"
 foreign import ccall unsafe "Z3_mk_real_sort"
     z3_mk_real_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
 
+-- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga62166c0e3f9a8be4ba492eee5a52ce1b>
+foreign import ccall unsafe "Z3_mk_finite_domain_sort"
+    z3_mk_finite_domain_sort :: Ptr Z3_context -> Ptr Z3_symbol -> CULLong -> IO (Ptr Z3_sort)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gaeed000a1bbb84b6ca6fdaac6cf0c1688>
 foreign import ccall unsafe "Z3_mk_bv_sort"
     z3_mk_bv_sort :: Ptr Z3_context -> CUInt -> IO (Ptr Z3_sort)

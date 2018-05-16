@@ -105,6 +105,7 @@ module Z3.Base (
   , mkIntSort
   , mkRealSort
   , mkBvSort
+  , mkFiniteDomainSort
   , mkArraySort
   , mkTupleSort
   , mkConstructor
@@ -743,7 +744,9 @@ mkBvSort c i
   | i >= 0    = liftFun1 z3_mk_bv_sort c i
   | otherwise = error "Z3.Base.mkBvSort: negative size"
 
--- TODO: Z3_mk_finite_domain_sort
+-- | Create a finite-domain type.
+mkFiniteDomainSort :: Context -> Symbol -> Word64 -> IO Sort
+mkFiniteDomainSort = liftFun2 z3_mk_finite_domain_sort
 
 -- | Create an array type
 --
