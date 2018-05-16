@@ -64,6 +64,7 @@ module Z3.Monad
   , mkIntSort
   , mkRealSort
   , mkBvSort
+  , mkFiniteDomainSort
   , mkArraySort
   , mkTupleSort
   , mkConstructor
@@ -656,6 +657,10 @@ mkRealSort = liftScalar Base.mkRealSort
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaeed000a1bbb84b6ca6fdaac6cf0c1688>
 mkBvSort :: MonadZ3 z3 => Int -> z3 Sort
 mkBvSort = liftFun1 Base.mkBvSort
+
+-- | Create a finite-domain type.
+mkFiniteDomainSort :: MonadZ3 z3 => Symbol -> Word64 -> z3 Sort
+mkFiniteDomainSort = liftFun2 Base.mkFiniteDomainSort
 
 -- | Create an array type
 --
