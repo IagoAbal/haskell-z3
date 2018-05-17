@@ -428,6 +428,7 @@ import Control.Monad.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Trans ( MonadIO, liftIO )
 import Control.Monad.Fix ( MonadFix )
 import Data.Int ( Int64 )
+import Data.List.NonEmpty (NonEmpty)
 import Data.Word ( Word, Word64 )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
@@ -834,7 +835,7 @@ mkEq = liftFun2 Base.mkEq
 -- distinct.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa076d3a668e0ec97d61744403153ecf7>
-mkDistinct :: MonadZ3 z3 => [AST] -> z3 AST
+mkDistinct :: MonadZ3 z3 => NonEmpty AST -> z3 AST
 mkDistinct = liftFun1 Base.mkDistinct
 
 -- | Create an AST node representing /not(a)/.
@@ -904,7 +905,7 @@ mkMul = liftFun1 Base.mkMul
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4f5fea9b683f9e674fd8f14d676cc9a9>
-mkSub :: MonadZ3 z3 => [AST] -> z3 AST
+mkSub :: MonadZ3 z3 => NonEmpty AST -> z3 AST
 mkSub = liftFun1 Base.mkSub
 
 -- | Create an AST node representing -arg.
