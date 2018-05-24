@@ -424,8 +424,8 @@ import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
 import Data.Fixed ( Fixed, HasResolution )
-import Control.Monad.Reader ( ReaderT, runReaderT, asks )
-import Control.Monad.Trans ( MonadIO, liftIO )
+import Control.Monad.IO.Class ( MonadIO, liftIO )
+import Control.Monad.Trans.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Fix ( MonadFix )
 import Data.Int ( Int64 )
 import Data.Word ( Word, Word64 )

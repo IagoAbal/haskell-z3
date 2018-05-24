@@ -5,7 +5,6 @@ module Example.Monad.ToSMTLib
 
 import Control.Applicative
 import Control.Monad ( join )
-import Control.Monad.Trans
 import Data.Maybe
 import qualified Data.Traversable as T
 

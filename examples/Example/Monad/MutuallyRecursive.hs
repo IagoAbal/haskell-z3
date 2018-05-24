@@ -3,7 +3,7 @@
 module Example.Monad.MutuallyRecursive where
 
 import Z3.Monad
-import Control.Monad.Trans (liftIO)
+import Control.Monad.IO.Class (liftIO)
 
 run :: IO ()
 run = evalZ3 datatypeScript

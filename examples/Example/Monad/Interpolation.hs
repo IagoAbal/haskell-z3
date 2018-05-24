@@ -4,7 +4,7 @@ module Example.Monad.Interpolation
   where
 
 import Control.Monad
-import Control.Monad.Trans ( liftIO )
+import Control.Monad.IO.Class (liftIO)
 
 import Z3.Monad
 
