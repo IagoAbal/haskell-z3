@@ -3192,9 +3192,8 @@ toResult lb
 -- 'Foreign.toBool' should be OK but this is more convenient.
 toBool :: Z3_bool -> Bool
 toBool b
-    | b == z3_true  = True
     | b == z3_false = False
-    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
+    | otherwise = True
 
 -- | Convert 'Bool' to 'Z3_bool'.
 unBool :: Bool -> Z3_bool
