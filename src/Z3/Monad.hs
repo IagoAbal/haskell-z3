@@ -331,7 +331,6 @@ module Z3.Monad
   -- * Parser interface
   , parseSMTLib2String
   , parseSMTLib2File
-  , getParserError
 
   -- * Error Handling
   , Base.Z3Error(..)
@@ -1977,9 +1976,6 @@ parseSMTLib2File :: MonadZ3 z3 =>
                  -> [FuncDecl] -- ^ declarations
                  -> z3 AST
 parseSMTLib2File = liftFun5 Base.parseSMTLib2File
-
-getParserError :: MonadZ3 z3 => z3 String
-getParserError = liftScalar Base.getParserError
 
 ---------------------------------------------------------------------
 -- Miscellaneous

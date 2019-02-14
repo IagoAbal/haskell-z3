@@ -373,7 +373,6 @@ module Z3.Base (
   -- * Parser interface
   , parseSMTLib2String
   , parseSMTLib2File
-  , getParserError
 
   -- * Error Handling
   , Z3Error(..)
@@ -2436,9 +2435,6 @@ parseSMTLib2File ctx file sortNames sorts declNames decls =
     marshalArray declNames $ \declNameArr ->
       f fileName sortNum sortNameArr sortArr declNum declNameArr declArr
 
-
-getParserError :: Context -> IO String
-getParserError = liftFun0 z3_get_parser_error
 
 ---------------------------------------------------------------------
 -- Error handling
