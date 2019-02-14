@@ -24,7 +24,6 @@ module Z3.Monad
     -- ** Z3 enviroments
   , Z3Env
   , newEnv
-  , newItpEnv
   , evalZ3WithEnv
 
   -- * Types
@@ -353,17 +352,6 @@ module Z3.Monad
   , fixedpointGetAnswer
   , fixedpointGetAssertions
 
-  -- * Interpolation
-  , Base.InterpolationProblem(..)
-  , mkInterpolant
-  , Base.mkInterpolationContext
-  , getInterpolant
-  , computeInterpolant
-  , readInterpolationProblem
-  , checkInterpolant
-  , interpolationProfile
-  , writeInterpolationProblem
-
   -- * Solvers
   , solverGetHelp
   , solverSetParams
@@ -559,9 +547,6 @@ newEnvWith mkContext mbLogic opts =
 -- | Create a new Z3 environment.
 newEnv :: Maybe Logic -> Opts -> IO Z3Env
 newEnv = newEnvWith Base.mkContext
-
-newItpEnv :: Maybe Logic -> Opts -> IO Z3Env
-newItpEnv = newEnvWith Base.mkInterpolationContext
 
 -- | Eval a Z3 script with a given environment.
 --
@@ -2032,31 +2017,6 @@ fixedpointGetAnswer = liftFixedpoint0 Base.fixedpointGetAnswer
 
 fixedpointGetAssertions :: MonadFixedpoint z3 => z3 [AST]
 fixedpointGetAssertions = liftFixedpoint0 Base.fixedpointGetAssertions
-
----------------------------------------------------------------------
--- * Interpolation
-
-mkInterpolant :: MonadZ3 z3 => AST -> z3 AST
-mkInterpolant = liftFun1 Base.mkInterpolant
-
-getInterpolant :: MonadZ3 z3 => AST -> AST -> Params -> z3 [AST]
-getInterpolant = liftFun3 Base.getInterpolant
-
-computeInterpolant :: MonadZ3 z3 => AST -> Params
-                   -> z3 (Maybe (Either Model [AST]))
-computeInterpolant = liftFun2 Base.computeInterpolant
-
-readInterpolationProblem :: MonadZ3 z3 => FilePath -> z3 (Either String Base.InterpolationProblem)
-readInterpolationProblem = liftFun1 Base.readInterpolationProblem
-
-checkInterpolant :: MonadZ3 z3 => Base.InterpolationProblem -> [AST] -> z3 (Result, Maybe String)
-checkInterpolant = liftFun2 Base.checkInterpolant
-
-interpolationProfile :: MonadZ3 z3 => z3 String
-interpolationProfile = liftScalar Base.interpolationProfile
-
-writeInterpolationProblem :: MonadZ3 z3 => FilePath -> Base.InterpolationProblem -> z3 ()
-writeInterpolationProblem = liftFun2 Base.writeInterpolationProblem
 
 ---------------------------------------------------------------------
 -- * Solvers
