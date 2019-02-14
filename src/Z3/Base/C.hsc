@@ -1434,10 +1434,6 @@ foreign import ccall unsafe "Z3_parse_smtlib2_file"
                         -> Ptr (Ptr Z3_func_decl)
                         -> IO (Ptr Z3_ast)
 
--- | Referece <http://z3prover.github.io/api/html/group__capi.html#ga96b11da43464071c4ec35418d1cc3483>
-foreign import ccall unsafe "Z3_get_parser_error"
-  z3_get_parser_error :: Ptr Z3_context -> IO Z3_string
-
 ---------------------------------------------------------------------
 -- * Error Handling
 
