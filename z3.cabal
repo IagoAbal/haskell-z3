@@ -52,6 +52,7 @@ Library
         Z3.Opts
 
         Z3.Monad
+        Z3.Monad.Expr
 
     -- TODO: Add flag to compile with -Werror, Hackage doesn't like it.
     ghc-options: -Wall
