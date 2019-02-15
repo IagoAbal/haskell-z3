@@ -4,6 +4,10 @@ module Z3.Monad.Expr where
 import           Z3.Monad ( AST, MonadZ3 )
 import qualified Z3.Monad as Z3
 
+import Control.Monad ( (=<<), join )
+
+import Data.Ratio ( numerator, denominator )
+
 
 ---------------------------------------------------------------------
 -- * Booleans
@@ -12,8 +16,8 @@ true, false :: MonadZ3 z3 => z3 AST
 true  = Z3.mkTrue
 false = Z3.mkFalse
 
-not_ :: MonadZ3 z3 => z3 AST
-not_ = Z3.mkNot
+not_ :: MonadZ3 z3 => z3 AST -> z3 AST
+not_ za = Z3.mkNot =<< za
 
 infixr 3  &&*, ||*, `xor`
 infixr 2  `implies`, `iff`, ==>, <=>
@@ -31,20 +35,11 @@ za ||* zb = do
   b <- zb
   Z3.mkOr [a, b]
 
-za `xor` zb = do
-  a <- za
-  b <- zb
-  Z3.mkXor [a, b]
+za `xor` zb = join $ Z3.mkXor <$> za <*> zb
 
-za `implies` zb = do
-  a <- za
-  b <- zb
-  Z3.mkImplies [a, b]
+za `implies` zb = join $ Z3.mkImplies <$> za <*> zb
 
-za `iff` zb = do
-  a <- za
-  b <- zb
-  Z3.mkIff [a, b]
+za `iff` zb = join $ Z3.mkIff <$> za <*> zb
 
 (==>) = implies
 (<=>) = iff
@@ -84,7 +79,7 @@ ite zc za zb = join $ Z3.mkIte <$> zc <*> za <*> zb
 ---------------------------------------------------------------------
 -- * Integers and Reals
 
--- Integers but also reals
+-- Mainly for integers but +/-/* also work for reals
 instance MonadZ3 z3 => Num (z3 AST) where
   za + zb = do
     a <- za
@@ -97,10 +92,17 @@ instance MonadZ3 z3 => Num (z3 AST) where
   za * zb = do
     a <- za
     b <- zb
-    Z3.mkMult [a, b]
+    Z3.mkMul [a, b]
   negate za = Z3.mkUnaryMinus =<< za
-  abs za = undefined
-  signum za = undefined
+  -- abs may only work for integers?
+  abs za = ite (za >=* 0) za (-za)
+  -- signum may only work for integers?
+  signum za =
+    ite (za >* 0)
+        1
+    (ite (za ==* 0)
+        0
+        (-1))
   fromInteger = Z3.mkInteger
 
 -- For reals
