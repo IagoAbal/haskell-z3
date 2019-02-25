@@ -142,6 +142,7 @@ module Z3.Base (
   , mkAnd
   , mkOr
   , mkDistinct
+  , mkDistinct_
   -- ** Helpers
   , mkBool
 
@@ -149,6 +150,7 @@ module Z3.Base (
   , mkAdd
   , mkMul
   , mkSub
+  , mkSub_
   , mkUnaryMinus
   , mkDiv
   , mkMod
@@ -992,6 +994,10 @@ mkEq = liftFun2 z3_mk_eq
 mkDistinct :: Context -> NonEmpty AST -> IO AST
 mkDistinct = liftAstN1 z3_mk_distinct
 
+{-# WARNING mkDistinct_ "Fails on empty list" #-}
+mkDistinct_ :: Context -> [AST] -> IO AST
+mkDistinct_ = liftAstN (error "Z3.Base.mkDistinct: empty list of expressions") z3_mk_distinct
+
 -- | Create an AST node representing /not(a)/.
 mkNot :: Context -> AST -> IO AST
 mkNot = liftFun1 z3_mk_not
@@ -1042,6 +1048,10 @@ mkMul ctx = maybe (mkInteger ctx 1) (liftAstN1 z3_mk_mul ctx) . nonEmpty
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
 mkSub :: Context -> NonEmpty AST -> IO AST
 mkSub = liftAstN1 z3_mk_sub
+
+{-# WARNING mkSub_ "Fails on empty list" #-}
+mkSub_ :: Context -> [AST] -> IO AST
+mkSub_ = liftAstN (error "Z3.Base.mkSub: empty list of expressions") z3_mk_sub
 
 -- | Create an AST node representing -arg.
 mkUnaryMinus :: Context -> AST -> IO AST
