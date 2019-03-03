@@ -372,7 +372,6 @@ module Z3.Base (
   -- * Parser interface
   , parseSMTLib2String
   , parseSMTLib2File
-  , getParserError
 
   -- * Error Handling
   , Z3Error(..)
@@ -393,17 +392,6 @@ module Z3.Base (
   , fixedpointQueryRelations
   , fixedpointGetAnswer
   , fixedpointGetAssertions
-
-  -- * Interpolation
-  , InterpolationProblem(..)
-  , mkInterpolant
-  , mkInterpolationContext
-  , getInterpolant
-  , computeInterpolant
-  , readInterpolationProblem
-  , checkInterpolant
-  , interpolationProfile
-  , writeInterpolationProblem
 
   -- * Solvers
   , Logic(..)
@@ -432,7 +420,7 @@ import Z3.Base.C
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
-import Control.Monad ( join, when, (>=>), forM )
+import Control.Monad ( join, when, forM )
 import Data.Fixed ( Fixed, HasResolution )
 import Data.Int
 import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
@@ -2445,9 +2433,6 @@ parseSMTLib2File ctx file sortNames sorts declNames decls =
       f fileName sortNum sortNameArr sortArr declNum declNameArr declArr
 
 
-getParserError :: Context -> IO String
-getParserError = liftFun0 z3_get_parser_error
-
 ---------------------------------------------------------------------
 -- Error handling
 
@@ -2588,131 +2573,6 @@ fixedpointGetAssertions = liftFun1 z3_fixedpoint_get_assertions
 -- Tactics and Probes
 
 -- TODO
-
----------------------------------------------------------------------
--- Interpolation
-
--- | Interpolation problem formulation.
-data InterpolationProblem =
-    InterpolationProblem {
-      getConstraints    :: [AST]
-    , getParents        :: Maybe [Int]
-    , getTheoryTerms    :: [AST]
-    }
-
--- | Generate a Z3 context suitable for generation of interpolants.
-mkInterpolationContext :: Config -> IO Context
-mkInterpolationContext = mkContextWith z3_mk_interpolation_context
-
--- | Create an AST node marking a formula position for interpolation.
-mkInterpolant :: Context
-              -> AST     -- ^ boolean expression
-              -> IO AST
-mkInterpolant = liftFun1 z3_mk_interpolant
-
--- | Extracts interpolants from a proof of unsatisfiability.
---
--- Interpolants are computed in pre-order for occurrences of 'mkInterpolant'
--- within the second argument, which needs to be in form of a conjunction.
-getInterpolant :: Context
-               -> AST      -- ^ proof of /false/
-               -> AST      -- ^ interpolation pattern (cf. 'mkInterpolant')
-               -> Params
-               -> IO [AST]
-getInterpolant = liftFun3 z3_get_interpolant
-
--- | Checks satisfiability of input conjunction.
---
--- Returns either a model witnessing satisfiability, or a (sequence) interpolants
--- between individual subformulae of the conjunction wrapped in 'mkInterpolant'.
---
--- Result:
--- /sat/     -> @Just (Left <model>)@
--- /unsat/   -> @Just (Right <interp>)@
--- /unknown/ -> @Nothing@
-computeInterpolant :: Context -> AST -> Params
-                   -> IO (Maybe (Either Model [AST]))
-computeInterpolant c p ps =
-  alloca $ \interp ->
-  alloca $ \model ->
-  h2c p $ \pat -> do
-  h2c ps $ \params -> do
-    res <- toHsCheckError c $ \ctx ->
-      z3_compute_interpolant ctx pat params interp model
-    case res of
-         Sat   -> Just . Left <$> peekToHs c model
-         Unsat -> Just . Right <$> peekToHs c interp
-         Undef -> return Nothing
-
--- | Read an interpolation problem from file.
-readInterpolationProblem :: Context -> FilePath
-                         -> IO (Either String InterpolationProblem)
-readInterpolationProblem c file =
-  withCString file $ \fileName ->
-  alloca $ \num ->
-  alloca $ \cnsts ->
-  alloca $ \parents ->
-  alloca $ \errorMsg ->
-  alloca $ \numTheory ->
-  alloca $ \theory -> do
-    suc <- toHsCheckError c $ \ctx ->
-      z3_read_interpolation_problem ctx num cnsts parents fileName errorMsg
-                                        numTheory theory
-    if suc
-      then do
-        n <- peekToHs c num
-        constraints' <- peekArrayToHs c n cnsts
-        parents' <- peekPtrArrayToHs c n `T.traverse` ptrToMaybe parents
-        nt <- peekToHs c numTheory
-        theory' <- peekArrayToHs c nt theory
-        return $ Right $ InterpolationProblem
-            { getConstraints = constraints'
-            , getParents     = parents'
-            , getTheoryTerms = theory' }
-      else do
-        Left <$> peekToHs c errorMsg
-
--- | Check the correctness of an interpolant.
---
--- The Z3 context must have no constraints asserted when this call is made.
--- That means that after interpolating, you must first fully pop the Z3 context
--- before calling this.
-checkInterpolant :: Context -> InterpolationProblem -> [AST] -> IO (Result,Maybe String)
-checkInterpolant c prob is =
-  marshalArrayLen cs $ \num cnsts ->
-  marshalMaybeArray ps $ \parents ->
-  marshalArray is $ \interps ->
-  alloca $ \errorMsgPtr ->
-  marshalArrayLen t $ \numTheory theory -> do
-    res <- toHsCheckError c $ \ctx ->
-      z3_check_interpolant ctx num cnsts parents interps errorMsgPtr numTheory theory
-    errorMsg <- peekToMaybeHs c errorMsgPtr
-    return (res,errorMsg)
-  where cs = getConstraints prob
-        ps = getParents prob
-        t  = getTheoryTerms prob
-
--- | Return a string summarizing cumulative time used for interpolation.
---
--- This string is purely for entertainment purposes and has no semantics.
-interpolationProfile :: Context -> IO String
-interpolationProfile = liftFun0 z3_interpolation_profile
-
--- | Write an interpolation problem to file suitable for reading with 'readInterpolationProblem'.
---
--- The output file is a sequence of SMT-LIB2 format commands, suitable for reading
--- with command-line Z3 or other interpolating solvers.
-writeInterpolationProblem :: Context -> FilePath -> InterpolationProblem -> IO ()
-writeInterpolationProblem c file prob =
-  marshalArrayLen cs $ \num cnsts ->
-  marshalMaybeArray ps $ \parents ->
-  withCString file $ \filename ->
-  marshalArrayLen t $ \numTheory theory ->
-  toHsCheckError c $ \ctx ->
-    z3_write_interpolation_problem ctx num cnsts parents filename numTheory theory
-  where cs = getConstraints prob
-        ps = getParents prob
-        t  = getTheoryTerms prob
 
 ---------------------------------------------------------------------
 -- Solvers
@@ -2954,10 +2814,6 @@ marshalArrayLen :: (Marshal h c, Storable c, Integral i) =>
 marshalArrayLen hs f =
   hs2cs hs $ \cs -> withArrayLen cs $ \n -> f (fromIntegral n)
 
-marshalMaybeArray :: (Marshal h c, Storable c) => Maybe [h] -> (Ptr c -> IO a) -> IO a
-marshalMaybeArray Nothing   f = f nullPtr
-marshalMaybeArray (Just hs) f = marshalArray hs f
-
 liftAstN :: String
             -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
             -> Context -> [AST] -> IO AST
@@ -2978,18 +2834,9 @@ hs2cs (h:hs) f =
 cs2hs :: Marshal h c => Context -> [c] -> IO [h]
 cs2hs ctx = mapM (c2h ctx)
 
-peekToHs :: (Marshal h c, Storable c) => Context -> Ptr c -> IO h
-peekToHs c ptr = c2h c =<< peek ptr
-
-peekToMaybeHs :: (Marshal h (Ptr c), Storable c) => Context -> Ptr (Ptr c) -> IO (Maybe h)
-peekToMaybeHs c = peek >=> (c2h c `T.traverse`) . ptrToMaybe
-
 peekArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr c -> IO [h]
 peekArrayToHs c n dPtr =
   cs2hs c =<< peekArray n dPtr
-
-peekPtrArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr (Ptr c) -> IO [h]
-peekPtrArrayToHs c n = peekArray n >=> mapM (peekToHs c)
 
 toHsCheckError :: Marshal h c => Context -> (Ptr Z3_context -> IO c) -> IO h
 toHsCheckError c f = withContext c $ \cPtr ->
