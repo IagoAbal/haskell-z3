@@ -248,6 +248,43 @@ module Z3.Base (
   , mkBitvector
   , mkBvNum
 
+  -- * Sequences and regular expressions
+  , mkSeqSort
+  , isSeqSort
+  , mkReSort
+  , isReSort
+  , mkStringSort
+  , isStringSort
+  , mkString
+  , isString
+  , getString
+  , mkSeqEmpty
+  , mkSeqUnit
+  , mkSeqConcat
+  , mkSeqPrefix
+  , mkSeqSuffix
+  , mkSeqContains
+  , mkSeqExtract
+  , mkSeqReplace
+  , mkSeqAt
+  , mkSeqLength
+  , mkSeqIndex
+  , mkStrToInt
+  , mkIntToStr
+  , mkSeqToRe
+  , mkSeqInRe
+  , mkRePlus
+  , mkReStar
+  , mkReOption
+  , mkReUnion
+  , mkReConcat
+  , mkReRange
+  , mkReLoop
+  , mkReIntersect
+  , mkReComplement
+  , mkReEmpty
+  , mkReFull
+
   -- * Quantifiers
   , mkPattern
   , mkBound
@@ -1514,6 +1551,129 @@ mkBvNum :: Integral i => Context -> Int    -- ^ bit-width
 mkBvNum ctx s n = mkIntegral ctx n =<< mkBvSort ctx s
 
 ---------------------------------------------------------------------
+-- Sequences and regular expressions
+
+mkSeqSort :: Context -> Sort -> IO Sort
+mkSeqSort = liftFun1 z3_mk_seq_sort
+
+isSeqSort :: Context -> Sort -> IO Bool
+isSeqSort = liftFun1 z3_is_seq_sort
+
+mkReSort :: Context -> Sort -> IO Sort
+mkReSort = liftFun1 z3_mk_re_sort
+
+isReSort :: Context -> Sort -> IO Bool
+isReSort = liftFun1 z3_is_re_sort
+
+mkStringSort :: Context -> IO Sort
+mkStringSort = liftFun0 z3_mk_string_sort
+
+isStringSort :: Context -> Sort -> IO Bool
+isStringSort = liftFun1 z3_is_string_sort
+
+mkString :: Context -> String -> IO AST
+mkString = liftFun1 z3_mk_string
+
+isString :: Context -> AST -> IO Bool
+isString = liftFun1 z3_is_string
+
+getString :: Context -> AST -> IO String
+getString = liftFun1 z3_get_string
+
+mkSeqEmpty :: Context -> Sort -> IO AST
+mkSeqEmpty = liftFun1 z3_mk_seq_empty
+
+mkSeqUnit :: Context -> AST -> IO AST
+mkSeqUnit = liftFun1 z3_mk_seq_unit
+
+mkSeqConcat :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkSeqConcat c i as
+  | i <  0            = error "Z3.Base.mkSeqConcat: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkSeqConcet: empty list of expressions"
+  | otherwise         = marshal z3_mk_seq_concat c $ marshalArrayLen as
+
+mkSeqPrefix :: Context -> AST -> AST -> IO AST
+mkSeqPrefix = liftFun2 z3_mk_seq_prefix
+
+mkSeqSuffix :: Context -> AST -> AST -> IO AST
+mkSeqSuffix = liftFun2 z3_mk_seq_suffix
+
+mkSeqContains :: Context -> AST -> AST -> IO AST
+mkSeqContains = liftFun2 z3_mk_seq_contains
+
+mkSeqExtract :: Context -> AST -> AST -> AST -> IO AST
+mkSeqExtract = liftFun3 z3_mk_seq_extract
+
+mkSeqReplace :: Context -> AST -> AST -> AST -> IO AST
+mkSeqReplace = liftFun3 z3_mk_seq_replace
+
+mkSeqAt :: Context -> AST -> AST -> IO AST
+mkSeqAt = liftFun2 z3_mk_seq_at
+
+mkSeqLength :: Context -> AST -> IO AST
+mkSeqLength = liftFun1 z3_mk_seq_length
+
+mkSeqIndex :: Context -> AST -> AST -> AST -> IO AST
+mkSeqIndex = liftFun3 z3_mk_seq_index
+
+mkStrToInt :: Context -> AST -> IO AST
+mkStrToInt = liftFun1 z3_mk_str_to_int
+
+mkIntToStr :: Context -> AST -> IO AST
+mkIntToStr = liftFun1 z3_mk_int_to_str
+
+mkSeqToRe :: Context -> AST -> IO AST
+mkSeqToRe = liftFun1 z3_mk_seq_to_re
+
+mkSeqInRe :: Context -> AST -> AST -> IO AST
+mkSeqInRe = liftFun2 z3_mk_seq_in_re
+
+mkRePlus :: Context -> AST -> IO AST
+mkRePlus = liftFun1 z3_mk_re_plus
+
+mkReStar :: Context -> AST -> IO AST
+mkReStar = liftFun1 z3_mk_re_star
+
+mkReOption :: Context -> AST -> IO AST
+mkReOption = liftFun1 z3_mk_re_option
+
+mkReUnion :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReUnion c i as
+  | i <  0            = error "Z3.Base.mkReUnion: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReUnion: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_union c $ marshalArrayLen as
+
+mkReConcat :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReConcat c i as
+  | i <  0            = error "Z3.Base.mkReConcat: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReConcat: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_concat c $ marshalArrayLen as
+
+mkReRange :: Context -> AST -> AST -> IO AST
+mkReRange = liftFun2 z3_mk_re_range
+
+mkReLoop :: (Integral int) => Context -> AST -> int -> int -> IO AST
+mkReLoop c a i j
+  | i < 0     = error "Z3.Base.mkReLoop: negative size"
+  | i < 0     = error "Z3.Base.mkReLoop: empty list of expressions"
+  | otherwise = liftFun3 z3_mk_re_loop c a i j
+
+mkReIntersect :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReIntersect c i as
+  | i <  0            = error "Z3.Base.mkReIntersect: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReIntersect: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_intersect c $ marshalArrayLen as
+
+mkReComplement :: Context -> AST -> IO AST
+mkReComplement = liftFun1 z3_mk_re_complement
+
+mkReEmpty :: Context -> Sort -> IO AST
+mkReEmpty = liftFun1 z3_mk_re_empty
+
+mkReFull :: Context -> Sort -> IO AST
+mkReFull = liftFun1 z3_mk_re_full
+
+ ---------------------------------------------------------------------
 -- Quantifiers
 
 -- | Create a pattern for quantifier instantiation.
