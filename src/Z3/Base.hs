@@ -3193,6 +3193,8 @@ toResult lb
 toBool :: Z3_bool -> Bool
 toBool b
     | b == z3_false = False
+    -- As of March 2019, OS X has an issue where z3 uses other
+    -- values than 'z3_true' as truthy. Our work around is to be permissive.
     | otherwise = True
 
 -- | Convert 'Bool' to 'Z3_bool'.
