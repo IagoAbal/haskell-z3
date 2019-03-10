@@ -3055,9 +3055,10 @@ toResult lb
 -- 'Foreign.toBool' should be OK but this is more convenient.
 toBool :: Z3_bool -> Bool
 toBool b
-    | b == z3_true  = True
     | b == z3_false = False
-    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
+    -- As of March 2019, OS X has an issue where z3 uses other
+    -- values than 'z3_true' as truthy. Our work around is to be permissive.
+    | otherwise = True
 
 -- | Convert 'Bool' to 'Z3_bool'.
 unBool :: Bool -> Z3_bool
