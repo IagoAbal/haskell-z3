@@ -5,11 +5,11 @@ These are Haskell bindings for the Z3 theorem prover.
 We don't provide any high-level interface (e.g. in the form of a Haskell eDSL) here,
 these bindings are targeted to those who want to build verification tools on top of Z3 in Haskell.
 
-[Changelog here.](blob/master/CHANGES.md)
+[Changelog here.](CHANGES.md)
 
-[Examples here.](tree/master/examples)
+[Examples here.](examples)
 
-[Do you want to contribute?](blob/master/HACKING.md)
+[Do you want to contribute?](HACKING.md)
 
 ## Installation
 
