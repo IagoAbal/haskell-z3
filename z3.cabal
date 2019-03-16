@@ -104,7 +104,6 @@ Executable examples
                        Example.Monad.Queens4All
                        Example.Monad.DataTypes
                        Example.Monad.FuncModel
-                       Example.Monad.Interpolation
                        Example.Monad.MutuallyRecursive
                        Example.Monad.ParserInterface
                        Example.Monad.Quantifiers
