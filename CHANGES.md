@@ -6,6 +6,7 @@
 * Enabled support for Z3 4.8. (Carlo Nucera)
     - Required removing the Inteprolation API, `z3_get_parser_error` and other functions!
 * Fixed compatibility with base 4.11 due to SMP. (M Farkas-Dyck)
+* Do not crash on empty lists. (M Farkas-Dyck)
 * Added binding for `Z3_mk_finite_domain_sort`. (M Farkas-Dyck)
 * Implemented workaround for `Z3.Base.toBool` to work on OS X. (Matthew Doty)
 
