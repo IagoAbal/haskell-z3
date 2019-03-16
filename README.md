@@ -11,6 +11,20 @@ these bindings are targeted to those who want to build verification tools on top
 
 [Do you want to contribute?](HACKING.md)
 
+## Supported versions and version policy
+
+Z3 releases come out often and sometimes introduce backwards incompatible changes.
+In order to avoid #ifdef-ery, we only try to support a reasonably recent version
+of Z3, ideally the latest one.
+We use semantic versioning to reflect which version(s) are supported:
+
+    <z3-version>.<bindings-version>[.<patch-level>]
+
+The `<z3-version>` indicates which version of Z3 is supported, it is computed as
+_x*100+y_ for Z3 _x.y_. For example, versions _408.y.z_ of these bindings are
+meant to support versions _4.8.*_ of Z3.
+This version policy is in line with Haskell's PVP.
+
 ## Installation
 
 Preferably use the [z3](http://hackage.haskell.org/package/z3) package.
