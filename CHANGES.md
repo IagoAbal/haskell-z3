@@ -9,7 +9,7 @@
 * Added binding for `Z3_mk_finite_domain_sort`. (M Farkas-Dyck)
 * Implemented workaround for `Z3.Base.toBool` to work on OS X. (Matthew Doty)
 
-By the way, you have read correctly, this new version is _408.0_,
+By the way, you have read correctly, this new version is _408.0_.
 Find more details about the new version policy in the [README](README.md).
 
 ## 4.3.1
