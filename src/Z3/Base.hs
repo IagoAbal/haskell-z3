@@ -423,7 +423,7 @@ import Z3.Base.C
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
-import Control.Monad ( join, when, (>=>), forM )
+import Control.Monad ( join, when, forM )
 import Data.Fixed ( Fixed, HasResolution )
 import Data.Foldable ( Foldable (..) )
 import Data.Int
@@ -2831,9 +2831,9 @@ marshalArrayLen :: (Marshal h c, Storable c, Integral i) =>
 marshalArrayLen hs f =
   hs2cs hs $ \cs -> withArrayLen cs $ \n -> f (fromIntegral n)
 
-marshalMaybeArray :: (Marshal h c, Storable c) => Maybe [h] -> (Ptr c -> IO a) -> IO a
-marshalMaybeArray Nothing   f = f nullPtr
-marshalMaybeArray (Just hs) f = marshalArray hs f
+-- marshalMaybeArray :: (Marshal h c, Storable c) => Maybe [h] -> (Ptr c -> IO a) -> IO a
+-- marshalMaybeArray Nothing   f = f nullPtr
+-- marshalMaybeArray (Just hs) f = marshalArray hs f
 
 liftAstN_err :: String
             -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
@@ -2866,18 +2866,18 @@ hs2cs (h:hs) f =
 cs2hs :: Marshal h c => Context -> [c] -> IO [h]
 cs2hs ctx = mapM (c2h ctx)
 
-peekToHs :: (Marshal h c, Storable c) => Context -> Ptr c -> IO h
-peekToHs c ptr = c2h c =<< peek ptr
+-- peekToHs :: (Marshal h c, Storable c) => Context -> Ptr c -> IO h
+-- peekToHs c ptr = c2h c =<< peek ptr
 
-peekToMaybeHs :: (Marshal h (Ptr c), Storable c) => Context -> Ptr (Ptr c) -> IO (Maybe h)
-peekToMaybeHs c = peek >=> (c2h c `T.traverse`) . ptrToMaybe
+-- peekToMaybeHs :: (Marshal h (Ptr c), Storable c) => Context -> Ptr (Ptr c) -> IO (Maybe h)
+-- peekToMaybeHs c = peek >=> (c2h c `T.traverse`) . ptrToMaybe
 
 peekArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr c -> IO [h]
 peekArrayToHs c n dPtr =
   cs2hs c =<< peekArray n dPtr
 
-peekPtrArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr (Ptr c) -> IO [h]
-peekPtrArrayToHs c n = peekArray n >=> mapM (peekToHs c)
+-- peekPtrArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr (Ptr c) -> IO [h]
+-- peekPtrArrayToHs c n = peekArray n >=> mapM (peekToHs c)
 
 toHsCheckError :: Marshal h c => Context -> (Ptr Z3_context -> IO c) -> IO h
 toHsCheckError c f = withContext c $ \cPtr ->
