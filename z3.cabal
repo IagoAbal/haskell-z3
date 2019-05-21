@@ -60,6 +60,8 @@ Library
     Build-depends:       base >= 4.5 && <5,
                          containers,
                          transformers >= 0.2
+    if impl(ghc < 8)
+      Build-depends:     semigroups >= 0.5
 
     Build-tools:         hsc2hs
     Extensions:          FlexibleInstances
