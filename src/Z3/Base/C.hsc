@@ -1453,10 +1453,6 @@ foreign import ccall unsafe "Z3_set_error"
 foreign import ccall unsafe "Z3_get_error_msg"
     z3_get_error_msg :: Z3_error_code -> IO Z3_string
 
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gae0aba52b5738b2ea78e0d6ad67ef1f92>
-foreign import ccall unsafe "Z3_get_error_msg_ex"
-    z3_get_error_msg_ex :: Ptr Z3_context -> Z3_error_code -> IO Z3_string
-
 ---------------------------------------------------------------------
 -- * Miscellaneous
 
