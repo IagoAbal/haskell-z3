@@ -969,6 +969,10 @@ foreign import ccall unsafe "Z3_get_quantifier_body"
 foreign import ccall unsafe "Z3_substitute_vars"
     z3_substitute_vars :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga0f8ba9b735388e010044b8a1d39c6af0>
+foreign import ccall unsafe "Z3_substitute"
+    z3_substitute :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> Ptr (Ptr Z3_ast) -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+
 ---------------------------------------------------------------------
 -- * AST vectors
 
@@ -1066,6 +1070,13 @@ foreign import ccall unsafe "Z3_is_as_array"
     z3_is_as_array :: Ptr Z3_context
                    -> Ptr Z3_ast
                    -> IO Z3_bool
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gabc6d17e7862f2db40c778409152e931f>
+foreign import ccall unsafe "Z3_is_eq_ast"
+    z3_is_eq_ast :: Ptr Z3_context
+                 -> Ptr Z3_ast
+                 -> Ptr Z3_ast
+                 -> IO Z3_bool
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
 foreign import ccall unsafe "Z3_get_as_array_func_decl"
