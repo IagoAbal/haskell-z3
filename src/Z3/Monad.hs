@@ -1,4 +1,3 @@
-
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
@@ -265,6 +264,7 @@ module Z3.Monad
 
   -- * Modifiers
   , substituteVars
+  , substitute
 
   -- * Models
   , modelEval
@@ -279,6 +279,7 @@ module Z3.Monad
   , getConsts
   , getFuncs
   , isAsArray
+  , isEqAST
   , addFuncInterp
   , addConstInterp
   , getAsArrayFuncDecl
@@ -1292,7 +1293,7 @@ mkBvmulNoUnderflow = liftFun2 Base.mkBvmulNoUnderflow
 mkSelect :: MonadZ3 z3 => AST -> AST -> z3 AST
 mkSelect = liftFun2 Base.mkSelect
 
--- | Array update.   
+-- | Array update.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gae305a4f54b4a64f7e5973ae6ccb13593>
 mkStore :: MonadZ3 z3 => AST -> AST -> AST -> z3 AST
@@ -1690,6 +1691,9 @@ getBv = liftFun2 Base.getBv
 substituteVars :: MonadZ3 z3 => AST -> [AST] -> z3 AST
 substituteVars = liftFun2 Base.substituteVars
 
+substitute :: MonadZ3 z3 => AST -> [(AST, AST)] -> z3 AST
+substitute = liftFun2 Base.substitute
+
 ---------------------------------------------------------------------
 -- Models
 
@@ -1750,6 +1754,9 @@ getFuncs = liftFun1 Base.getFuncs
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: MonadZ3 z3 => AST -> z3 Bool
 isAsArray = liftFun1 Base.isAsArray
+
+isEqAST :: MonadZ3 z3 => AST -> AST -> z3 Bool
+isEqAST = liftFun2 Base.isEqAST
 
 addFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> AST -> z3 FuncInterp
 addFuncInterp = liftFun3 Base.addFuncInterp

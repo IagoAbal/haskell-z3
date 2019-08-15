@@ -307,6 +307,7 @@ module Z3.Base (
 
   -- * Modifiers
   , substituteVars
+  , substitute
 
   -- * Models
   , modelEval
@@ -321,6 +322,7 @@ module Z3.Base (
   , getConsts
   , getFuncs
   , isAsArray
+  , isEqAST
   , addFuncInterp
   , addConstInterp
   , getAsArrayFuncDecl
@@ -2044,6 +2046,16 @@ substituteVars ctx a vars =
     marshalArrayLen vars $ \varsNum varsArr ->
       f aPtr varsNum varsArr
 
+substitute :: Context -> AST -> [(AST, AST)] -> IO AST
+substitute ctx a substs =
+  let froms = map fst substs
+      tos   = map snd substs
+  in marshal z3_substitute ctx $ \f ->
+    h2c a $ \aPtr ->
+    marshalArrayLen froms $ \fromsLen fromsArr ->
+    marshalArray    tos   $ \         tosArr   ->
+      f aPtr fromsLen fromsArr tosArr
+
 ---------------------------------------------------------------------
 -- Models
 
@@ -2129,6 +2141,9 @@ getAsArrayFuncDecl = liftFun1 z3_get_as_array_func_decl
 -- if the a is an as-array AST node.
 isAsArray :: Context -> AST -> IO Bool
 isAsArray = liftFun1 z3_is_as_array
+
+isEqAST :: Context -> AST -> AST -> IO Bool
+isEqAST = liftFun2 z3_is_eq_ast
 
 addFuncInterp :: Context -> Model -> FuncDecl -> AST -> IO FuncInterp
 addFuncInterp = liftFun3 z3_add_func_interp
