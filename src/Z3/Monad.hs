@@ -344,8 +344,6 @@ module Z3.Monad
 
   -- * Fixedpoint
   , Fixedpoint
-  , fixedpointPush
-  , fixedpointPop
   , fixedpointAddRule
   , fixedpointSetParams
   , fixedpointRegisterRelation
@@ -2004,12 +2002,6 @@ getVersion = liftIO Base.getVersion
 
 class MonadZ3 m => MonadFixedpoint m where
   getFixedpoint :: m Base.Fixedpoint
-
-fixedpointPush :: MonadFixedpoint z3 => z3 ()
-fixedpointPush = liftFixedpoint0 Base.fixedpointPush
-
-fixedpointPop :: MonadFixedpoint z3 => z3 ()
-fixedpointPop = liftFixedpoint0 Base.fixedpointPush
 
 fixedpointAddRule :: MonadFixedpoint z3 => AST -> Symbol -> z3 ()
 fixedpointAddRule = liftFixedpoint2 Base.fixedpointAddRule
