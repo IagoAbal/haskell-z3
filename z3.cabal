@@ -1,5 +1,5 @@
 Name:                z3
-Version:             4.3
+Version:             408.0
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
@@ -60,6 +60,8 @@ Library
     Build-depends:       base >= 4.5 && <5,
                          containers,
                          transformers >= 0.2
+    if impl(ghc < 8)
+      Build-depends:     semigroups >= 0.5
 
     Build-tools:         hsc2hs
     Extensions:          FlexibleInstances
@@ -104,7 +106,6 @@ Executable examples
                        Example.Monad.Queens4All
                        Example.Monad.DataTypes
                        Example.Monad.FuncModel
-                       Example.Monad.Interpolation
                        Example.Monad.MutuallyRecursive
                        Example.Monad.ParserInterface
                        Example.Monad.Quantifiers

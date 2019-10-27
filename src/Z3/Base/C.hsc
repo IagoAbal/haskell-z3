@@ -1561,10 +1561,6 @@ foreign import ccall unsafe "Z3_set_error"
 foreign import ccall unsafe "Z3_get_error_msg"
     z3_get_error_msg :: Z3_error_code -> IO Z3_string
 
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gae0aba52b5738b2ea78e0d6ad67ef1f92>
-foreign import ccall unsafe "Z3_get_error_msg_ex"
-    z3_get_error_msg_ex :: Ptr Z3_context -> Z3_error_code -> IO Z3_string
-
 ---------------------------------------------------------------------
 -- * Miscellaneous
 
@@ -1577,12 +1573,6 @@ foreign import ccall unsafe "Z3_get_version"
 
 foreign import ccall unsafe "Z3_mk_fixedpoint"
     z3_mk_fixedpoint :: Ptr Z3_context -> IO (Ptr Z3_fixedpoint)
-
-foreign import ccall unsafe "Z3_fixedpoint_push"
-    z3_fixedpoint_push :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
-
-foreign import ccall unsafe "Z3_fixedpoint_pop"
-    z3_fixedpoint_pop :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()
 
 foreign import ccall unsafe "Z3_fixedpoint_inc_ref"
     z3_fixedpoint_inc_ref :: Ptr Z3_context -> Ptr Z3_fixedpoint -> IO ()

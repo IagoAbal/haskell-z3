@@ -143,6 +143,7 @@ module Z3.Base (
   , mkAnd
   , mkOr
   , mkDistinct
+  , mkDistinct1
   -- ** Helpers
   , mkBool
 
@@ -150,6 +151,7 @@ module Z3.Base (
   , mkAdd
   , mkMul
   , mkSub
+  , mkSub1
   , mkUnaryMinus
   , mkDiv
   , mkMod
@@ -422,8 +424,6 @@ module Z3.Base (
   -- * Fixedpoint
   , Fixedpoint (..)
   , mkFixedpoint
-  , fixedpointPush
-  , fixedpointPop
   , fixedpointAddRule
   , fixedpointSetParams
   , fixedpointRegisterRelation
@@ -458,10 +458,12 @@ import Z3.Base.C
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
-import Control.Monad ( join, when, (>=>), forM )
+import Control.Monad ( join, when, forM )
 import Data.Fixed ( Fixed, HasResolution )
+import Data.Foldable ( Foldable (..) )
 import Data.Int
 import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
+import Data.List.NonEmpty (NonEmpty (..), nonEmpty)
 import Data.Maybe ( fromJust )
 import Data.Ratio ( numerator, denominator, (%) )
 import Data.Traversable ( Traversable )
@@ -1015,9 +1017,15 @@ mkEq = liftFun2 z3_mk_eq
 -- distinct.
 --
 -- That is, @and [ args!!i /= args!!j | i <- [0..length(args)-1], j <- [i+1..length(args)-1] ]@
+--
+-- Requires a non-empty list.
 mkDistinct :: Context -> [AST] -> IO AST
 mkDistinct =
-  liftAstN "Z3.Base.mkDistinct: empty list of expressions" z3_mk_distinct
+  liftAstN_err "Z3.Base.mkDistinct: empty list of expressions" z3_mk_distinct
+
+-- | Same as 'mkDistinct' but type-safe.
+mkDistinct1 :: Context -> NonEmpty AST -> IO AST
+mkDistinct1 = liftAstN1 z3_mk_distinct
 
 -- | Create an AST node representing /not(a)/.
 mkNot :: Context -> AST -> IO AST
@@ -1041,13 +1049,11 @@ mkXor = liftFun2 z3_mk_xor
 
 -- | Create an AST node representing args[0] and ... and args[num_args-1].
 mkAnd :: Context -> [AST] -> IO AST
-mkAnd ctx [] = mkTrue ctx
-mkAnd ctx as = marshal z3_mk_and ctx $ marshalArrayLen as
+mkAnd = liftAstN z3_mk_true z3_mk_and
 
 -- | Create an AST node representing args[0] or ... or args[num_args-1].
 mkOr :: Context -> [AST] -> IO AST
-mkOr ctx [] = mkFalse ctx
-mkOr ctx os = marshal z3_mk_or ctx $ marshalArrayLen os
+mkOr = liftAstN z3_mk_false z3_mk_or
 
 -------------------------------------------------
 -- ** Helpers
@@ -1062,15 +1068,21 @@ mkBool ctx True  = mkTrue  ctx
 
 -- | Create an AST node representing args[0] + ... + args[num_args-1].
 mkAdd :: Context -> [AST] -> IO AST
-mkAdd = liftAstN "Z3.Base.mkAdd: empty list of expressions" z3_mk_add
+mkAdd ctx = maybe (mkInteger ctx 0) (liftAstN1 z3_mk_add ctx) . nonEmpty
 
 -- | Create an AST node representing args[0] * ... * args[num_args-1].
 mkMul :: Context -> [AST] -> IO AST
-mkMul = liftAstN "Z3.Base.mkMul: empty list of expressions" z3_mk_mul
+mkMul ctx = maybe (mkInteger ctx 1) (liftAstN1 z3_mk_mul ctx) . nonEmpty
 
 -- | Create an AST node representing args[0] - ... - args[num_args - 1].
+--
+-- Requires a non-empty list.
 mkSub :: Context -> [AST] -> IO AST
-mkSub = liftAstN "Z3.Base.mkSub: empty list of expressions" z3_mk_sub
+mkSub = liftAstN_err "Z3.Base.mkSub: empty list of expressions" z3_mk_sub
+
+-- | Same as 'mkSub' but type-safe.
+mkSub1 :: Context -> NonEmpty AST -> IO AST
+mkSub1 = liftAstN1 z3_mk_sub
 
 -- | Create an AST node representing -arg.
 mkUnaryMinus :: Context -> AST -> IO AST
@@ -2723,7 +2735,7 @@ z3Error cd = throw . Z3Error cd
 checkError :: Ptr Z3_context -> IO a -> IO a
 checkError cPtr m = do
   m <* (z3_get_error_code cPtr >>= throwZ3Exn)
-  where getErrStr i  = peekCString =<< z3_get_error_msg_ex cPtr i
+  where getErrStr i  = peekCString =<< z3_get_error_msg i
         throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
 
 ---------------------------------------------------------------------
@@ -2773,12 +2785,6 @@ instance Marshal Fixedpoint (Ptr Z3_fixedpoint) where
 
 mkFixedpoint :: Context -> IO Fixedpoint
 mkFixedpoint = liftFun0 z3_mk_fixedpoint
-
-fixedpointPush :: Context -> Fixedpoint -> IO ()
-fixedpointPush = liftFun1 z3_fixedpoint_push
-
-fixedpointPop :: Context -> Fixedpoint -> IO ()
-fixedpointPop = liftFun1 z3_fixedpoint_pop
 
 fixedpointAddRule :: Context -> Fixedpoint -> AST -> Symbol -> IO ()
 fixedpointAddRule = liftFun3 z3_fixedpoint_add_rule
@@ -3056,16 +3062,27 @@ marshalArrayLen :: (Marshal h c, Storable c, Integral i) =>
 marshalArrayLen hs f =
   hs2cs hs $ \cs -> withArrayLen cs $ \n -> f (fromIntegral n)
 
-marshalMaybeArray :: (Marshal h c, Storable c) => Maybe [h] -> (Ptr c -> IO a) -> IO a
-marshalMaybeArray Nothing   f = f nullPtr
-marshalMaybeArray (Just hs) f = marshalArray hs f
+-- marshalMaybeArray :: (Marshal h c, Storable c) => Maybe [h] -> (Ptr c -> IO a) -> IO a
+-- marshalMaybeArray Nothing   f = f nullPtr
+-- marshalMaybeArray (Just hs) f = marshalArray hs f
 
-liftAstN :: String
+liftAstN_err :: String
             -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
             -> Context -> [AST] -> IO AST
-liftAstN s _ _ [] = error s
-liftAstN _ f c es = marshal f c $ marshalArrayLen es
+liftAstN_err s _ _ [] = error s
+liftAstN_err _ f c es = marshal f c $ marshalArrayLen es
+{-# INLINE liftAstN_err #-}
+
+liftAstN :: (Ptr Z3_context -> IO (Ptr Z3_ast))
+         -> (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
+         -> Context -> [AST] -> IO AST
+liftAstN s f c = maybe (liftFun0 s c) (liftAstN1 f c) . nonEmpty
 {-# INLINE liftAstN #-}
+
+liftAstN1 :: (Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast))
+          -> Context -> NonEmpty AST -> IO AST
+liftAstN1 f c = marshal f c . marshalArrayLen . toList
+{-# INLINE liftAstN1 #-}
 
 class Marshal h c where
   c2h :: Context -> c -> IO h
@@ -3080,18 +3097,18 @@ hs2cs (h:hs) f =
 cs2hs :: Marshal h c => Context -> [c] -> IO [h]
 cs2hs ctx = mapM (c2h ctx)
 
-peekToHs :: (Marshal h c, Storable c) => Context -> Ptr c -> IO h
-peekToHs c ptr = c2h c =<< peek ptr
+-- peekToHs :: (Marshal h c, Storable c) => Context -> Ptr c -> IO h
+-- peekToHs c ptr = c2h c =<< peek ptr
 
-peekToMaybeHs :: (Marshal h (Ptr c), Storable c) => Context -> Ptr (Ptr c) -> IO (Maybe h)
-peekToMaybeHs c = peek >=> (c2h c `T.traverse`) . ptrToMaybe
+-- peekToMaybeHs :: (Marshal h (Ptr c), Storable c) => Context -> Ptr (Ptr c) -> IO (Maybe h)
+-- peekToMaybeHs c = peek >=> (c2h c `T.traverse`) . ptrToMaybe
 
 peekArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr c -> IO [h]
 peekArrayToHs c n dPtr =
   cs2hs c =<< peekArray n dPtr
 
-peekPtrArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr (Ptr c) -> IO [h]
-peekPtrArrayToHs c n = peekArray n >=> mapM (peekToHs c)
+-- peekPtrArrayToHs :: (Marshal h c, Storable c) => Context -> Int -> Ptr (Ptr c) -> IO [h]
+-- peekPtrArrayToHs c n = peekArray n >=> mapM (peekToHs c)
 
 toHsCheckError :: Marshal h c => Context -> (Ptr Z3_context -> IO c) -> IO h
 toHsCheckError c f = withContext c $ \cPtr ->
@@ -3294,9 +3311,10 @@ toResult lb
 -- 'Foreign.toBool' should be OK but this is more convenient.
 toBool :: Z3_bool -> Bool
 toBool b
-    | b == z3_true  = True
     | b == z3_false = False
-    | otherwise     = error "Z3.Base.toBool: illegal `Z3_bool' value"
+    -- As of March 2019, OS X has an issue where z3 uses other
+    -- values than 'z3_true' as truthy. Our work around is to be permissive.
+    | otherwise = True
 
 -- | Convert 'Bool' to 'Z3_bool'.
 unBool :: Bool -> Z3_bool

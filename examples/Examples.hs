@@ -10,7 +10,6 @@ import qualified Example.Monad.Quantifiers
 import qualified Example.Monad.QuantifierElimination
 import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
-import qualified Example.Monad.Interpolation
 import qualified Example.Monad.ParserInterface
 
 import System.Environment
@@ -27,9 +26,6 @@ examples =
     )
   , ("funcModel"
     , Example.Monad.FuncModel.run
-    )
-  , ("interpolation"
-    , Example.Monad.Interpolation.run
     )
   , ("mutuallyRecursive"
     , Example.Monad.MutuallyRecursive.run
