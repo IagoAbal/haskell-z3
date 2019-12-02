@@ -2496,7 +2496,7 @@ z3Error cd = throw . Z3Error cd
 checkError :: Ptr Z3_context -> IO a -> IO a
 checkError cPtr m = do
   m <* (z3_get_error_code cPtr >>= throwZ3Exn)
-  where getErrStr i  = peekCString =<< z3_get_error_msg i
+  where getErrStr i  = peekCString =<< z3_get_error_msg cPtr i
         throwZ3Exn i = when (i /= z3_ok) $ getErrStr i >>= z3Error (toZ3Error i)
 
 ---------------------------------------------------------------------
