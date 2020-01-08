@@ -412,6 +412,7 @@ import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
 import Data.Fixed ( Fixed, HasResolution )
+import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Reader ( ReaderT, runReaderT, asks )
 import Control.Monad.Fix ( MonadFix )
@@ -507,7 +508,7 @@ liftFixedpoint2 f a b = do
 -- A simple Z3 monad.
 
 newtype Z3 a = Z3 { _unZ3 :: ReaderT Z3Env IO a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadFix)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFix, MonadFail)
 
 -- | Z3 environment.
 data Z3Env
