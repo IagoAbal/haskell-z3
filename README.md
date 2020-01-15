@@ -11,6 +11,18 @@ these bindings are targeted to those who want to build verification tools on top
 
 [Do you want to contribute?](HACKING.md)
 
+## State of maintenance
+
+The library is currently "maintained", meaning that I try to be responsive to new
+issues and pull requests.
+Unfortunately I do not have time to investigate issues or to do major work myself.
+I do try to help those who want to contribute.
+
+If someone demonstrates willingness to maintain the library more actively
+in the long run, then I will be very happy to give the required permissions
+to become a co-maintainer.
+In the meantime I will do my best to keep it alive.
+
 ## Supported versions and version policy
 
 Z3 releases come out often and sometimes introduce backwards incompatible changes.

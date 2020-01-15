@@ -1,6 +1,15 @@
 
 # Release Notes
 
+## 408.1
+
+* Added bindings to `substitute` and `isEqAST`. (Hengchu Zhang)
+* Added `MonadFail` instance for `Z3`, required by GHC >=8.6. (Conal Elliott)
+* Updated `Z3_get_error_msg` signature (Z3 C API 4.8.7). (Kevin Quick)
+* Removed bindings to `Z3_fixedpoint_push` and `Z3_fixedpoint_pop` (Z3 C API 4.8.5). (Eric Walkingshaw)
+* Replaced `z3_get_error_msg_ex` with `z3_get_error_msg` (Z3 C API 4.8.5). (Alexander Knauth)
+* Added semigroups to dependencies for GHC <= 7. (Hogeyama)
+
 ## 408.0
 
 * Enabled support for Z3 4.8. (Carlo Nucera)
