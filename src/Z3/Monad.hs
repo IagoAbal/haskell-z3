@@ -667,11 +667,11 @@ mkTupleSort :: MonadZ3 z3
                                                -- constructor and projections.
 mkTupleSort = liftFun2 Base.mkTupleSort
 
--- | Create a contructor
+-- | Create a constructor
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
 mkConstructor :: MonadZ3 z3
-              => Symbol                       -- ^ Name of the sonstructor
+              => Symbol                       -- ^ Name of the constructor
               -> Symbol                       -- ^ Name of recognizer function
               -> [(Symbol, Maybe Sort, Int)]  -- ^ Name, sort option, and sortRefs
               -> z3 Constructor
