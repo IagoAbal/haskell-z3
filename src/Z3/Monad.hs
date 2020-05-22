@@ -416,7 +416,7 @@ import Control.Applicative ( Applicative )
 import Data.Fixed ( Fixed, HasResolution )
 import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
-import Control.Monad.Trans.Reader ( ReaderT, runReaderT, asks )
+import Control.Monad.Trans.Reader ( ReaderT(..), runReaderT, asks )
 import Control.Monad.Fix ( MonadFix )
 import Data.Int ( Int64 )
 import Data.List.NonEmpty (NonEmpty)
@@ -430,6 +430,10 @@ import qualified Data.Traversable as T
 class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
   getSolver  :: m Base.Solver
   getContext :: m Base.Context
+
+instance MonadZ3 m => MonadZ3 (ReaderT r m) where
+  getSolver = ReaderT $ const getSolver
+  getContext = ReaderT $ const getContext
 
 -------------------------------------------------
 -- Lifting
