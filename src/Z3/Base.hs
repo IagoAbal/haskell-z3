@@ -412,6 +412,7 @@ module Z3.Base (
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
+  , solverGetProof
   , solverGetUnsatCore
   , solverGetReasonUnknown
   , solverToString
@@ -2784,6 +2785,14 @@ solverGetModel :: Context -> Solver -> IO Model
 solverGetModel ctx solver = marshal z3_solver_get_model ctx $ \f ->
   h2c solver $ \solverPtr ->
     f solverPtr
+
+-- | Retrieve the proof for the last 'solverCheck' or 'solverCheckAssumptions'.
+--
+-- The error handler is invoked if a proof is not available because
+-- the commands above were not invoked for the given solver,
+-- or if the result was different from 'Unsat' (so 'Sat' does not have a proof).
+solverGetProof :: Context -> Solver -> IO AST
+solverGetProof = liftFun1 z3_solver_get_proof
 
 -- | Retrieve the unsat core for the last 'solverCheckAssumptions'; the unsat core is a subset of the assumptions
 solverGetUnsatCore :: Context -> Solver -> IO [AST]

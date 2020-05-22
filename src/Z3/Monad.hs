@@ -364,6 +364,7 @@ module Z3.Monad
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
+  , solverGetProof
   , solverGetUnsatCore
   , solverGetReasonUnknown
   , solverToString
@@ -2098,6 +2099,14 @@ solverCheckAssumptions = liftSolver1 Base.solverCheckAssumptions
 -- or if the result was 'Unsat'.
 solverGetModel :: MonadZ3 z3 => z3 Model
 solverGetModel = liftSolver0 Base.solverGetModel
+--
+-- | Retrieve the proof for the last 'solverCheck' or 'solverCheckAssumptions'.
+--
+-- The error handler is invoked if a proof is not available because
+-- the commands above were not invoked for the given solver,
+-- or if the result was different from 'Unsat' (so 'Sat' does not have a proof).
+solverGetProof :: MonadZ3 z3 => z3 AST
+solverGetProof = liftSolver0 Base.solverGetProof
 
 -- | Retrieve the unsat core for the last 'solverCheckAssumptions'; the unsat core is a subset of the assumptions
 solverGetUnsatCore :: MonadZ3 z3 => z3 [AST]
