@@ -68,6 +68,8 @@ data Z3_func_entry
 
 data Z3_fixedpoint
 
+data Z3_optimize
+
 data Z3_solver
 
 data Z3_params
@@ -1508,3 +1510,137 @@ foreign import ccall unsafe "Z3_fixedpoint_query_relations"
                                   -> CUInt
                                   -> Ptr (Ptr Z3_func_decl)
                                   -> IO Z3_lbool
+
+---------------------------------------------------------------------
+-- * Optimization facilities
+
+foreign import ccall unsafe "Z3_mk_optimize"
+    z3_mk_optimize :: Ptr Z3_context -> IO (Ptr Z3_optimize)
+
+foreign import ccall unsafe "Z3_optimize_inc_ref"
+    z3_optimize_inc_ref :: Ptr Z3_context -> Ptr Z3_optimize -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_dec_ref"
+    z3_optimize_dec_ref :: Ptr Z3_context -> Ptr Z3_optimize -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_assert"
+    z3_optimize_assert :: Ptr Z3_context -> Ptr Z3_optimize -> Ptr Z3_ast -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_assert_and_track"
+    z3_optimize_assert_and_track :: Ptr Z3_context
+                                 -> Ptr Z3_optimize
+                                 -> Ptr Z3_ast
+                                 -> Ptr Z3_ast
+                                 -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_assert_soft"
+    z3_optimize_assert_soft :: Ptr Z3_context
+                            -> Ptr Z3_optimize
+                            -> Ptr Z3_ast
+                            -> Z3_string
+                            -> Ptr Z3_symbol
+                            -> IO CUInt
+
+foreign import ccall unsafe "Z3_optimize_maximize"
+    z3_optimize_maximize :: Ptr Z3_context
+                         -> Ptr Z3_optimize
+                         -> Ptr Z3_ast
+                         -> IO CUInt
+
+foreign import ccall unsafe "Z3_optimize_minimize"
+    z3_optimize_minimize :: Ptr Z3_context
+                         -> Ptr Z3_optimize
+                         -> Ptr Z3_ast
+                         -> IO CUInt
+
+foreign import ccall unsafe "Z3_optimize_push"
+    z3_optimize_push :: Ptr Z3_context
+                     -> Ptr Z3_optimize
+                     -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_pop"
+    z3_optimize_pop :: Ptr Z3_context
+                    -> Ptr Z3_optimize
+                    -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_check"
+    z3_optimize_check :: Ptr Z3_context
+                      -> Ptr Z3_optimize
+                      -> IO Z3_lbool
+
+foreign import ccall unsafe "Z3_optimize_get_reason_unknown"
+    z3_optimize_get_reason_unknown :: Ptr Z3_context
+                                   -> Ptr Z3_optimize
+                                   -> IO Z3_string
+
+foreign import ccall unsafe "Z3_optimize_get_model"
+    z3_optimize_get_model :: Ptr Z3_context
+                          -> Ptr Z3_optimize
+                          -> IO (Ptr Z3_model)
+
+foreign import ccall unsafe "Z3_optimize_get_unsat_core"
+    z3_optimize_get_unsat_core :: Ptr Z3_context
+                               -> Ptr Z3_optimize
+                               -> IO (Ptr Z3_ast_vector)
+
+foreign import ccall unsafe "Z3_optimize_set_params"
+    z3_optimize_set_params :: Ptr Z3_context
+                           -> Ptr Z3_optimize
+                           -> Ptr Z3_params
+                           -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_get_lower"
+    z3_optimize_get_lower :: Ptr Z3_context
+                          -> Ptr Z3_optimize
+                          -> CUInt
+                          -> IO (Ptr Z3_ast)
+
+foreign import ccall unsafe "Z3_optimize_get_upper"
+    z3_optimize_get_upper :: Ptr Z3_context
+                          -> Ptr Z3_optimize
+                          -> CUInt
+                          -> IO (Ptr Z3_ast)
+
+foreign import ccall unsafe "Z3_optimize_get_lower_as_vector"
+    z3_optimize_get_lower_as_vector :: Ptr Z3_context
+                                    -> Ptr Z3_optimize
+                                    -> CUInt
+                                    -> IO (Ptr Z3_ast_vector)
+
+foreign import ccall unsafe "Z3_optimize_get_upper_as_vector"
+    z3_optimize_get_upper_as_vector :: Ptr Z3_context
+                                    -> Ptr Z3_optimize
+                                    -> CUInt
+                                    -> IO (Ptr Z3_ast_vector)
+
+foreign import ccall unsafe "Z3_optimize_to_string"
+    z3_optimize_to_string :: Ptr Z3_context
+                          -> Ptr Z3_optimize
+                          -> IO Z3_string
+
+foreign import ccall unsafe "Z3_optimize_from_string"
+    z3_optimize_from_string :: Ptr Z3_context
+                            -> Ptr Z3_optimize
+                            -> Z3_string
+                            -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_from_file"
+    z3_optimize_from_file :: Ptr Z3_context
+                          -> Ptr Z3_optimize
+                          -> Z3_string
+                          -> IO ()
+
+foreign import ccall unsafe "Z3_optimize_get_help"
+    z3_optimize_get_help :: Ptr Z3_context
+                         -> Ptr Z3_optimize
+                         -> IO Z3_string
+
+foreign import ccall unsafe "Z3_optimize_get_assertions"
+    z3_optimize_get_assertions :: Ptr Z3_context
+                               -> Ptr Z3_optimize
+                               -> IO (Ptr Z3_ast_vector)
+
+foreign import ccall unsafe "Z3_optimize_get_objectives"
+    z3_optimize_get_objectives :: Ptr Z3_context
+                               -> Ptr Z3_optimize
+                               -> IO (Ptr Z3_ast_vector)
