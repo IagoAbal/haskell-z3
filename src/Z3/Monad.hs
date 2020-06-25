@@ -585,6 +585,8 @@ import Data.Fixed ( Fixed, HasResolution )
 import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Reader ( ReaderT(..), runReaderT, asks )
+import Control.Monad.Trans.State.Lazy as StLazy ( StateT(..) )
+import Control.Monad.Trans.State.Strict as StStrict ( StateT(..) )
 import Control.Monad.Fix ( MonadFix )
 import Data.Int ( Int64 )
 import Data.List.NonEmpty (NonEmpty)
@@ -602,6 +604,14 @@ class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
 instance MonadZ3 m => MonadZ3 (ReaderT r m) where
   getSolver = ReaderT $ const getSolver
   getContext = ReaderT $ const getContext
+
+instance MonadZ3 m => MonadZ3 (StLazy.StateT s m) where
+  getSolver = StLazy.StateT $ \st -> fmap (\solv -> (solv, st)) getSolver
+  getContext = StLazy.StateT $ \st -> fmap (\ctx -> (ctx, st)) getContext
+
+instance MonadZ3 m => MonadZ3 (StStrict.StateT s m) where
+  getSolver = StStrict.StateT $ \st -> fmap (\solv -> (solv, st)) getSolver
+  getContext = StStrict.StateT $ \st -> fmap (\ctx -> (ctx, st)) getContext
 
 -------------------------------------------------
 -- Lifting
