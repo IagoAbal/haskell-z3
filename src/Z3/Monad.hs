@@ -352,6 +352,32 @@ module Z3.Monad
   , fixedpointGetAnswer
   , fixedpointGetAssertions
 
+  -- * Optimization
+  , Optimize
+  , optimizeAssert
+  , optimizeAssertAndTrack
+  , optimizeAssertSoft
+  , optimizeMaximize
+  , optimizeMinimize
+  , optimizePush
+  , optimizePop
+  , optimizeCheck
+  , optimizeGetReasonUnknown
+  , optimizeGetModel
+  , optimizeGetUnsatCore
+  , optimizeSetParams
+  , optimizeGetLower
+  , optimizeGetUpper
+  , optimizeGetLower
+  , optimizeGetUpperAsVector
+  , optimizeGetLowerAsVector
+  , optimizeToString
+  , optimizeFromString
+  , optimizeFromFile
+  , optimizeGetHelp
+  , optimizeGetAssertions
+  , optimizeGetObjectives
+
   -- * Solvers
   , solverGetHelp
   , solverSetParams
@@ -404,6 +430,7 @@ import Z3.Base
   , Params
   , Solver
   , Fixedpoint
+  , Optimize
   , SortKind(..)
   , ASTKind(..)
   , Tactic
@@ -510,6 +537,27 @@ liftFixedpoint2 f a b = do
   slv <- getFixedpoint
   liftIO $ f ctx slv a b
 
+liftOptimize0 :: MonadOptimize z3 =>
+       (Base.Context -> Base.Optimize -> IO b)
+    -> z3 b
+liftOptimize0 f_s =
+  do ctx <- getContext
+     liftIO . f_s ctx =<< getOptimize
+
+liftOptimize1 :: MonadOptimize z3 =>
+       (Base.Context -> Base.Optimize -> a -> IO b)
+    -> a -> z3 b
+liftOptimize1 f_s a =
+  do ctx <- getContext
+     liftIO . (\s -> f_s ctx s a) =<< getOptimize
+
+liftOptimize2 :: MonadOptimize z3 => (Base.Context -> Base.Optimize -> a -> b -> IO c)
+                             -> a -> b -> z3 c
+liftOptimize2 f a b = do
+  ctx <- getContext
+  slv <- getOptimize
+  liftIO $ f ctx slv a b
+
 -------------------------------------------------
 -- A simple Z3 monad.
 
@@ -522,6 +570,7 @@ data Z3Env
       envSolver     :: Base.Solver
     , envContext    :: Base.Context
     , envFixedpoint :: Base.Fixedpoint
+    , envOptimize   :: Base.Optimize
     }
 
 instance MonadZ3 Z3 where
@@ -530,6 +579,9 @@ instance MonadZ3 Z3 where
 
 instance MonadFixedpoint Z3 where
   getFixedpoint = Z3 $ asks envFixedpoint
+
+instance MonadOptimize Z3 where
+  getOptimize = Z3 $ asks envOptimize
 
 -- | Eval a Z3 script.
 evalZ3With :: Maybe Logic -> Opts -> Z3 a -> IO a
@@ -549,7 +601,8 @@ newEnvWith mkContext mbLogic opts =
     ctx <- mkContext cfg
     solver <- maybe (Base.mkSolver ctx) (Base.mkSolverForLogic ctx) mbLogic
     fixedpoint <- Base.mkFixedpoint ctx
-    return $ Z3Env solver ctx fixedpoint
+    optimize <- Base.mkOptimize ctx
+    return $ Z3Env solver ctx fixedpoint optimize
 
 -- | Create a new Z3 environment.
 newEnv :: Maybe Logic -> Opts -> IO Z3Env
@@ -2033,6 +2086,78 @@ fixedpointGetAnswer = liftFixedpoint0 Base.fixedpointGetAnswer
 
 fixedpointGetAssertions :: MonadFixedpoint z3 => z3 [AST]
 fixedpointGetAssertions = liftFixedpoint0 Base.fixedpointGetAssertions
+
+---------------------------------------------------------------------
+-- Optimization
+
+class MonadZ3 m => MonadOptimize m where
+  getOptimize :: m Base.Optimize
+
+optimizeAssert :: MonadOptimize z3 => AST -> z3 ()
+optimizeAssert = liftOptimize1 Base.optimizeAssert
+
+optimizeAssertAndTrack :: MonadOptimize z3 => AST -> AST -> z3 ()
+optimizeAssertAndTrack = liftOptimize2 Base.optimizeAssertAndTrack
+
+optimizeAssertSoft :: MonadOptimize z3 => AST -> String -> Symbol -> z3 ()
+optimizeAssertSoft = undefined
+
+optimizeMaximize :: MonadOptimize z3 => AST -> z3 Int
+optimizeMaximize = liftOptimize1 Base.optimizeMaximize 
+
+optimizeMinimize :: MonadOptimize z3 => AST -> z3 Int
+optimizeMinimize = liftOptimize1 Base.optimizeMinimize 
+
+optimizePush :: MonadOptimize z3 => z3 ()
+optimizePush = liftOptimize0 Base.optimizePush
+
+optimizePop :: MonadOptimize z3 => z3 ()
+optimizePop = liftOptimize0 Base.optimizePop 
+
+optimizeCheck :: MonadOptimize z3 => z3 Result
+optimizeCheck = liftOptimize0 Base.optimizeCheck
+
+optimizeGetReasonUnknown :: MonadOptimize z3 => z3 String
+optimizeGetReasonUnknown = liftOptimize0 Base.optimizeGetReasonUnknown
+
+optimizeGetModel :: MonadOptimize z3 => z3 Model
+optimizeGetModel = liftOptimize0 Base.optimizeGetModel
+
+optimizeGetUnsatCore :: MonadOptimize z3 => z3 [AST]
+optimizeGetUnsatCore = liftOptimize0 Base.optimizeGetUnsatCore
+
+optimizeSetParams :: MonadOptimize z3 => Params -> z3 ()
+optimizeSetParams = liftOptimize1 Base.optimizeSetParams
+
+optimizeGetLower :: MonadOptimize z3 => Int -> z3 AST
+optimizeGetLower = liftOptimize1 Base.optimizeGetLower
+
+optimizeGetUpper :: MonadOptimize z3 => Int -> z3 AST
+optimizeGetUpper = liftOptimize1 Base.optimizeGetLower
+
+optimizeGetUpperAsVector :: MonadOptimize z3 => Int -> z3 [AST]
+optimizeGetUpperAsVector = liftOptimize1 Base.optimizeGetUpperAsVector
+
+optimizeGetLowerAsVector :: MonadOptimize z3 => Int -> z3 [AST]
+optimizeGetLowerAsVector = liftOptimize1 Base.optimizeGetLowerAsVector
+
+optimizeToString :: MonadOptimize z3 => z3 String
+optimizeToString = liftOptimize0 Base.optimizeToString
+
+optimizeFromString :: MonadOptimize z3 => String -> z3 ()
+optimizeFromString = liftOptimize1 Base.optimizeFromString
+
+optimizeFromFile :: MonadOptimize z3 => String -> z3 ()
+optimizeFromFile = liftOptimize1 Base.optimizeFromFile
+ 
+optimizeGetHelp :: MonadOptimize z3 => z3 String
+optimizeGetHelp = liftOptimize0 Base.optimizeGetHelp
+
+optimizeGetAssertions :: MonadOptimize z3 => z3 [AST]
+optimizeGetAssertions = liftOptimize0 Base.optimizeGetAssertions
+
+optimizeGetObjectives :: MonadOptimize z3 => z3 [AST]
+optimizeGetObjectives = liftOptimize0 Base.optimizeGetObjectives
 
 ---------------------------------------------------------------------
 -- * Solvers
