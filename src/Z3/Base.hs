@@ -2628,10 +2628,16 @@ optimizeAssert :: Context -> Optimize -> AST -> IO ()
 optimizeAssert = liftFun2 z3_optimize_assert
 
 optimizeAssertAndTrack :: Context -> Optimize -> AST -> AST -> IO ()
-optimizeAssertAndTrack = undefined
+optimizeAssertAndTrack = liftFun3 z3_optimize_assert_and_track
 
-optimizeAssertSoft :: Context -> Optimize -> AST -> String -> Symbol -> IO ()
-optimizeAssertSoft = undefined
+optimizeAssertSoft :: Context -> Optimize -> AST -> String -> Symbol -> IO Int
+optimizeAssertSoft ctx opt ast str sym =
+  marshal z3_optimize_assert_soft ctx $ \f ->
+    h2c opt $ \optPtr ->
+    h2c ast $ \astPtr ->
+    withCString str $ \strPtr ->
+    h2c sym $ \symPtr ->
+      f optPtr astPtr strPtr symPtr
 
 optimizeMaximize :: Context -> Optimize -> AST -> IO Int
 optimizeMaximize = liftFun2 z3_optimize_maximize
