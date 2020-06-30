@@ -250,6 +250,43 @@ module Z3.Base (
   , mkBitvector
   , mkBvNum
 
+  -- * Sequences and regular expressions
+  , mkSeqSort
+  , isSeqSort
+  , mkReSort
+  , isReSort
+  , mkStringSort
+  , isStringSort
+  , mkString
+  , isString
+  , getString
+  , mkSeqEmpty
+  , mkSeqUnit
+  , mkSeqConcat
+  , mkSeqPrefix
+  , mkSeqSuffix
+  , mkSeqContains
+  , mkSeqExtract
+  , mkSeqReplace
+  , mkSeqAt
+  , mkSeqLength
+  , mkSeqIndex
+  , mkStrToInt
+  , mkIntToStr
+  , mkSeqToRe
+  , mkSeqInRe
+  , mkRePlus
+  , mkReStar
+  , mkReOption
+  , mkReUnion
+  , mkReConcat
+  , mkReRange
+  , mkReLoop
+  , mkReIntersect
+  , mkReComplement
+  , mkReEmpty
+  , mkReFull
+
   -- * Quantifiers
   , mkPattern
   , mkBound
@@ -1555,6 +1592,208 @@ mkBvNum :: Integral i => Context -> Int    -- ^ bit-width
 mkBvNum ctx s n = mkIntegral ctx n =<< mkBvSort ctx s
 
 ---------------------------------------------------------------------
+-- Sequences and regular expressions
+
+-- | Create a sequence sort out of the sort for the elements.
+mkSeqSort :: Context -> Sort -> IO Sort
+mkSeqSort = liftFun1 z3_mk_seq_sort
+
+-- | Check if s is a sequence sort.
+isSeqSort :: Context -> Sort -> IO Bool
+isSeqSort = liftFun1 z3_is_seq_sort
+
+-- | Create a regular expression sort out of a sequence sort.
+mkReSort :: Context -> Sort -> IO Sort
+mkReSort = liftFun1 z3_mk_re_sort
+
+-- | Check if s is a regular expression sort.
+isReSort :: Context -> Sort -> IO Bool
+isReSort = liftFun1 z3_is_re_sort
+
+-- | Create a sort for 8 bit strings. This function creates a sort for ASCII
+-- strings. Each character is 8 bits.
+mkStringSort :: Context -> IO Sort
+mkStringSort = liftFun0 z3_mk_string_sort
+
+-- | Check if s is a string sort.
+isStringSort :: Context -> Sort -> IO Bool
+isStringSort = liftFun1 z3_is_string_sort
+
+-- | Create a string constant out of the string that is passed in.
+mkString :: Context -> String -> IO AST
+mkString = liftFun1 z3_mk_string
+
+-- | Determine if s is a string constant.
+isString :: Context -> AST -> IO Bool
+isString = liftFun1 z3_is_string
+
+-- | Retrieve the string constant stored in s.
+getString :: Context -> AST -> IO String
+getString = liftFun1 z3_get_string
+
+-- | Create an empty sequence of the sequence sort seq.
+mkSeqEmpty :: Context -> Sort -> IO AST
+mkSeqEmpty = liftFun1 z3_mk_seq_empty
+
+-- | Create a unit sequence of a.
+mkSeqUnit :: Context -> AST -> IO AST
+mkSeqUnit = liftFun1 z3_mk_seq_unit
+
+-- | Concatenate sequences.
+mkSeqConcat :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkSeqConcat c i as
+  | i <  0            = error "Z3.Base.mkSeqConcat: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkSeqConcet: empty list of expressions"
+  | otherwise         = marshal z3_mk_seq_concat c $ marshalArrayLen as
+
+-- | Check if prefix is a prefix of s.
+mkSeqPrefix :: Context
+            -> AST -- ^ prefix
+            -> AST -- ^ s
+            -> IO AST
+mkSeqPrefix = liftFun2 z3_mk_seq_prefix
+
+-- | Check if suffix is a suffix of s.
+mkSeqSuffix :: Context
+            -> AST -- ^ suffix
+            -> AST -- ^ s
+            -> IO AST
+mkSeqSuffix = liftFun2 z3_mk_seq_suffix
+
+-- | Check if container contains containee.
+mkSeqContains :: Context
+              -> AST -- ^ container
+              -> AST -- ^ containee
+              -> IO AST
+mkSeqContains = liftFun2 z3_mk_seq_contains
+
+-- | Extract subsequence starting at offset of length.
+mkSeqExtract :: Context
+             -> AST -- ^ s
+             -> AST -- ^ offset
+             -> AST -- ^ length
+             -> IO AST
+mkSeqExtract = liftFun3 z3_mk_seq_extract
+
+-- | Replace the first occurrence of src with dst in s.
+mkSeqReplace :: Context
+             -> AST -- ^ s
+             -> AST -- ^ src
+             -> AST -- ^ dst
+             -> IO AST
+mkSeqReplace = liftFun3 z3_mk_seq_replace
+
+-- | Retrieve from s the unit sequence positioned at position index.
+mkSeqAt :: Context
+        -> AST -- ^ s
+        -> AST -- ^ index
+        -> IO AST
+mkSeqAt = liftFun2 z3_mk_seq_at
+
+-- | Return the length of the sequence s.
+mkSeqLength :: Context
+            -> AST -- ^ s
+            -> IO AST
+mkSeqLength = liftFun1 z3_mk_seq_length
+
+-- | Return index of first occurrence of substr in s starting from offset
+-- offset. If s does not contain substr, then the value is -1, if offset is the
+-- length of s, then the value is -1 as well. The function is under-specified if
+-- offset is negative or larger than the length of s.
+mkSeqIndex :: Context
+           -> AST -- ^ s
+           -> AST -- ^ substr
+           -> AST -- ^ offset
+           -> IO AST
+mkSeqIndex = liftFun3 z3_mk_seq_index
+
+-- | Convert string to integer.
+mkStrToInt :: Context -> AST -> IO AST
+mkStrToInt = liftFun1 z3_mk_str_to_int
+
+-- | Integer to string conversion.
+mkIntToStr :: Context -> AST -> IO AST
+mkIntToStr = liftFun1 z3_mk_int_to_str
+
+-- | Create a regular expression that accepts the sequence.
+mkSeqToRe :: Context -> AST -> IO AST
+mkSeqToRe = liftFun1 z3_mk_seq_to_re
+
+-- | Check if seq is in the language generated by the regular expression re.
+mkSeqInRe :: Context
+          -> AST -- ^ seq
+          -> AST -- ^ re
+          -> IO AST
+mkSeqInRe = liftFun2 z3_mk_seq_in_re
+
+-- | Create the regular language re+.
+mkRePlus :: Context -> AST -> IO AST
+mkRePlus = liftFun1 z3_mk_re_plus
+
+-- | Create the regular language re*.
+mkReStar :: Context -> AST -> IO AST
+mkReStar = liftFun1 z3_mk_re_star
+
+-- | Create the regular language [re].
+mkReOption :: Context -> AST -> IO AST
+mkReOption = liftFun1 z3_mk_re_option
+
+-- | Create the union of the regular languages.
+mkReUnion :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReUnion c i as
+  | i <  0            = error "Z3.Base.mkReUnion: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReUnion: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_union c $ marshalArrayLen as
+
+-- | Create the concatenation of the regular languages.
+mkReConcat :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReConcat c i as
+  | i <  0            = error "Z3.Base.mkReConcat: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReConcat: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_concat c $ marshalArrayLen as
+
+-- | Create the range regular expression over two sequences of length 1.
+mkReRange :: Context
+          -> AST -- ^ lo
+          -> AST -- ^ hi
+          -> IO AST
+mkReRange = liftFun2 z3_mk_re_range
+
+-- | Create a regular expression loop. The supplied regular expression r is
+-- repeated between lo and hi times. The lo should be below hi with one
+-- exception: when supplying the value hi as 0, the meaning is to repeat the
+-- argument r at least lo number of times, and with an unbounded upper bound.
+mkReLoop :: (Integral int)
+         => Context
+         -> AST -- ^ r
+         -> int -- ^ lo
+         -> int -- ^ hi
+         -> IO AST
+mkReLoop c a i j
+  | i < 0     = error "Z3.Base.mkReLoop: negative size"
+  | i < 0     = error "Z3.Base.mkReLoop: empty list of expressions"
+  | otherwise = liftFun3 z3_mk_re_loop c a i j
+
+-- | Create the intersection of the regular languages.
+mkReIntersect :: (Integral int) => Context -> int -> [AST] -> IO AST
+mkReIntersect c i as
+  | i <  0            = error "Z3.Base.mkReIntersect: negative size"
+  | i >= 0 && null as = error "Z3.Base.mkReIntersect: empty list of expressions"
+  | otherwise         = marshal z3_mk_re_intersect c $ marshalArrayLen as
+
+-- | Create the complement of the regular language.
+mkReComplement :: Context -> AST -> IO AST
+mkReComplement = liftFun1 z3_mk_re_complement
+
+-- | Create an empty regular expression of sort re.
+mkReEmpty :: Context -> Sort -> IO AST
+mkReEmpty = liftFun1 z3_mk_re_empty
+
+-- | Create an universal regular expression of sort re.
+mkReFull :: Context -> Sort -> IO AST
+mkReFull = liftFun1 z3_mk_re_full
+
+ ---------------------------------------------------------------------
 -- Quantifiers
 
 -- | Create a pattern for quantifier instantiation.

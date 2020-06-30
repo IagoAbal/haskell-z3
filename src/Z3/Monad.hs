@@ -207,6 +207,43 @@ module Z3.Monad
   , mkBitvector
   , mkBvNum
 
+  -- * Sequences and regular expressions
+  , mkSeqSort
+  , isSeqSort
+  , mkReSort
+  , isReSort
+  , mkStringSort
+  , isStringSort
+  , mkString
+  , isString
+  , getString
+  , mkSeqEmpty
+  , mkSeqUnit
+  , mkSeqConcat
+  , mkSeqPrefix
+  , mkSeqSuffix
+  , mkSeqContains
+  , mkSeqExtract
+  , mkSeqReplace
+  , mkSeqAt
+  , mkSeqLength
+  , mkSeqIndex
+  , mkStrToInt
+  , mkIntToStr
+  , mkSeqToRe
+  , mkSeqInRe
+  , mkRePlus
+  , mkReStar
+  , mkReOption
+  , mkReUnion
+  , mkReConcat
+  , mkReRange
+  , mkReLoop
+  , mkReIntersect
+  , mkReComplement
+  , mkReEmpty
+  , mkReFull
+
   -- * Quantifiers
   , mkPattern
   , mkBound
@@ -1525,6 +1562,191 @@ mkBvNum :: (MonadZ3 z3, Integral i) => Int    -- ^ bit-width
                                     -> i      -- ^ integer value
                                     -> z3 AST
 mkBvNum = liftFun2 Base.mkBvNum
+
+---------------------------------------------------------------------
+-- Sequences and regular expressions
+
+-- | Create a sequence sort out of the sort for the elements.
+mkSeqSort :: MonadZ3 z3 => Sort -> z3 Sort
+mkSeqSort = liftFun1 Base.mkSeqSort
+
+-- | Check if s is a sequence sort.
+isSeqSort :: MonadZ3 z3 => Sort -> z3 Bool
+isSeqSort = liftFun1 Base.isSeqSort
+
+-- | Create a regular expression sort out of a sequence sort.
+mkReSort :: MonadZ3 z3 => Sort -> z3 Sort
+mkReSort = liftFun1 Base.mkReSort
+
+-- | Check if s is a regular expression sort.
+isReSort :: MonadZ3 z3 => Sort -> z3 Bool
+isReSort = liftFun1 Base.isReSort
+
+-- | Create a sort for 8 bit strings. This function creates a sort for ASCII
+-- strings. Each character is 8 bits.
+mkStringSort :: MonadZ3 z3 => z3 Sort
+mkStringSort = liftScalar Base.mkStringSort
+
+-- | Check if s is a string sort.
+isStringSort :: MonadZ3 z3 => Sort -> z3 Bool
+isStringSort = liftFun1 Base.isStringSort
+
+-- | Create a string constant out of the string that is passed in.
+mkString :: MonadZ3 z3 => String -> z3 AST
+mkString = liftFun1 Base.mkString
+
+-- | Determine if s is a string constant.
+isString :: MonadZ3 z3 => AST -> z3 Bool
+isString = liftFun1 Base.isString
+
+-- | Retrieve the string constant stored in s.
+getString :: MonadZ3 z3 => AST -> z3 String
+getString = liftFun1 Base.getString
+
+-- | Create an empty sequence of the sequence sort seq.
+mkSeqEmpty :: MonadZ3 z3 => Sort -> z3 AST
+mkSeqEmpty = liftFun1 Base.mkSeqEmpty
+
+-- | Create a unit sequence of a.
+mkSeqUnit :: MonadZ3 z3 => AST -> z3 AST
+mkSeqUnit = liftFun1 Base.mkSeqUnit
+
+-- | Concatenate sequences.
+mkSeqConcat :: (Integral int, MonadZ3 z3) => int -> [AST] -> z3 AST
+mkSeqConcat = liftFun2 Base.mkSeqConcat
+
+-- | Check if prefix is a prefix of s.
+mkSeqPrefix :: MonadZ3 z3
+            => AST -- ^ prefix
+            -> AST -- ^ s
+            -> z3 AST
+mkSeqPrefix = liftFun2 Base.mkSeqPrefix
+
+-- | Check if suffix is a suffix of s.
+mkSeqSuffix :: MonadZ3 z3
+            => AST -- ^ suffix
+            -> AST -- ^ s
+            -> z3 AST
+mkSeqSuffix = liftFun2 Base.mkSeqSuffix
+
+-- | Check if container contains containee.
+mkSeqContains :: MonadZ3 z3
+              => AST -- ^ container
+              -> AST -- ^ containee
+              -> z3 AST
+mkSeqContains = liftFun2 Base.mkSeqContains
+
+-- | Extract subsequence starting at offset of length.
+mkSeqExtract :: MonadZ3 z3
+             => AST -- ^ s
+             -> AST -- ^ offset
+             -> AST -- ^ length
+             -> z3 AST
+mkSeqExtract = liftFun3 Base.mkSeqExtract
+
+-- | Replace the first occurrence of src with dst in s.
+mkSeqReplace :: MonadZ3 z3
+             => AST -- ^ s
+             -> AST -- ^ src
+             -> AST -- ^ dst
+             -> z3 AST
+mkSeqReplace = liftFun3 Base.mkSeqReplace
+
+-- | Retrieve from s the unit sequence positioned at position index.
+mkSeqAt :: MonadZ3 z3
+        => AST -- ^ s
+        -> AST -- ^ index
+        -> z3 AST
+mkSeqAt = liftFun2 Base.mkSeqAt
+
+-- | Return the length of the sequence s.
+mkSeqLength :: MonadZ3 z3 => AST -> z3 AST
+mkSeqLength = liftFun1 Base.mkSeqLength
+
+-- | Return index of first occurrence of substr in s starting from offset
+-- offset. If s does not contain substr, then the value is -1, if offset is the
+-- length of s, then the value is -1 as well. The function is under-specified if
+-- offset is negative or larger than the length of s.
+mkSeqIndex :: MonadZ3 z3
+           => AST -- ^ s
+           -> AST -- ^ substr
+           -> AST -- ^ offset
+           -> z3 AST
+mkSeqIndex = liftFun3 Base.mkSeqIndex
+
+-- | Convert string to integer.
+mkStrToInt :: MonadZ3 z3 => AST -> z3 AST
+mkStrToInt = liftFun1 Base.mkStrToInt
+
+-- | Integer to string conversion.
+mkIntToStr :: MonadZ3 z3 => AST -> z3 AST
+mkIntToStr = liftFun1 Base.mkIntToStr
+
+-- | Create a regular expression that accepts the sequence.
+mkSeqToRe :: MonadZ3 z3 => AST -> z3 AST
+mkSeqToRe = liftFun1 Base.mkSeqToRe
+
+-- | Check if seq is in the language generated by the regular expression re.
+mkSeqInRe :: MonadZ3 z3
+          => AST -- ^ seq
+          -> AST -- ^ re
+          -> z3 AST
+mkSeqInRe = liftFun2 Base.mkSeqInRe
+
+-- | Create the regular language re+.
+mkRePlus :: MonadZ3 z3 => AST -> z3 AST
+mkRePlus = liftFun1 Base.mkRePlus
+
+-- | Create the regular language re*.
+mkReStar :: MonadZ3 z3 => AST -> z3 AST
+mkReStar = liftFun1 Base.mkReStar
+
+-- | Create the regular language [re].
+mkReOption :: MonadZ3 z3 => AST -> z3 AST
+mkReOption = liftFun1 Base.mkReOption
+
+-- | Create the union of the regular languages.
+mkReUnion :: (Integral int, MonadZ3 z3) => int -> [AST] -> z3 AST
+mkReUnion = liftFun2 Base.mkReUnion
+
+-- | Create the concatenation of the regular languages.
+mkReConcat :: (Integral int, MonadZ3 z3) => int -> [AST] -> z3 AST
+mkReConcat = liftFun2 Base.mkReConcat
+
+-- | Create the range regular expression over two sequences of length 1.
+mkReRange :: MonadZ3 z3
+          => AST -- ^ lo
+          -> AST -- ^ hi
+          -> z3 AST
+mkReRange = liftFun2 Base.mkReRange
+
+-- | Create a regular expression loop. The supplied regular expression r is
+-- repeated between lo and hi times. The lo should be below hi with one
+-- exception: when supplying the value hi as 0, the meaning is to repeat the
+-- argument r at least lo number of times, and with an unbounded upper bound.
+mkReLoop :: (Integral int, MonadZ3 z3)
+         => AST -- ^ r
+         -> int -- ^ lo
+         -> int -- ^ hi
+         -> z3 AST
+mkReLoop = liftFun3 Base.mkReLoop
+
+-- | Create the intersection of the regular languages.
+mkReIntersect :: (Integral int, MonadZ3 z3) => int -> [AST] -> z3 AST
+mkReIntersect = liftFun2 Base.mkReIntersect
+
+-- | Create the complement of the regular language.
+mkReComplement :: MonadZ3 z3 => AST -> z3 AST
+mkReComplement = liftFun1 Base.mkReComplement
+
+-- | Create an empty regular expression of sort re.
+mkReEmpty :: MonadZ3 z3 => Sort -> z3 AST
+mkReEmpty = liftFun1 Base.mkReEmpty
+
+-- | Create an universal regular expression of sort re.
+mkReFull :: MonadZ3 z3 => Sort -> z3 AST
+mkReFull = liftFun1 Base.mkReFull
+
 
 ---------------------------------------------------------------------
 -- Quantifiers
