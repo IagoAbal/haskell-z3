@@ -396,6 +396,32 @@ module Z3.Base (
   , fixedpointGetAnswer
   , fixedpointGetAssertions
 
+  -- * Optimization
+  , Optimize (..)
+  , mkOptimize
+  , optimizeAssert
+  , optimizeAssertAndTrack
+  , optimizeAssertSoft
+  , optimizeMaximize
+  , optimizeMinimize
+  , optimizePush
+  , optimizePop
+  , optimizeCheck
+  , optimizeGetReasonUnknown
+  , optimizeGetModel
+  , optimizeGetUnsatCore
+  , optimizeSetParams
+  , optimizeGetLower
+  , optimizeGetUpper
+  , optimizeGetUpperAsVector
+  , optimizeGetLowerAsVector
+  , optimizeToString
+  , optimizeFromString
+  , optimizeFromFile
+  , optimizeGetHelp
+  , optimizeGetAssertions
+  , optimizeGetObjectives
+
   -- * Solvers
   , Logic(..)
   , mkSolver
@@ -2584,6 +2610,91 @@ fixedpointGetAnswer = liftFun1 z3_fixedpoint_get_answer
 
 fixedpointGetAssertions :: Context -> Fixedpoint -> IO [AST]
 fixedpointGetAssertions = liftFun1 z3_fixedpoint_get_assertions
+
+---------------------------------------------------------------------
+-- Optimization facilities
+
+newtype Optimize = Optimize { unOptimize :: ForeignPtr Z3_optimize }
+    deriving Eq
+
+instance Marshal Optimize (Ptr Z3_optimize) where
+  c2h = mkC2hRefCount Optimize z3_optimize_inc_ref z3_optimize_dec_ref
+  h2c fp = withForeignPtr (unOptimize fp)
+
+mkOptimize :: Context -> IO Optimize
+mkOptimize = liftFun0 z3_mk_optimize
+
+optimizeAssert :: Context -> Optimize -> AST -> IO ()
+optimizeAssert = liftFun2 z3_optimize_assert
+
+optimizeAssertAndTrack :: Context -> Optimize -> AST -> AST -> IO ()
+optimizeAssertAndTrack = liftFun3 z3_optimize_assert_and_track
+
+optimizeAssertSoft :: Context -> Optimize -> AST -> String -> Symbol -> IO Int
+optimizeAssertSoft ctx opt ast str sym =
+  marshal z3_optimize_assert_soft ctx $ \f ->
+    h2c opt $ \optPtr ->
+    h2c ast $ \astPtr ->
+    withCString str $ \strPtr ->
+    h2c sym $ \symPtr ->
+      f optPtr astPtr strPtr symPtr
+
+optimizeMaximize :: Context -> Optimize -> AST -> IO Int
+optimizeMaximize = liftFun2 z3_optimize_maximize
+
+optimizeMinimize :: Context -> Optimize -> AST -> IO Int
+optimizeMinimize = liftFun2 z3_optimize_minimize
+
+optimizePush :: Context -> Optimize -> IO ()
+optimizePush = liftFun1 z3_optimize_push
+
+optimizePop :: Context -> Optimize -> IO ()
+optimizePop = liftFun1 z3_optimize_pop
+
+optimizeCheck :: Context -> Optimize -> IO Result
+optimizeCheck = liftFun1 z3_optimize_check
+
+optimizeGetReasonUnknown :: Context -> Optimize -> IO String
+optimizeGetReasonUnknown = liftFun1 z3_optimize_get_reason_unknown
+
+optimizeGetModel :: Context -> Optimize -> IO Model
+optimizeGetModel = liftFun1 z3_optimize_get_model
+
+optimizeGetUnsatCore :: Context -> Optimize -> IO [AST]
+optimizeGetUnsatCore = liftFun1 z3_optimize_get_unsat_core
+
+optimizeSetParams :: Context -> Optimize -> Params -> IO ()
+optimizeSetParams = liftFun2 z3_optimize_set_params
+
+optimizeGetLower :: Context -> Optimize -> Int -> IO AST
+optimizeGetLower = liftFun2 z3_optimize_get_lower
+
+optimizeGetUpper :: Context -> Optimize -> Int -> IO AST
+optimizeGetUpper = liftFun2 z3_optimize_get_upper
+
+optimizeGetUpperAsVector :: Context -> Optimize -> Int -> IO [AST]
+optimizeGetUpperAsVector = liftFun2 z3_optimize_get_upper_as_vector
+
+optimizeGetLowerAsVector :: Context -> Optimize -> Int -> IO [AST]
+optimizeGetLowerAsVector = liftFun2 z3_optimize_get_lower_as_vector
+
+optimizeToString :: Context -> Optimize -> IO String
+optimizeToString = liftFun1 z3_optimize_to_string
+
+optimizeFromString :: Context -> Optimize -> String -> IO ()
+optimizeFromString = liftFun2 z3_optimize_from_string
+
+optimizeFromFile :: Context -> Optimize -> String -> IO ()
+optimizeFromFile = liftFun2 z3_optimize_from_file
+ 
+optimizeGetHelp :: Context -> Optimize -> IO String
+optimizeGetHelp = liftFun1 z3_optimize_get_help
+
+optimizeGetAssertions :: Context -> Optimize -> IO [AST]
+optimizeGetAssertions = liftFun1 z3_optimize_get_assertions
+
+optimizeGetObjectives :: Context -> Optimize -> IO [AST]
+optimizeGetObjectives = liftFun1 z3_optimize_get_objectives
 
 -- AST vectors ?
 
