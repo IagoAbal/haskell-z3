@@ -1674,6 +1674,8 @@ foreign import ccall unsafe "Z3_optimize_pop"
 foreign import ccall unsafe "Z3_optimize_check"
     z3_optimize_check :: Ptr Z3_context
                       -> Ptr Z3_optimize
+                      -> CUInt
+                      -> Ptr (Ptr Z3_ast)
                       -> IO Z3_lbool
 
 foreign import ccall unsafe "Z3_optimize_get_reason_unknown"

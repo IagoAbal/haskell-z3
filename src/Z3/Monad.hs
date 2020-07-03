@@ -2338,8 +2338,8 @@ optimizePush = liftOptimize0 Base.optimizePush
 optimizePop :: MonadOptimize z3 => z3 ()
 optimizePop = liftOptimize0 Base.optimizePop 
 
-optimizeCheck :: MonadOptimize z3 => z3 Result
-optimizeCheck = liftOptimize0 Base.optimizeCheck
+optimizeCheck :: MonadOptimize z3 => [AST] -> z3 Result
+optimizeCheck = liftOptimize1 Base.optimizeCheck
 
 optimizeGetReasonUnknown :: MonadOptimize z3 => z3 String
 optimizeGetReasonUnknown = liftOptimize0 Base.optimizeGetReasonUnknown

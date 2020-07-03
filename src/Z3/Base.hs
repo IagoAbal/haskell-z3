@@ -2890,8 +2890,11 @@ optimizePush = liftFun1 z3_optimize_push
 optimizePop :: Context -> Optimize -> IO ()
 optimizePop = liftFun1 z3_optimize_pop
 
-optimizeCheck :: Context -> Optimize -> IO Result
-optimizeCheck = liftFun1 z3_optimize_check
+optimizeCheck :: Context -> Optimize -> [AST] -> IO Result
+optimizeCheck ctx opt ss = marshal z3_optimize_check ctx $ \f ->
+  h2c opt $ \optPtr ->
+  marshalArrayLen ss $ \ssNum ssPtr ->
+    f optPtr ssNum ssPtr
 
 optimizeGetReasonUnknown :: Context -> Optimize -> IO String
 optimizeGetReasonUnknown = liftFun1 z3_optimize_get_reason_unknown
