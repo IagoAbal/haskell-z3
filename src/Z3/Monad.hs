@@ -381,6 +381,7 @@ module Z3.Monad
   , getVersion
 
   -- * Fixedpoint
+  , MonadFixedpoint(..)
   , Fixedpoint
   , fixedpointAddRule
   , fixedpointSetParams
@@ -390,6 +391,7 @@ module Z3.Monad
   , fixedpointGetAssertions
 
   -- * Optimization
+  , MonadOptimize(..)
   , Optimize
   , optimizeAssert
   , optimizeAssertAndTrack
