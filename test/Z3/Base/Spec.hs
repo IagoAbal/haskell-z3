@@ -77,7 +77,9 @@ spec = around withContext $ do
   context "Bit-vectors" $ do
 
     specify "mkBvmul" $ \ctx ->
-      let bad = do
+      let bad = do {
           x <- Z3.mkFreshIntVar ctx "x";
           Z3.mkBvmul ctx x x
-      in bad `shouldThrow` anyZ3Error
+        }
+        in
+      bad `shouldThrow` anyZ3Error
