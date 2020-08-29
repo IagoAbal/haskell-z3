@@ -1,7 +1,19 @@
 
 # Release Notes
 
+## 408.2
+
+Tested (sort of) with Z3 4.8.8.
+
+* Added Optimization API. (David Cao)
+* Added Sequences and regular expressions API. (Carlo Nucera)
+* Added z3_solver_get_proof. ("0xd34df00d")
+* Added MonadZ3 instance for ReaderT. ("0xd34df00d")
+* Fixed two typos in docs. (Mauro Bringolf)
+
 ## 408.1
+
+Tested (sort of) with Z3 4.8.4.
 
 * Added bindings to `substitute` and `isEqAST`. (Hengchu Zhang)
 * Added `MonadFail` instance for `Z3`, required by GHC >=8.6. (Conal Elliott)

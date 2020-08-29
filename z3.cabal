@@ -1,5 +1,5 @@
 Name:                z3
-Version:             408.1
+Version:             408.2
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
@@ -30,10 +30,10 @@ License-file:        LICENSE
 Author:              Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
 Maintainer:          Iago Abal <mail@iagoabal.eu>
-Copyright:           2012-2019, Iago Abal, David Castro
+Copyright:           2012-2020, Iago Abal, David Castro
 Category:            Math, SMT, Theorem Provers, Formal Methods, Bit vectors
 Build-type:          Simple
-Cabal-version:       >= 1.8
+Cabal-version:       >= 1.10
 
 Extra-source-files:  README.md CHANGES.md HACKING.md
 
@@ -64,11 +64,12 @@ Library
       Build-depends:     semigroups >= 0.5
 
     Build-tools:         hsc2hs
-    Extensions:          FlexibleInstances
+
+    Default-language:    Haskell2010
+    Default-extensions:  FlexibleInstances
                          FlexibleContexts
                          ForeignFunctionInterface
                          MultiParamTypeClasses
-
     Other-extensions:    CPP
                          DeriveDataTypeable
                          EmptyDataDecls
@@ -99,6 +100,8 @@ Executable examples
   else
     Buildable:         False
 
+  Default-language:    Haskell2010
+
   Hs-source-dirs:      examples
   Main-Is:             Examples.hs
 
@@ -119,7 +122,8 @@ Test-suite spec
 
     Ghc-options:        -Wall
 
-    Extensions:         ScopedTypeVariables
+    Default-language:   Haskell2010
+    Default-extensions: ScopedTypeVariables
 
     Hs-source-dirs:     test
 
