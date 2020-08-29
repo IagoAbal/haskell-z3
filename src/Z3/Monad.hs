@@ -407,7 +407,6 @@ module Z3.Monad
   , optimizeSetParams
   , optimizeGetLower
   , optimizeGetUpper
-  , optimizeGetLower
   , optimizeGetUpperAsVector
   , optimizeGetLowerAsVector
   , optimizeToString
