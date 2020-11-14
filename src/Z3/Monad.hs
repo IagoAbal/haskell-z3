@@ -2437,6 +2437,9 @@ solverAssertCnstr = liftSolver1 Base.solverAssertCnstr
 solverAssertAndTrack :: MonadZ3 z3 => AST -> AST -> z3 ()
 solverAssertAndTrack = liftSolver2 Base.solverAssertAndTrack
 
+-- | Return the set of asserted formulas on the solver.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3b3d6d8c5bafd5be707cda2d144073db>
 solverGetAssertions :: MonadZ3 z3 => z3 [AST]
 solverGetAssertions = liftSolver0 Base.solverGetAssertions
 
