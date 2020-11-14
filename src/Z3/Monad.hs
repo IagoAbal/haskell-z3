@@ -2441,18 +2441,24 @@ solverGetAssertions :: MonadZ3 z3 => z3 [AST]
 solverGetAssertions = liftSolver0 Base.solverGetAssertions
 
 -- | Check whether the assertions in a given solver are consistent or not.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3570e58a8c3d493da4109568b1eca2ce>
 solverCheck :: MonadZ3 z3 => z3 Result
 solverCheck = liftSolver0 Base.solverCheck
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga65b2bd980519c0e873d328edcc5f9317>
 solverCheckAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 solverCheckAssumptions = liftSolver1 Base.solverCheckAssumptions
 
--- | Retrieve the model for the last 'solverCheck'.
+-- | Retrieve the model for the last 'solverCheck' or 'solverCheckAssumptions'.
 --
 -- The error handler is invoked if a model is not available because
 -- the commands above were not invoked for the given solver,
 -- or if the result was 'Unsat'.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6342b4260e9c92b11cb3eea3a145dff4>
 solverGetModel :: MonadZ3 z3 => z3 Model
 solverGetModel = liftSolver0 Base.solverGetModel
 --
