@@ -2482,6 +2482,8 @@ solverToString = liftSolver0 Base.solverToString
 -- | Create a backtracking point.
 --
 -- For @push; m; pop 1@ see 'local'.
+--
+-- Alias for 'solverPush'
 push :: MonadZ3 z3 => z3 ()
 push = solverPush
 
@@ -2507,6 +2509,8 @@ local q = do
   return r
 
 -- | Backtrack all the way.
+--
+-- Alias for 'solverReset'
 reset :: MonadZ3 z3 => z3 ()
 reset = solverReset
 
@@ -2514,23 +2518,29 @@ reset = solverReset
 getNumScopes :: MonadZ3 z3 => z3 Int
 getNumScopes = liftSolver0 Base.solverGetNumScopes
 
+-- | Alias for 'solverAssertCnstr'
 assert :: MonadZ3 z3 => AST -> z3 ()
 assert = solverAssertCnstr
 
 -- | Check whether the given logical context is consistent or not.
+--
+-- Alias for 'solverCheck'
 check :: MonadZ3 z3 => z3 Result
 check = solverCheck
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+--
+-- Alias for 'solverCheckAssumptions'
 checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 checkAssumptions = solverCheckAssumptions
 
+-- | Call 'solverCheck' and based on the result also call 'solverGetModel'.
 solverCheckAndGetModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
 solverCheckAndGetModel = liftSolver0 Base.solverCheckAndGetModel
 
--- | Get model.
+-- | Check and get model.
 --
--- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
+-- Alias for 'solverCheckAndGetModel'
 getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
 getModel = solverCheckAndGetModel
 
@@ -2549,5 +2559,7 @@ withModel f = do
  return (r, mb_e)
 
 -- | Retrieve the unsat core for the last 'checkAssumptions'; the unsat core is a subset of the assumptions.
+--
+-- Alias for 'solverGetUnsatCore'
 getUnsatCore :: MonadZ3 z3 => z3 [AST]
 getUnsatCore = solverGetUnsatCore

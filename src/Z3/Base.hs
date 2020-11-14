@@ -3166,6 +3166,7 @@ solverToString = liftFun1 z3_solver_to_string
 -------------------------------------------------
 -- ** Helpers
 
+-- | Call 'solverCheck' and based on the result also call 'solverGetModel'.
 solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
 solverCheckAndGetModel ctx solver =
   do res <- solverCheck ctx solver
