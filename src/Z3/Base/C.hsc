@@ -1468,6 +1468,10 @@ foreign import ccall unsafe "Z3_solver_assert_and_track"
     z3_solver_assert_and_track :: Ptr Z3_context -> Ptr Z3_solver ->
                                   Ptr Z3_ast -> Ptr Z3_ast -> IO ()
 
+-- | Reference <https://z3prover.github.io/api/html/group__capi.html#ga3b3d6d8c5bafd5be707cda2d144073db>
+foreign import ccall unsafe "Z3_solver_get_assertions"
+    z3_solver_get_assertions :: Ptr Z3_context -> Ptr Z3_solver -> IO (Ptr Z3_ast_vector)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga000e369de7b71caa4ee701089709c526>
 foreign import ccall unsafe "Z3_solver_check"
     z3_solver_check :: Ptr Z3_context -> Ptr Z3_solver -> IO Z3_lbool

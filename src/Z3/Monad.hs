@@ -425,6 +425,7 @@ module Z3.Monad
   , solverGetNumScopes
   , solverAssertCnstr
   , solverAssertAndTrack
+  , solverGetAssertions
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
@@ -2435,6 +2436,9 @@ solverAssertCnstr = liftSolver1 Base.solverAssertCnstr
 -- Boolean literals provided using Z3_solver_check_assumptions.
 solverAssertAndTrack :: MonadZ3 z3 => AST -> AST -> z3 ()
 solverAssertAndTrack = liftSolver2 Base.solverAssertAndTrack
+
+solverGetAssertions :: MonadZ3 z3 => z3 [AST]
+solverGetAssertions = liftSolver0 Base.solverGetAssertions
 
 -- | Check whether the assertions in a given solver are consistent or not.
 solverCheck :: MonadZ3 z3 => z3 Result
