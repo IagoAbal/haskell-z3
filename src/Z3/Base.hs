@@ -319,6 +319,8 @@ module Z3.Base (
   , isApp
   , toApp
   , getNumeralString
+  , getNumerator
+  , getDenominator
   , simplify
   , simplifyEx
   , getIndexValue
@@ -2173,9 +2175,17 @@ getNumeralString = liftFun1 z3_get_numeral_string
 
 -- TODO: Z3_get_numeral_decimal_string
 
--- TODO: Z3_get_numerator
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga2d37084eb47ea0ab19638a3407ce610b>
+getNumerator :: Context -> AST -> IO AST
+getNumerator = liftFun1 z3_get_numerator
 
--- TODO: Z3_get_denominator
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
+getDenominator :: Context -> AST -> IO AST
+getDenominator = liftFun1 z3_get_denominator
 
 -- TODO: Z3_get_numeral_small
 

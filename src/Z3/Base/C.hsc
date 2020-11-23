@@ -1004,6 +1004,14 @@ foreign import ccall unsafe "Z3_get_bool_value"
 foreign import ccall unsafe "Z3_get_numeral_string"
     z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga2d37084eb47ea0ab19638a3407ce610b>
+foreign import ccall unsafe "Z3_get_numerator"
+  z3_get_numerator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
+foreign import ccall unsafe "Z3_get_denominator"
+  z3_get_denominator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga203f32e3b904955f703f61f91a8626a4>
 foreign import ccall unsafe "Z3_get_arity"
     z3_get_arity :: Ptr Z3_context -> Ptr Z3_func_decl -> IO CUInt

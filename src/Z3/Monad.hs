@@ -276,6 +276,8 @@ module Z3.Monad
   , isApp
   , toApp
   , getNumeralString
+  , getNumerator
+  , getDenominator
   , simplify
   , simplifyEx
   , getIndexValue
@@ -1884,6 +1886,18 @@ toApp = liftFun1 Base.toApp
 -- | Return numeral value, as a string of a numeric constant term.
 getNumeralString :: MonadZ3 z3 => AST -> z3 String
 getNumeralString = liftFun1 Base.getNumeralString
+
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga2d37084eb47ea0ab19638a3407ce610b>
+getNumerator :: MonadZ3 z3 => AST -> z3 AST
+getNumerator = liftFun1 Base.getNumerator
+
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
+getDenominator :: MonadZ3 z3 => AST -> z3 AST
+getDenominator = liftFun1 Base.getDenominator
 
 getIndexValue :: MonadZ3 z3 => AST -> z3 Int
 getIndexValue = liftFun1 Base.getIndexValue
