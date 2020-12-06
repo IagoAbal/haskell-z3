@@ -2521,7 +2521,7 @@ evalReal ctx m ast = eval ctx m ast >>= T.traverse (getReal ctx)
 evalBv :: Context -> Bool -- ^ signed?
                   -> EvalAst Integer
 evalBv ctx signed m ast =
-  eval ctx m ast >>= T.traverse (\a -> getBv ctx a signed)
+  mkBv2int ctx ast signed >>= eval ctx m >>= T.traverse (\a -> getInt ctx a)
 
 -- | Evaluate a /collection/ of AST nodes in the given model.
 evalT :: Traversable t => Context -> Model -> t AST -> IO (Maybe (t AST))
