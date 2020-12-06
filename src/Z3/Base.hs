@@ -2702,7 +2702,7 @@ parseSMTLib2String :: Context
                    -> [Sort]     -- ^ sorts
                    -> [Symbol]   -- ^ declaration names
                    -> [FuncDecl] -- ^ declarations
-                   -> IO AST
+                   -> IO [AST]
 parseSMTLib2String ctx str sortNames sorts declNames decls =
   marshal z3_parse_smtlib2_string ctx $ \f ->
     withCString str $ \cstr ->
@@ -2718,7 +2718,7 @@ parseSMTLib2File :: Context
                  -> [Sort]     -- ^ sorts
                  -> [Symbol]   -- ^ declaration names
                  -> [FuncDecl] -- ^ declarations
-                 -> IO AST
+                 -> IO [AST]
 parseSMTLib2File ctx file sortNames sorts declNames decls =
   marshal z3_parse_smtlib2_string ctx $ \f ->
     withCString file $ \fileName ->
