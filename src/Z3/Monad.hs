@@ -2264,7 +2264,7 @@ parseSMTLib2String :: MonadZ3 z3 =>
                    -> [Sort]     -- ^ sorts
                    -> [Symbol]   -- ^ declaration names
                    -> [FuncDecl] -- ^ declarations
-                   -> z3 AST
+                   -> z3 [AST]
 parseSMTLib2String = liftFun5 Base.parseSMTLib2String
 
 -- | Parse SMT expressions from a file
@@ -2276,7 +2276,7 @@ parseSMTLib2File :: MonadZ3 z3 =>
                  -> [Sort]     -- ^ sorts
                  -> [Symbol]   -- ^ declaration names
                  -> [FuncDecl] -- ^ declarations
-                 -> z3 AST
+                 -> z3 [AST]
 parseSMTLib2File = liftFun5 Base.parseSMTLib2File
 
 ---------------------------------------------------------------------

@@ -18,8 +18,8 @@ smtStr2 = "(declare-const x Int)\n(assert (> x 5))"
 
 script :: Z3 Result
 script = do
-  l <- parseSMTLib2String smtStr1 [] [] [] []
-  r <- parseSMTLib2String smtStr2 [] [] [] []
+  [l] <- parseSMTLib2String smtStr1 [] [] [] []
+  [r] <- parseSMTLib2String smtStr2 [] [] [] []
   eq <- mkEq l r
   assert l
   assert r
