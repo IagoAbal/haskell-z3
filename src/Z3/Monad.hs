@@ -297,7 +297,6 @@ module Z3.Monad
   , getBool
   , getInt
   , getReal
-  , getBv
 
   -- * Modifiers
   , substituteVars
@@ -1956,15 +1955,6 @@ getInt = liftFun1 Base.getInt
 getReal :: MonadZ3 z3 => AST -> z3 Rational
 getReal = liftFun1 Base.getReal
 
--- | Read the 'Integer' value from an 'AST' of sort /bit-vector/.
---
--- See 'mkBv2int'.
-getBv :: MonadZ3 z3 => AST
-                    -> Bool  -- ^ signed?
-                    -> z3 Integer
-getBv = liftFun2 Base.getBv
-
-
 ---------------------------------------------------------------------
 -- Modifiers
 
@@ -2139,7 +2129,7 @@ evalReal = liftFun2 Base.evalReal
 -- The flag /signed/ decides whether the bit-vector value is
 -- interpreted as a signed or unsigned integer.
 --
--- See 'modelEval' and 'getBv'.
+-- See 'modelEval' and 'mkBv2int'.
 evalBv :: MonadZ3 z3 => Bool -- ^ signed?
                      -> EvalAst z3 Integer
 evalBv = liftFun3 Base.evalBv
