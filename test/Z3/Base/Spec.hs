@@ -83,3 +83,12 @@ spec = around withContext $ do
         }
         in
       bad `shouldThrow` anyZ3Error
+
+    specify "evalBv" $ \ctx -> property $ \(i :: Integer) ->
+      monadicIO $ do
+        x <- run $ do
+          ast <- Z3.mkBitvector ctx 32 i
+          solver <- Z3.mkSolver ctx
+          (_, Just model) <- Z3.solverCheckAndGetModel ctx solver
+          Z3.evalBv ctx True model ast
+        assert $ x == Just i
