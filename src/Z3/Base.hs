@@ -340,7 +340,6 @@ module Z3.Base (
   , getBool
   , getInt
   , getReal
-  , getBv
 
   -- * Modifiers
   , substituteVars
@@ -2290,14 +2289,6 @@ getReal c a = parse <$> getNumeralString c a
         parseDen ('/':sj) = read sj
         parseDen _        = error "Z3.Base.getReal: no parse"
 
--- | Read the 'Integer' value from an 'AST' of sort /bit-vector/.
---
--- See 'mkBv2int'.
-getBv :: Context -> AST
-                 -> Bool  -- ^ signed?
-                 -> IO Integer
-getBv c a signed = getInt c =<< mkBv2int c a signed
-
 ---------------------------------------------------------------------
 -- Modifiers
 
@@ -2517,7 +2508,7 @@ evalReal ctx m ast = eval ctx m ast >>= T.traverse (getReal ctx)
 -- The flag /signed/ decides whether the bit-vector value is
 -- interpreted as a signed or unsigned integer.
 --
--- See 'modelEval' and 'getBv'.
+-- See 'modelEval' and 'mkBv2int'.
 evalBv :: Context -> Bool -- ^ signed?
                   -> EvalAst Integer
 evalBv ctx signed m ast =
