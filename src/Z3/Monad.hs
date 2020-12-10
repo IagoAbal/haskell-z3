@@ -113,7 +113,7 @@ module Z3.Monad
   , mkDiv
   , mkMod
   , mkRem
-  , mkPow
+  , mkPower
   , mkLt
   , mkLe
   , mkGt
@@ -1034,8 +1034,8 @@ mkRem = liftFun2 Base.mkRem
 -- | Create an AST node representing arg1 ^ arg2.
 --
 -- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga8414506c805caa171f0c1fe29f9f9612>
-mkPow :: MonadZ3 z3 => AST -> AST -> z3 AST
-mkPow = liftFun2 Base.mkPow
+mkPower :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkPower = liftFun2 Base.mkPower
 
 -- | Create less than.
 --

@@ -156,7 +156,7 @@ module Z3.Base (
   , mkDiv
   , mkMod
   , mkRem
-  , mkPow
+  , mkPower
   , mkLt
   , mkLe
   , mkGt
@@ -1130,8 +1130,8 @@ mkRem :: Context -> AST -> AST -> IO AST
 mkRem = liftFun2 z3_mk_rem
 
 -- | Create an AST node representing arg1 ^ arg2.
-mkPow :: Context -> AST -> AST -> IO AST
-mkPow = liftFun2 z3_mk_power
+mkPower :: Context -> AST -> AST -> IO AST
+mkPower = liftFun2 z3_mk_power
 
 -- | Create less than.
 mkLt :: Context -> AST -> AST -> IO AST

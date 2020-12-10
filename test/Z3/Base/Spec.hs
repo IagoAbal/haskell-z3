@@ -52,12 +52,12 @@ spec = around withContext $ do
           Z3.getInt ctx ast;
         assert $ x == i
 
-    specify "mkPow" $ \ctx -> property $ \(ValidPowerInput i j) ->
+    specify "mkPower" $ \ctx -> property $ \(ValidPowerInput i j) ->
       monadicIO $ do
         x <- run $ do
           iAst <- Z3.mkInteger ctx i
           jAst <- Z3.mkInteger ctx j
-          p <- Z3.mkPow ctx iAst jAst
+          p <- Z3.mkPower ctx iAst jAst
           sol <- Z3.mkSolver ctx
           (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
           Z3.evalInt ctx model p 
