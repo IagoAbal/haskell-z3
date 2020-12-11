@@ -437,6 +437,10 @@ foreign import ccall unsafe "Z3_mk_mod"
 foreign import ccall unsafe "Z3_mk_rem"
     z3_mk_rem :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast ->  IO (Ptr Z3_ast)
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga8414506c805caa171f0c1fe29f9f9612>
+foreign import ccall unsafe "Z3_mk_power"
+    z3_mk_power :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast ->  IO (Ptr Z3_ast)
+
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga58a3dc67c5de52cf599c346803ba1534>
 foreign import ccall unsafe "Z3_mk_lt"
     z3_mk_lt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast ->  IO (Ptr Z3_ast)

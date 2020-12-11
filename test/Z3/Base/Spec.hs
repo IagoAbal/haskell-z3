@@ -5,7 +5,8 @@ module Z3.Base.Spec
   where
 
 import Test.Hspec
-import Test.QuickCheck ( property )
+import Test.QuickCheck ( property, choose )
+import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Monadic
 
 import qualified Z3.Base as Z3
@@ -17,6 +18,18 @@ withContext k = do
 
 anyZ3Error :: Selector Z3.Z3Error
 anyZ3Error = const True
+
+data ValidPowerInput = ValidPowerInput Integer Integer
+  deriving Show
+
+instance Arbitrary ValidPowerInput where
+  arbitrary = do i <- choose (0::Integer, 10)
+                 j <- choose (0::Integer, 64)
+                 return $ ValidPowerInput i j
+
+z3powerDef :: Integer -> Integer -> Integer
+z3powerDef 0 0 = 0
+z3powerDef i j = i ^ j
 
 spec :: Spec
 spec = around withContext $ do
@@ -38,6 +51,17 @@ spec = around withContext $ do
           ast <- Z3.mkInteger ctx i;
           Z3.getInt ctx ast;
         assert $ x == i
+
+    specify "mkPower" $ \ctx -> property $ \(ValidPowerInput i j) ->
+      monadicIO $ do
+        x <- run $ do
+          iAst <- Z3.mkInteger ctx i
+          jAst <- Z3.mkInteger ctx j
+          p <- Z3.mkPower ctx iAst jAst
+          sol <- Z3.mkSolver ctx
+          (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
+          Z3.evalInt ctx model p 
+        assert $ x == Just (z3powerDef i j)
 
   context "AST Equality and Substitution" $ do
     specify "isEqAST" $ \ctx ->
