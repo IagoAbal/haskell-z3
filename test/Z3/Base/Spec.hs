@@ -34,6 +34,60 @@ z3powerDef i j = i ^ j
 spec :: Spec
 spec = around withContext $ do
 
+
+  context "Sorts" $ do
+
+    specify "isEqSort" $ \ctx ->
+      monadicIO $ do
+        assert =<< (run $ do
+          s1 <- Z3.mkIntSort ctx
+          s2 <- Z3.mkIntSort ctx
+          Z3.isEqSort ctx s1 s2)
+        assert . not =<< (run $ do
+          s1 <- Z3.mkIntSort ctx
+          s2 <- Z3.mkRealSort ctx
+          Z3.isEqSort ctx s1 s2)
+        assert =<< (run $ do
+          s1 <- Z3.mkRealSort ctx
+          s2 <- Z3.mkRealSort ctx
+          Z3.isEqSort ctx s1 s2)
+        assert =<< (run $ do
+          s1 <- Z3.mkRealSort ctx
+          s2 <- Z3.mkRealSort ctx
+          s12 <- Z3.mkArraySort ctx s1 s2
+          s21 <- Z3.mkArraySort ctx s2 s1
+          Z3.isEqSort ctx s21 s12)
+        assert . not =<< (run $ do
+          s1 <- Z3.mkBoolSort ctx
+          s2 <- Z3.mkRealSort ctx
+          s12 <- Z3.mkArraySort ctx s1 s2
+          s21 <- Z3.mkArraySort ctx s2 s1
+          Z3.isEqSort ctx s21 s12)
+
+    specify "getSortId" $ \ctx -> 
+        sequence [ Z3.getSortId ctx =<< Z3.mkIntSort ctx
+                 , Z3.getSortId ctx =<< Z3.mkRealSort ctx
+                 , Z3.getSortId ctx =<< Z3.mkBoolSort ctx
+                 ] `shouldReturn`
+                 [ 2147483659
+                 , 2147483658
+                 , 2147483648
+                 ]
+
+    specify "sortToAst" $ \ctx ->
+      (do
+        s1 <- Z3.mkIntSort ctx
+        s2 <- Z3.mkRealSort ctx
+        ast <- Z3.sortToAst ctx =<< Z3.mkArraySort ctx s1 s2
+        Z3.astToString ctx ast)
+      `shouldReturn` "(Array Int Real)"
+
+    specify "getSortName" $ \ctx ->
+      (do
+        s1 <- Z3.mkIntSort ctx
+        Z3.getSymbolString ctx =<< Z3.getSortName ctx s1)
+      `shouldReturn` "Int"
+
   context "Propositional Logic and Equality" $ do
 
     specify "mkBool" $ \ctx -> property $ \b ->

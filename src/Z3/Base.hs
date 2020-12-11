@@ -298,6 +298,10 @@ module Z3.Base (
 
   -- * Accessors
   , getSymbolString
+  , isEqSort
+  , getSortName
+  , sortToAst
+  , getSortId
   , getSortKind
   , getBvSortSize
   , getDatatypeSortConstructors
@@ -1942,13 +1946,21 @@ mkExistsConst = marshalMkQConst z3_mk_exists_const
 getSymbolString :: Context -> Symbol -> IO String
 getSymbolString = liftFun1 z3_get_symbol_string
 
--- TODO: Z3_get_sort_name
+-- | Return the sort name as a symbol. 
+getSortName :: Context -> Sort -> IO Symbol
+getSortName = liftFun1 z3_get_sort_name
 
--- TODO: Z3_get_sort_id
+-- | Convert a Z3_sort into Z3_ast. This is just type casting.
+sortToAst :: Context -> Sort -> IO AST
+sortToAst = liftFun1 z3_sort_to_ast
 
--- TODO: Z3_sort_to_ast
+-- | Return a unique identifier for s.
+getSortId :: Context -> Sort -> IO Int
+getSortId = liftFun1 z3_get_sort_id
 
--- TODO: Z3_is_eq_sort
+-- | Compare sorts.
+isEqSort :: Context -> Sort -> Sort -> IO Bool
+isEqSort = liftFun2 z3_is_eq_sort
 
 -- | Return the sort kind of the given sort.
 getSortKind :: Context -> Sort -> IO SortKind

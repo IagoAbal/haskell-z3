@@ -255,6 +255,10 @@ module Z3.Monad
 
   -- * Accessors
   , getSymbolString
+  , getSortName
+  , getSortId
+  , sortToAst
+  , isEqSort
   , getSortKind
   , getBvSortSize
   , getDatatypeSortConstructors
@@ -1784,6 +1788,28 @@ mkExists = liftFun4 Base.mkExists
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
 getSymbolString :: MonadZ3 z3 => Symbol -> z3 String
 getSymbolString = liftFun1 Base.getSymbolString
+
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gacc77e9b5ce5ada28c5af4ddb67d6702a>
+getSortId :: MonadZ3 z3 => Sort -> z3 Int
+getSortId = liftFun1 Base.getSortId
+
+-- | Return the sort name as a symbol.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gab66884f00730c61cf3a5e6814aa2ebd0>
+getSortName :: MonadZ3 z3 => Sort -> z3 Symbol
+getSortName = liftFun1 Base.getSortName
+
+-- | Convert a Z3_sort into Z3_ast. This is just type casting.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gac68cabaff75abfbf3d99f1f66d2e39a5>
+sortToAst :: MonadZ3 z3 => Sort -> z3 AST
+sortToAst = liftFun1 Base.sortToAst
+
+-- | Compare sorts.
+--
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf260f3b5bc786cd0552e1ed4f8232a4b>
+isEqSort :: MonadZ3 z3 => Sort -> Sort -> z3 Bool
+isEqSort = liftFun2 Base.isEqSort
 
 -- | Return the sort kind.
 --
