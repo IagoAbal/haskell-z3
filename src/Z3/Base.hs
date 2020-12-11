@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards              #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 
 -- |
 -- Module    : Z3.Base
@@ -59,6 +60,7 @@ module Z3.Base (
   , Symbol
   , AST
   , Sort
+  , TupleSort(..)
   , FuncDecl
   , App
   , Pattern
@@ -548,6 +550,14 @@ newtype AST = AST { unAST :: ForeignPtr Z3_ast }
 newtype Sort = Sort { unSort :: ForeignPtr Z3_sort }
     deriving (Eq, Ord, Show)
 
+-- | A sort representing named tuples with associated functions
+data TupleSort
+  = TupleSort {
+      tupleSort :: Sort
+    , tupleCons :: FuncDecl    -- constructor function
+    , tupleProjs :: [FuncDecl] -- projection functions
+    }
+
 -- | A kind of AST representing function symbols.
 newtype FuncDecl = FuncDecl { unFuncDecl :: ForeignPtr Z3_func_decl }
     deriving (Eq, Ord, Show, Typeable)
@@ -822,17 +832,6 @@ mkFiniteDomainSort = liftFun2 z3_mk_finite_domain_sort
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
 
-{- TODO
-data TupleTyple
-  = TupleType {
-      tupleSort :: Sort
-    , tupleCons :: FunDecl
-    , tupleProj :: [FunDecl]
-    }
-
-mkTupleSort :: ... -> IO TupleType
--}
-
 -- | Create a tuple type
 --
 -- A tuple with n fields has a constructor and n projections.
@@ -840,9 +839,7 @@ mkTupleSort :: ... -> IO TupleType
 mkTupleSort :: Context                         -- ^ Context
             -> Symbol                          -- ^ Name of the sort
             -> [(Symbol, Sort)]                -- ^ Name and sort of each field
-            -> IO (Sort, FuncDecl, [FuncDecl]) -- ^ Resulting sort, and function
-                                               -- declarations for the
-                                               -- constructor and projections.
+            -> IO TupleSort                    -- ^ Resulting sort with functions
 mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
   h2c sym $ \symPtr ->
   marshalArrayLen syms $ \ n symsPtr ->
@@ -854,10 +851,10 @@ mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
                                   outConstrPtr outProjsPtr
     outConstr <- peek outConstrPtr
     outProjs  <- peekArray n outProjsPtr
-    sort <- c2h c srtPtr
-    constrFd <- c2h c outConstr
-    projsFds <- mapM (c2h c) outProjs
-    return (sort, constrFd, projsFds)
+    tupleSort <- c2h c srtPtr
+    tupleCons <- c2h c outConstr
+    tupleProjs <- mapM (c2h c) outProjs
+    return $ TupleSort { tupleSort, tupleCons, tupleProjs }
   where (syms, sorts) = unzip symSorts
 
 -- TODO: Z3_mk_enumeration_sort

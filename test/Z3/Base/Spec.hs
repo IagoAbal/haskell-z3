@@ -250,3 +250,65 @@ spec = around withContext $ do
         fa <- Z3.mkExistsConst ctx [] [v] =<< Z3.mkBool ctx True
         Z3.getQuantifierWeight ctx fa
       ) `shouldReturn` 0
+
+  context "Tuple sorts" $ do
+
+    specify "mkTupleSort" $ \ctx ->
+      (do
+        -- create a new tuple sort of the form:
+        --   myTuple (f1::int, f2::bool, f3::bool)
+        name <- Z3.mkStringSymbol ctx "myTuple"
+        f1 <- Z3.mkStringSymbol ctx "f1"
+        f2 <- Z3.mkStringSymbol ctx "f2"
+        f3 <- Z3.mkStringSymbol ctx "f3"
+        int <- Z3.mkIntSort ctx
+        bool <- Z3.mkBoolSort ctx
+        tupleSort <- Z3.mkTupleSort ctx name [(f1, int), (f2, bool), (f3, bool)]
+        let [f1proj, f2proj, f3proj] = Z3.tupleProjs tupleSort
+        let cons = Z3.tupleCons tupleSort
+
+        one <- Z3.mkIntNum ctx 37
+        b1 <- Z3.mkBool ctx True
+        b2 <- Z3.mkBool ctx False
+
+        tuple <- Z3.mkApp ctx cons [one,b1,b2]
+
+        sol <- Z3.mkSolver ctx
+        (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
+
+        x1 <- Z3.evalInt ctx model =<< Z3.mkApp ctx f1proj [tuple]
+        x2 <- Z3.evalBool ctx model =<< Z3.mkApp ctx f2proj [tuple]
+        x3 <- Z3.evalBool ctx model =<< Z3.mkApp ctx f3proj [tuple]
+        return (x1,x2,x3)
+      ) `shouldReturn` (Just 37, Just True, Just False)
+
+
+    specify "mkTupleSort nested" $ \ctx ->
+      (do
+        -- create a new tuple sort of the form:
+        --   T1 (f1::int)
+        t1 <- Z3.mkStringSymbol ctx "T1"
+        f1 <- Z3.mkStringSymbol ctx "f1"
+        int <- Z3.mkIntSort ctx
+        t1sort <- Z3.mkTupleSort ctx t1 [(f1, int)]
+
+        -- create a new tuple sort of the form:
+        --   T2 (f2::T1)
+        t2 <- Z3.mkStringSymbol ctx "T2"
+        f2 <- Z3.mkStringSymbol ctx "f2"
+
+        -- NOTE: `TupleSort` is not a `Sort`, but it wraps around the `tupleSort` field that is
+        t2sort <- Z3.mkTupleSort ctx t2 [(f2, Z3.tupleSort t1sort)]
+
+        let [f1proj] = Z3.tupleProjs t1sort
+            [f2proj] = Z3.tupleProjs t2sort
+            t1cons = Z3.tupleCons t1sort
+            t2cons = Z3.tupleCons t2sort
+        x <- Z3.mkIntNum ctx 64
+
+        let mkApp' c f arg = Z3.mkApp c f [arg]
+
+        (_, Just model) <- Z3.solverCheckAndGetModel ctx =<< Z3.mkSolver ctx
+
+        Z3.evalInt ctx model =<< mkApp' ctx f1proj =<< mkApp' ctx f2proj =<< mkApp' ctx t2cons =<< Z3.mkApp ctx t1cons [x]
+      ) `shouldReturn` Just 64
