@@ -1764,17 +1764,17 @@ mkPattern = liftFun1 Base.mkPattern
 mkBound :: MonadZ3 z3 => Int -> Sort -> z3 AST
 mkBound = liftFun2 Base.mkBound
 
-mkForall :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
-mkForall = liftFun4 Base.mkForall
+mkForall :: MonadZ3 z3 => Int -> [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
+mkForall = liftFun5 Base.mkForall
 
-mkForallConst :: MonadZ3 z3 => [Pattern] -> [App] -> AST -> z3 AST
-mkForallConst = liftFun3 Base.mkForallConst
+mkForallConst :: MonadZ3 z3 => Int -> [Pattern] -> [App] -> AST -> z3 AST
+mkForallConst = liftFun4 Base.mkForallConst
 
-mkExistsConst :: MonadZ3 z3 => [Pattern] -> [App] -> AST -> z3 AST
-mkExistsConst = liftFun3 Base.mkExistsConst
+mkExistsConst :: MonadZ3 z3 => Int -> [Pattern] -> [App] -> AST -> z3 AST
+mkExistsConst = liftFun4 Base.mkExistsConst
 
-mkExists :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
-mkExists = liftFun4 Base.mkExists
+mkExists :: MonadZ3 z3 => Int -> [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
+mkExists = liftFun5 Base.mkExists
 
 ---------------------------------------------------------------------
 -- Accessors

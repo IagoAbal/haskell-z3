@@ -1839,17 +1839,19 @@ type MkZ3Quantifier = Ptr Z3_context -> CUInt
 -- TODO: Allow the user to specify the quantifier weight!
 marshalMkQ :: MkZ3Quantifier
           -> Context
+          -> Int
           -> [Pattern]
           -> [Symbol]
           -> [Sort]
           -> AST
           -> IO AST
-marshalMkQ z3_mk_Q ctx pats x s body = marshal z3_mk_Q ctx $ \f ->
+marshalMkQ z3_mk_Q ctx weight pats x s body = marshal z3_mk_Q ctx $ \f ->
   marshalArrayLen pats $ \n patsArr ->
   marshalArray x $ \xArr ->
   marshalArray s $ \sArr ->
+  h2c weight $ \weightC ->
   h2c body $ \bodyPtr ->
-    f 0 n patsArr len sArr xArr bodyPtr
+    f weightC n patsArr len sArr xArr bodyPtr
   where len
           | l == 0        = error "Z3.Base.mkQuantifier:\
               \ quantifier with 0 bound variables"
@@ -1866,6 +1868,7 @@ marshalMkQ z3_mk_Q ctx pats x s body = marshal z3_mk_Q ctx $ \f ->
 -- variable with index 0, the second to last element of /xs/ refers to the
 -- variable with index 1, etc.
 mkForall :: Context
+          -> Int        -- ^ quantifiers are associated with weights indicating the importance of using the quantifier during instantiation. By default, pass the weight 0.
           -> [Pattern]  -- ^ Instantiation patterns (see 'mkPattern').
           -> [Symbol]   -- ^ Bound (quantified) variables /xs/.
           -> [Sort]     -- ^ Sorts of the bound variables.
@@ -1876,7 +1879,7 @@ mkForall = marshalMkQ z3_mk_forall
 -- | Create an exists formula.
 --
 -- Similar to 'mkForall'.
-mkExists :: Context -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
+mkExists :: Context -> Int -> [Pattern] -> [Symbol] -> [Sort] -> AST -> IO AST
 mkExists = marshalMkQ z3_mk_exists
 
 -- TODO: Z3_mk_quantifier
@@ -1893,26 +1896,29 @@ type MkZ3QuantifierConst = Ptr Z3_context
 
 marshalMkQConst :: MkZ3QuantifierConst
                   -> Context
+                  -> Int
                   -> [Pattern]
                   -> [App]
                   -> AST
                 -> IO AST
-marshalMkQConst z3_mk_Q_const ctx pats apps body =
+marshalMkQConst z3_mk_Q_const ctx weight pats apps body =
   marshal z3_mk_Q_const ctx $ \f ->
     marshalArrayLen pats $ \patsNum patsArr ->
     marshalArray    apps $ \appsArr ->
+    h2c weight $ \weightC ->
     h2c body $ \bodyPtr ->
-      f 0 len appsArr patsNum patsArr bodyPtr
+      f weightC len appsArr patsNum patsArr bodyPtr
   where len
           | l == 0        = error "Z3.Base.mkQuantifierConst:\
               \ quantifier with 0 bound variables"
           | otherwise     = fromIntegral l
           where l = length apps
--- TODO: Allow the user to specify the quantifier weight!
 
 -- | Create a universal quantifier using a list of constants that will form the
 -- set of bound variables.
 mkForallConst :: Context
+              -> Int       -- ^ quantifiers are associated with weights indicating the importance of using the quantifier during instantiation. By default, pass the weight 0.
+
               -> [Pattern] -- ^ Instantiation patterns (see 'mkPattern').
               -> [App]     -- ^ Constants to be abstracted into bound variables.
               -> AST       -- ^ Quantifier body.
@@ -1922,6 +1928,7 @@ mkForallConst = marshalMkQConst z3_mk_forall_const
 -- | Create a existential quantifier using a list of constants that will form
 -- the set of bound variables.
 mkExistsConst :: Context
+              -> Int       -- ^ quantifiers are associated with weights indicating the importance of using the quantifier during instantiation. By default, pass the weight 0.
               -> [Pattern] -- ^ Instantiation patterns (see 'mkPattern').
               -> [App]     -- ^ Constants to be abstracted into bound variables.
               -> AST       -- ^ Quantifier body.

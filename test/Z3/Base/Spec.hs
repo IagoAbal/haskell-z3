@@ -116,3 +116,39 @@ spec = around withContext $ do
           (_, Just model) <- Z3.solverCheckAndGetModel ctx solver
           Z3.evalBv ctx True model ast
         assert $ x == Just i
+
+  context "Quantifiers" $ do
+
+    specify "mkForall" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        fa <- Z3.mkForall ctx 554 [] [x] [int] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 554
+
+    specify "mkExists" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        fa <- Z3.mkExists ctx 10 [] [x] [int] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 10
+
+    specify "mkForallConst" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
+        fa <- Z3.mkForallConst ctx 554 [] [v] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 554
+
+    specify "mkExistsConst" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
+        fa <- Z3.mkExistsConst ctx 991 [] [v] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 991
