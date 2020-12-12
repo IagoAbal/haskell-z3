@@ -1,5 +1,3 @@
 dist
 .cabal-sandbox
 cabal.sandbox.config
-*.swp
-result
