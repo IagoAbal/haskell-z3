@@ -320,6 +320,8 @@ module Z3.Base (
   , isApp
   , toApp
   , getNumeralString
+  , getNumerator
+  , getDenominator
   , simplify
   , simplifyEx
   , getIndexValue
@@ -472,6 +474,7 @@ module Z3.Base (
   , solverGetNumScopes
   , solverAssertCnstr
   , solverAssertAndTrack
+  , solverGetAssertions
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
@@ -2174,9 +2177,17 @@ getNumeralString = liftFun1 z3_get_numeral_string
 
 -- TODO: Z3_get_numeral_decimal_string
 
--- TODO: Z3_get_numerator
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga2d37084eb47ea0ab19638a3407ce610b>
+getNumerator :: Context -> AST -> IO AST
+getNumerator = liftFun1 z3_get_numerator
 
--- TODO: Z3_get_denominator
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
+getDenominator :: Context -> AST -> IO AST
+getDenominator = liftFun1 z3_get_denominator
 
 -- TODO: Z3_get_numeral_small
 
@@ -3111,6 +3122,9 @@ solverAssertCnstr = liftFun2 z3_solver_assert
 solverAssertAndTrack :: Context -> Solver -> AST -> AST -> IO ()
 solverAssertAndTrack = liftFun3 z3_solver_assert_and_track
 
+solverGetAssertions :: Context -> Solver -> IO [AST]
+solverGetAssertions = liftFun1 z3_solver_get_assertions
+
 -- | Check whether the assertions in a given solver are consistent or not.
 solverCheck :: Context -> Solver -> IO Result
 solverCheck ctx solver = marshal z3_solver_check ctx $ h2c solver
@@ -3156,6 +3170,7 @@ solverToString = liftFun1 z3_solver_to_string
 -------------------------------------------------
 -- ** Helpers
 
+-- | Call 'solverCheck' and based on the result also call 'solverGetModel'.
 solverCheckAndGetModel :: Context -> Solver -> IO (Result, Maybe Model)
 solverCheckAndGetModel ctx solver =
   do res <- solverCheck ctx solver

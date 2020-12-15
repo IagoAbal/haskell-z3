@@ -277,6 +277,8 @@ module Z3.Monad
   , isApp
   , toApp
   , getNumeralString
+  , getNumerator
+  , getDenominator
   , simplify
   , simplifyEx
   , getIndexValue
@@ -425,6 +427,7 @@ module Z3.Monad
   , solverGetNumScopes
   , solverAssertCnstr
   , solverAssertAndTrack
+  , solverGetAssertions
   , solverCheck
   , solverCheckAssumptions
   , solverGetModel
@@ -1890,6 +1893,18 @@ toApp = liftFun1 Base.toApp
 getNumeralString :: MonadZ3 z3 => AST -> z3 String
 getNumeralString = liftFun1 Base.getNumeralString
 
+-- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga2d37084eb47ea0ab19638a3407ce610b>
+getNumerator :: MonadZ3 z3 => AST -> z3 AST
+getNumerator = liftFun1 Base.getNumerator
+
+-- | Return the denominator (as a numeral AST) of a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
+getDenominator :: MonadZ3 z3 => AST -> z3 AST
+getDenominator = liftFun1 Base.getDenominator
+
 getIndexValue :: MonadZ3 z3 => AST -> z3 Int
 getIndexValue = liftFun1 Base.getIndexValue
 
@@ -2433,19 +2448,31 @@ solverAssertCnstr = liftSolver1 Base.solverAssertCnstr
 solverAssertAndTrack :: MonadZ3 z3 => AST -> AST -> z3 ()
 solverAssertAndTrack = liftSolver2 Base.solverAssertAndTrack
 
+-- | Return the set of asserted formulas on the solver.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3b3d6d8c5bafd5be707cda2d144073db>
+solverGetAssertions :: MonadZ3 z3 => z3 [AST]
+solverGetAssertions = liftSolver0 Base.solverGetAssertions
+
 -- | Check whether the assertions in a given solver are consistent or not.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga3570e58a8c3d493da4109568b1eca2ce>
 solverCheck :: MonadZ3 z3 => z3 Result
 solverCheck = liftSolver0 Base.solverCheck
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga65b2bd980519c0e873d328edcc5f9317>
 solverCheckAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 solverCheckAssumptions = liftSolver1 Base.solverCheckAssumptions
 
--- | Retrieve the model for the last 'solverCheck'.
+-- | Retrieve the model for the last 'solverCheck' or 'solverCheckAssumptions'.
 --
 -- The error handler is invoked if a model is not available because
 -- the commands above were not invoked for the given solver,
 -- or if the result was 'Unsat'.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6342b4260e9c92b11cb3eea3a145dff4>
 solverGetModel :: MonadZ3 z3 => z3 Model
 solverGetModel = liftSolver0 Base.solverGetModel
 --
@@ -2475,6 +2502,8 @@ solverToString = liftSolver0 Base.solverToString
 -- | Create a backtracking point.
 --
 -- For @push; m; pop 1@ see 'local'.
+--
+-- Alias for 'solverPush'
 push :: MonadZ3 z3 => z3 ()
 push = solverPush
 
@@ -2500,6 +2529,8 @@ local q = do
   return r
 
 -- | Backtrack all the way.
+--
+-- Alias for 'solverReset'
 reset :: MonadZ3 z3 => z3 ()
 reset = solverReset
 
@@ -2507,23 +2538,29 @@ reset = solverReset
 getNumScopes :: MonadZ3 z3 => z3 Int
 getNumScopes = liftSolver0 Base.solverGetNumScopes
 
+-- | Alias for 'solverAssertCnstr'
 assert :: MonadZ3 z3 => AST -> z3 ()
 assert = solverAssertCnstr
 
 -- | Check whether the given logical context is consistent or not.
+--
+-- Alias for 'solverCheck'
 check :: MonadZ3 z3 => z3 Result
 check = solverCheck
 
 -- | Check whether the assertions in the given solver and optional assumptions are consistent or not.
+--
+-- Alias for 'solverCheckAssumptions'
 checkAssumptions :: MonadZ3 z3 => [AST] -> z3 Result
 checkAssumptions = solverCheckAssumptions
 
+-- | Call 'solverCheck' and based on the result also call 'solverGetModel'.
 solverCheckAndGetModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
 solverCheckAndGetModel = liftSolver0 Base.solverCheckAndGetModel
 
--- | Get model.
+-- | Check and get model.
 --
--- Reference : <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#gaff310fef80ac8a82d0a51417e073ec0a>
+-- Alias for 'solverCheckAndGetModel'
 getModel :: MonadZ3 z3 => z3 (Result, Maybe Model)
 getModel = solverCheckAndGetModel
 
@@ -2542,5 +2579,7 @@ withModel f = do
  return (r, mb_e)
 
 -- | Retrieve the unsat core for the last 'checkAssumptions'; the unsat core is a subset of the assumptions.
+--
+-- Alias for 'solverGetUnsatCore'
 getUnsatCore :: MonadZ3 z3 => z3 [AST]
 getUnsatCore = solverGetUnsatCore
