@@ -119,36 +119,70 @@ spec = around withContext $ do
 
   context "Quantifiers" $ do
 
+    specify "mkForallW" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        fa <- Z3.mkForallW ctx 554 [] [x] [int] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 554
+
     specify "mkForall" $ \ctx ->
       (do
         int <- Z3.mkIntSort ctx
         x <- Z3.mkStringSymbol ctx "x"
-        fa <- Z3.mkForall ctx 554 [] [x] [int] =<< Z3.mkBool ctx True
+        fa <- Z3.mkForall ctx [] [x] [int] =<< Z3.mkBool ctx True
         Z3.getQuantifierWeight ctx fa
-      ) `shouldReturn` 554
+      ) `shouldReturn` 0
+
+    specify "mkExistsW" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        fa <- Z3.mkExistsW ctx 37 [] [x] [int] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 37
 
     specify "mkExists" $ \ctx ->
       (do
         int <- Z3.mkIntSort ctx
         x <- Z3.mkStringSymbol ctx "x"
-        fa <- Z3.mkExists ctx 10 [] [x] [int] =<< Z3.mkBool ctx True
+        fa <- Z3.mkExists ctx [] [x] [int] =<< Z3.mkBool ctx True
         Z3.getQuantifierWeight ctx fa
-      ) `shouldReturn` 10
+      ) `shouldReturn` 0
+
+    specify "mkForallWConst" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
+        fa <- Z3.mkForallWConst ctx 554 [] [v] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 554
 
     specify "mkForallConst" $ \ctx ->
       (do
         int <- Z3.mkIntSort ctx
         x <- Z3.mkStringSymbol ctx "x"
         v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
-        fa <- Z3.mkForallConst ctx 554 [] [v] =<< Z3.mkBool ctx True
+        fa <- Z3.mkForallConst ctx [] [v] =<< Z3.mkBool ctx True
         Z3.getQuantifierWeight ctx fa
-      ) `shouldReturn` 554
+      ) `shouldReturn` 0
+
+    specify "mkExistsWConst" $ \ctx ->
+      (do
+        int <- Z3.mkIntSort ctx
+        x <- Z3.mkStringSymbol ctx "x"
+        v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
+        fa <- Z3.mkExistsWConst ctx 991 [] [v] =<< Z3.mkBool ctx True
+        Z3.getQuantifierWeight ctx fa
+      ) `shouldReturn` 991
 
     specify "mkExistsConst" $ \ctx ->
       (do
         int <- Z3.mkIntSort ctx
         x <- Z3.mkStringSymbol ctx "x"
         v <- Z3.toApp ctx =<< Z3.mkConst ctx x int
-        fa <- Z3.mkExistsConst ctx 991 [] [v] =<< Z3.mkBool ctx True
+        fa <- Z3.mkExistsConst ctx [] [v] =<< Z3.mkBool ctx True
         Z3.getQuantifierWeight ctx fa
-      ) `shouldReturn` 991
+      ) `shouldReturn` 0
