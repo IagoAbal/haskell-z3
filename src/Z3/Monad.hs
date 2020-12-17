@@ -464,7 +464,7 @@ import Z3.Base
   ( Symbol
   , AST
   , Sort
-  , TupleSort
+  , TupleType
   , FuncDecl
   , App
   , Pattern
@@ -770,7 +770,9 @@ mkArraySort = liftFun2 Base.mkArraySort
 mkTupleSort :: MonadZ3 z3
             => Symbol                          -- ^ Name of the sort
             -> [(Symbol, Sort)]                -- ^ Name and sort of each field
-            -> z3 TupleSort                    -- ^ Resulting sort with functions
+            -> z3 (Sort, FuncDecl, [FuncDecl]) -- ^ Resulting sort, and function
+                                               -- declarations for the
+                                               -- constructor and projections.
 mkTupleSort = liftFun2 Base.mkTupleSort
 
 -- | Create a constructor
