@@ -249,9 +249,13 @@ module Z3.Monad
   , mkPattern
   , mkBound
   , mkForall
+  , mkForallW
   , mkExists
+  , mkExistsW
   , mkForallConst
+  , mkForallWConst
   , mkExistsConst
+  , mkExistsWConst
 
   -- * Accessors
   , getSymbolString
@@ -1771,14 +1775,26 @@ mkPattern = liftFun1 Base.mkPattern
 mkBound :: MonadZ3 z3 => Int -> Sort -> z3 AST
 mkBound = liftFun2 Base.mkBound
 
+mkForallW :: MonadZ3 z3 => Int -> [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
+mkForallW = liftFun5 Base.mkForallW
+
 mkForall :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
 mkForall = liftFun4 Base.mkForall
 
 mkForallConst :: MonadZ3 z3 => [Pattern] -> [App] -> AST -> z3 AST
 mkForallConst = liftFun3 Base.mkForallConst
 
+mkForallWConst :: MonadZ3 z3 => Int -> [Pattern] -> [App] -> AST -> z3 AST
+mkForallWConst = liftFun4 Base.mkForallWConst
+
 mkExistsConst :: MonadZ3 z3 => [Pattern] -> [App] -> AST -> z3 AST
 mkExistsConst = liftFun3 Base.mkExistsConst
+
+mkExistsWConst :: MonadZ3 z3 => Int -> [Pattern] -> [App] -> AST -> z3 AST
+mkExistsWConst = liftFun4 Base.mkExistsWConst
+
+mkExistsW :: MonadZ3 z3 => Int -> [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
+mkExistsW = liftFun5 Base.mkExistsW
 
 mkExists :: MonadZ3 z3 => [Pattern] -> [Symbol] -> [Sort] -> AST -> z3 AST
 mkExists = liftFun4 Base.mkExists
