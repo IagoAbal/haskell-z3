@@ -227,7 +227,9 @@ foreign import ccall unsafe "Z3_mk_string_symbol"
 foreign import ccall unsafe "Z3_sort_to_ast"
     z3_sort_to_ast :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
--- TODO Sorts: Z3_is_eq_sort
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf260f3b5bc786cd0552e1ed4f8232a4b>
+foreign import ccall unsafe "Z3_is_eq_sort"
+    z3_is_eq_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Z3_bool)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga736e88741af1c178cbebf94c49aa42de>
 foreign import ccall unsafe "Z3_mk_uninterpreted_sort"
@@ -975,6 +977,14 @@ foreign import ccall unsafe "Z3_get_decl_name"
 -- Reference: <http://z3prover.github.io/api/html/group__capi.html#gaf1683d9464f377e5089ce6ebf2a9bd31>
 foreign import ccall unsafe "Z3_get_symbol_string"
     z3_get_symbol_string :: Ptr Z3_context -> Ptr Z3_symbol -> IO Z3_string
+
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gab66884f00730c61cf3a5e6814aa2ebd0>
+foreign import ccall unsafe "Z3_get_sort_name"
+    z3_get_sort_name :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_symbol)
+
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gacc77e9b5ce5ada28c5af4ddb67d6702a>
+foreign import ccall unsafe "Z3_get_sort_id"
+    z3_get_sort_id :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
 
 -- Reference: <http://z3prover.github.io/api/html/group__capi.html#gacd85d48842c7bfaa696596d16875681a>
 foreign import ccall unsafe "Z3_get_sort_kind"
