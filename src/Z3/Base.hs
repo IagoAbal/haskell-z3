@@ -110,6 +110,10 @@ module Z3.Base (
   , mkFiniteDomainSort
   , mkArraySort
   , mkTupleSort
+  , mkTupleType
+  , mkTuple
+  , mkIndexTuple
+  , mkProjTuple
   , mkConstructor
   , mkDatatype
   , mkDatatypes
@@ -874,13 +878,14 @@ mkTuple :: Context -> TupleType -> [AST] -> IO AST
 mkTuple ctx TupleType{tupleCons} args = mkApp ctx tupleCons args
 
 -- | Project the i-th field of the given tuple,
-indexTuple :: Context -> TupleType -> Int -> AST -> IO AST
-indexTuple ctx tt i tup
+mkIndexTuple :: Context -> TupleType -> Int -> AST -> IO AST
+mkIndexTuple ctx tt i tup
   | 0 <= i && i < length (tupleProjs tt) = mkApp ctx (tupleProjs tt !! i) [tup]
   | otherwise                            = error "Invalid tuple index used."
 
-projTuple :: Context -> TupleType -> String -> AST -> IO AST
-projTuple ctx TupleType{namedTupleProjs} f tup = case lookup f namedTupleProjs of
+-- | Project a field of the given tuple by name,
+mkProjTuple :: Context -> TupleType -> String -> AST -> IO AST
+mkProjTuple ctx TupleType{namedTupleProjs} f tup = case lookup f namedTupleProjs of
   Just proj -> mkApp ctx proj [tup]
   Nothing   -> error "Invalid tuple field used."
 

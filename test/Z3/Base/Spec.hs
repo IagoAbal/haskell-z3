@@ -279,6 +279,33 @@ spec = around withContext $ do
         return (x1,x2,x3)
       ) `shouldReturn` (Just i, Just b1v, Just b2v)
 
+    specify "mkTupleType, mkTuple, mkIndexTuple, mkProjTuple" $ \ctx -> property $ \(i::Integer) (b1v::Bool) (b2v::Bool) ->
+      (do
+        -- create a new tuple sort of the form (f1:int, f2:bool, f3:bool)
+        name <- Z3.mkStringSymbol ctx "myTuple"
+        int <- Z3.mkIntSort ctx
+        bool <- Z3.mkBoolSort ctx
+        tupleType <- Z3.mkTupleType ctx name [("f1", int), ("f2", bool), ("f3", bool)]
+
+        one <- Z3.mkIntNum ctx i
+        b1 <- Z3.mkBool ctx b1v
+        b2 <- Z3.mkBool ctx b2v
+
+        tuple <- Z3.mkTuple ctx tupleType [one,b1,b2]
+
+        sol <- Z3.mkSolver ctx
+        (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
+
+        x1 <- Z3.evalInt ctx model =<< Z3.mkIndexTuple ctx tupleType 0 tuple
+        x1' <- Z3.evalInt ctx model =<< Z3.mkProjTuple ctx tupleType "f1" tuple
+        x2 <- Z3.evalBool ctx model =<< Z3.mkIndexTuple ctx tupleType 1 tuple
+        x2' <- Z3.evalBool ctx model =<< Z3.mkProjTuple ctx tupleType "f2" tuple
+        x3 <- Z3.evalBool ctx model =<< Z3.mkIndexTuple ctx tupleType 2 tuple
+        x3' <- Z3.evalBool ctx model =<< Z3.mkProjTuple ctx tupleType "f3" tuple
+        return (x1,x1',x2,x2',x3,x3')
+      ) `shouldReturn` (Just i, Just i, Just b1v, Just b1v, Just b2v, Just b2v)
+
+
 
     specify "mkTupleSort nested" $ \ctx -> property $ \(i::Integer) ->
       (do
