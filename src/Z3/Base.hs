@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 -- |
 -- Module    : Z3.Base
@@ -77,6 +78,32 @@ module Z3.Base (
   , Goal
   -- ** Satisfiability result
   , Result(..)
+
+  -- * Algebraic Numbers
+  , algebraicIsValue
+  , algebraicIsPos
+  , algebraicIsNeg
+  , algebraicIsZero
+  , algebraicSign
+  , algebraicAdd
+  , algebraicSub
+  , algebraicMul
+  , algebraicDiv
+  , algebraicRoot
+  , algebraicPower
+  , algebraicLt
+  , algebraicGt
+  , algebraicLe
+  , algebraicGe
+  , algebraicEq
+  , algebraicNeq
+  , algebraicRoots
+  , algebraicEval
+
+  -- * Global Parameters
+  , globalParamSet
+  , globalParamResetAll
+  , globalParamGet
 
   -- * Create configuration
   , mkConfig
@@ -517,6 +544,7 @@ import qualified Data.Traversable as T
 import Data.Typeable ( Typeable )
 import Data.Word
 import Foreign hiding ( toBool, newForeignPtr )
+import Foreign.Storable ( peek )
 import Foreign.C
   ( CDouble, CInt, CUInt, CLLong, CULLong, CString
   , peekCString
@@ -660,12 +688,95 @@ data ASTKind
     | Z3_UNKNOWN_AST
     deriving (Eq, Show)
 
----------------------------------------------------------------------
--- * Configuration
 
--- TODO: Z3_global_param_set
--- TODO: Z3_global_param_reset_all
--- TODO: Z3_global_param_get
+---------------------------------------------------------------------
+-- * Algebraic Numbers
+
+algebraicIsValue :: Context -> AST -> IO Bool
+algebraicIsValue = liftFun1 z3_algebraic_is_value
+
+
+algebraicIsPos :: Context -> AST -> IO Bool
+algebraicIsPos = liftFun1 z3_algebraic_is_pos
+
+algebraicIsNeg :: Context -> AST -> IO Bool
+algebraicIsNeg = liftFun1 z3_algebraic_is_neg
+
+algebraicIsZero :: Context -> AST -> IO Bool
+algebraicIsZero = liftFun1 z3_algebraic_is_zero
+
+algebraicSign :: Context -> AST -> IO Int
+algebraicSign = liftFun1 z3_algebraic_sign
+
+algebraicAdd :: Context -> AST -> AST -> IO AST
+algebraicAdd = liftFun2 z3_algebraic_add
+
+algebraicSub :: Context -> AST -> AST -> IO AST
+algebraicSub = liftFun2 z3_algebraic_sub
+
+algebraicMul :: Context -> AST -> AST -> IO AST
+algebraicMul = liftFun2 z3_algebraic_mul
+
+algebraicDiv :: Context -> AST -> AST -> IO AST
+algebraicDiv = liftFun2 z3_algebraic_div
+
+algebraicRoot :: Context -> AST -> Int -> IO AST
+algebraicRoot = liftFun2 z3_algebraic_root
+
+algebraicPower :: Context -> AST -> Int -> IO AST
+algebraicPower = liftFun2 z3_algebraic_power
+
+algebraicLt :: Context -> AST -> AST -> IO Bool
+algebraicLt = liftFun2 z3_algebraic_lt
+
+algebraicGt :: Context -> AST -> AST -> IO Bool
+algebraicGt = liftFun2 z3_algebraic_gt
+
+algebraicLe :: Context -> AST -> AST -> IO Bool
+algebraicLe = liftFun2 z3_algebraic_le
+
+algebraicGe :: Context -> AST -> AST -> IO Bool
+algebraicGe = liftFun2 z3_algebraic_ge
+
+algebraicEq :: Context -> AST -> AST -> IO Bool
+algebraicEq = liftFun2 z3_algebraic_eq
+
+algebraicNeq :: Context -> AST -> AST -> IO Bool
+algebraicNeq = liftFun2 z3_algebraic_neq
+
+algebraicRoots :: Context -> AST -> [AST] -> IO [AST]
+algebraicRoots ctx p args = marshal z3_algebraic_roots ctx $ \f ->
+  h2c p $ \pPtr ->
+    marshalArrayLen args $ \argsNum argsArr ->
+      f pPtr argsNum argsArr
+
+algebraicEval :: Context -> AST -> [AST] -> IO Int
+algebraicEval ctx p args = marshal z3_algebraic_eval ctx $ \f ->
+  h2c p $ \pPtr ->
+    marshalArrayLen args $ \argsNum argsArr ->
+      f pPtr argsNum argsArr
+
+---------------------------------------------------------------------
+-- * Global Parameters
+
+globalParamSet :: String -> String -> IO ()
+globalParamSet param value =
+  withCString param $ \cParam ->
+    withCString value $ \cValue ->
+      z3_global_param_set cParam cValue
+
+globalParamResetAll :: IO ()
+globalParamResetAll = z3_global_param_reset_all
+
+globalParamGet :: String -> IO (Maybe String)
+globalParamGet param =
+  withCString param $ \cParam ->
+    alloca $ \(cValuePtr::Ptr CString) ->
+       do success <- z3_global_param_get cParam cValuePtr
+          if success /= Z3_bool 0 then
+            Just <$> (peekCString =<< peek cValuePtr)
+          else
+            return Nothing
 
 ---------------------------------------------------------------------
 -- * Create configuration
