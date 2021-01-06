@@ -464,6 +464,7 @@ import Z3.Base
   ( Symbol
   , AST
   , Sort
+  , TupleType
   , FuncDecl
   , App
   , Pattern

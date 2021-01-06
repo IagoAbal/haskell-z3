@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards              #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 
 -- |
 -- Module    : Z3.Base
@@ -59,6 +60,7 @@ module Z3.Base (
   , Symbol
   , AST
   , Sort
+  , TupleType(..)
   , FuncDecl
   , App
   , Pattern
@@ -108,6 +110,10 @@ module Z3.Base (
   , mkFiniteDomainSort
   , mkArraySort
   , mkTupleSort
+  , mkTupleType
+  , mkTuple
+  , mkIndexTuple
+  , mkProjTuple
   , mkConstructor
   , mkDatatype
   , mkDatatypes
@@ -548,6 +554,17 @@ newtype AST = AST { unAST :: ForeignPtr Z3_ast }
 newtype Sort = Sort { unSort :: ForeignPtr Z3_sort }
     deriving (Eq, Ord, Show)
 
+-- | A sort representing named tuples with associated functions
+data TupleType
+  = TupleType {
+      tupleSort :: Sort
+    , tupleCons :: FuncDecl                   -- ^ constructor function
+    , namedTupleProjs :: [(String, FuncDecl)] -- ^ projection functions
+    }
+
+tupleProjs :: TupleType -> [FuncDecl]
+tupleProjs = map snd . namedTupleProjs
+
 -- | A kind of AST representing function symbols.
 newtype FuncDecl = FuncDecl { unFuncDecl :: ForeignPtr Z3_func_decl }
     deriving (Eq, Ord, Show, Typeable)
@@ -822,17 +839,6 @@ mkFiniteDomainSort = liftFun2 z3_mk_finite_domain_sort
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
 
-{- TODO
-data TupleTyple
-  = TupleType {
-      tupleSort :: Sort
-    , tupleCons :: FunDecl
-    , tupleProj :: [FunDecl]
-    }
-
-mkTupleSort :: ... -> IO TupleType
--}
-
 -- | Create a tuple type
 --
 -- A tuple with n fields has a constructor and n projections.
@@ -854,11 +860,34 @@ mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
                                   outConstrPtr outProjsPtr
     outConstr <- peek outConstrPtr
     outProjs  <- peekArray n outProjsPtr
-    sort <- c2h c srtPtr
-    constrFd <- c2h c outConstr
-    projsFds <- mapM (c2h c) outProjs
-    return (sort, constrFd, projsFds)
+    tupleSort <- c2h c srtPtr
+    tupleCons <- c2h c outConstr
+    tupleProjs <- mapM (c2h c) outProjs
+    return (tupleSort, tupleCons, tupleProjs)
   where (syms, sorts) = unzip symSorts
+
+-- | Like 'mkTupleSort' but wraps the result in a 'TupleType' record
+mkTupleType :: Context -> Symbol -> [(String, Sort)] -> IO TupleType
+mkTupleType ctx sym fs = do fs' <- flip zip (map snd fs) <$> mapM (mkStringSymbol ctx . fst) fs
+                            (tupleSort, tupleCons, tupleProjs) <- mkTupleSort ctx sym fs'
+                            let namedTupleProjs = zip (map fst fs) tupleProjs
+                            return $ TupleType {tupleSort, tupleCons, namedTupleProjs}
+
+-- | Create an instance of the tuple sort wrapped in 'TupleType'
+mkTuple :: Context -> TupleType -> [AST] -> IO AST
+mkTuple ctx TupleType{tupleCons} args = mkApp ctx tupleCons args
+
+-- | Project the i-th field of the given tuple,
+mkIndexTuple :: Context -> TupleType -> Int -> AST -> IO AST
+mkIndexTuple ctx tt i tup
+  | 0 <= i && i < length (tupleProjs tt) = mkApp ctx (tupleProjs tt !! i) [tup]
+  | otherwise                            = error "Invalid tuple index used."
+
+-- | Project a field of the given tuple by name,
+mkProjTuple :: Context -> TupleType -> String -> AST -> IO AST
+mkProjTuple ctx TupleType{namedTupleProjs} f tup = case lookup f namedTupleProjs of
+  Just proj -> mkApp ctx proj [tup]
+  Nothing   -> error "Invalid tuple field used."
 
 -- TODO: Z3_mk_enumeration_sort
 -- TODO: Z3_mk_list_sort
