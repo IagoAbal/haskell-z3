@@ -34,6 +34,32 @@ z3powerDef i j = i ^ j
 spec :: Spec
 spec = around withContext $ do
 
+  context "Algebraic Numbers" $ do
+
+    specify "algebraicIsValue" $ \ctx ->
+      (do
+        x <- Z3.mkReal ctx 10 1
+        Z3.algebraicIsValue ctx x
+      ) `shouldReturn` True
+
+    specify "algebraicMul" $ \ctx ->
+      (do
+        i10_3 <- Z3.mkReal ctx 10 3
+        i5_8 <- Z3.mkReal ctx 5 8
+        r <- Z3.algebraicMul ctx i10_3 i5_8
+        Z3.getNumeralString ctx r
+      ) `shouldReturn` "25/12"
+
+  context "Global Parameters" $ do
+    specify "globalParamSet / globalParamGet" $ \_ ->
+      (do
+        Z3.globalParamSet "memory_max_size" "10000"
+        beforeReset <- Z3.globalParamGet "memory_max_size"
+        Z3.globalParamResetAll
+        afterReset <- Z3.globalParamGet "memory_max_size"
+        invalid <- Z3.globalParamGet "invalid_option"
+        return (beforeReset, afterReset, invalid)
+      ) `shouldReturn` (Just "10000", Just "0", Nothing)
 
   context "Sorts" $ do
 
