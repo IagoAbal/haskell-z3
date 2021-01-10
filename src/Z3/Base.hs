@@ -136,11 +136,14 @@ module Z3.Base (
   , mkBvSort
   , mkFiniteDomainSort
   , mkArraySort
+  , mkArraySortN
   , mkTupleSort
   , mkTupleType
   , mkTuple
   , mkIndexTuple
   , mkProjTuple
+  , mkEnumerationSort
+  , mkListSort
   , mkConstructor
   , mkDatatype
   , mkDatatypes
@@ -950,6 +953,13 @@ mkFiniteDomainSort = liftFun2 z3_mk_finite_domain_sort
 mkArraySort :: Context -> Sort -> Sort -> IO Sort
 mkArraySort = liftFun2 z3_mk_array_sort
 
+-- | Create an array type with N arguments.
+mkArraySortN :: Context -> [Sort] -> Sort -> IO Sort
+mkArraySortN ctx argSorts rangeSort = marshal z3_mk_array_sort_n ctx $ \f ->
+  marshalArrayLen argSorts $ \nArgs argSortsPtr ->
+    h2c rangeSort $ \rangeSortPtr ->
+      f nArgs argSortsPtr rangeSortPtr
+
 -- | Create a tuple type
 --
 -- A tuple with n fields has a constructor and n projections.
@@ -1000,8 +1010,62 @@ mkProjTuple ctx TupleType{namedTupleProjs} f tup = case lookup f namedTupleProjs
   Just proj -> mkApp ctx proj [tup]
   Nothing   -> error "Invalid tuple field used."
 
--- TODO: Z3_mk_enumeration_sort
--- TODO: Z3_mk_list_sort
+-- | Create a enumeration sort.
+--
+-- An enumeration sort with n elements. This function will also declare the functions corresponding to the enumerations:
+--
+-- * @enum_consts@: constants corresponding to the enumerated elements.
+-- * @enum_testers@: predicates testing if terms of the enumeration sort correspond to an enumeration.
+--
+mkEnumerationSort :: Context                           -- ^ logical context
+                  -> Symbol                            -- ^ name of the enumeration sort
+                  -> [Symbol]                          -- ^ names of the enumerated elements
+                  -> IO (Sort, [FuncDecl], [FuncDecl]) -- ^ the created enumeration sort, @enum_consts@, @enum_testers@
+mkEnumerationSort ctx sortName constNames = let hn = length constNames in
+  allocaArray hn $ \constDeclsPtr ->
+    allocaArray hn $ \testDeclsPtr ->
+      do s <- marshal z3_mk_enumeration_sort ctx $ \f ->
+                marshalArrayLen constNames $ \n constNamesPtr ->
+                  h2c sortName $ \sortNamePtr ->
+                    f sortNamePtr n constNamesPtr constDeclsPtr testDeclsPtr
+         constDecls <- peekArrayToHs ctx hn constDeclsPtr
+         testDecls <- peekArrayToHs ctx hn testDeclsPtr
+         return (s, constDecls, testDecls)
+
+-- | Create a list sort.
+--
+-- A list sort over elem_sort. This function declares the corresponding constructors and testers for lists:
+--
+-- * @nilDecl@: declaration for the empty list
+-- * @isnilDecl@:	test for the empty list
+-- * @consDecl@:	declaration for a cons cell
+-- * @isconsDecl@:	cons cell test
+-- * @headDecl@:	list head
+-- * @tailDecl@:	list tail
+mkListSort :: Context       -- ^ Context
+           -> Symbol        -- ^ name of the list sort
+           -> Sort          -- ^ sort of list elements
+           -> IO (Sort, FuncDecl, FuncDecl, FuncDecl, FuncDecl, FuncDecl, FuncDecl) -- ^ the created list sort, @nilDecl@
+                                                                                    -- @isnilDecl@, @consDecl@, @isconsDecl@
+                                                                                    -- @headDecl@, @tailDecl@
+mkListSort ctx sortName elemSort =
+  alloca $ \nilDeclPtr ->
+  alloca $ \isNilDeclPtr ->
+  alloca $ \consDeclPtr ->
+  alloca $ \isConsDeclPtr ->
+  alloca $ \headDeclPtr ->
+  alloca $ \tailDeclPtr ->
+  h2c sortName $ \sortNamePtr ->
+    h2c elemSort $ \elemSortPtr ->
+      do listSort <- marshal z3_mk_list_sort ctx $ \f ->
+           f sortNamePtr elemSortPtr nilDeclPtr isNilDeclPtr consDeclPtr isConsDeclPtr headDeclPtr tailDeclPtr
+         nilDecl <- c2h ctx =<< peek nilDeclPtr
+         isNilDecl <- c2h ctx =<< peek isNilDeclPtr
+         consDecl <- c2h ctx =<< peek consDeclPtr
+         isConsDecl <- c2h ctx =<< peek isConsDeclPtr
+         headDecl <- c2h ctx =<< peek headDeclPtr
+         tailDecl <- c2h ctx =<< peek tailDeclPtr
+         return (listSort, nilDecl, isNilDecl, consDecl, isConsDecl, headDecl, tailDecl)
 
 -- | Create a contructor
 mkConstructor :: Context                      -- ^ Context

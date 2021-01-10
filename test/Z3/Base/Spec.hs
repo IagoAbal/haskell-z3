@@ -124,6 +124,53 @@ spec = around withContext $ do
         Z3.getSymbolString ctx =<< Z3.getSortName ctx s1)
       `shouldReturn` "Int"
 
+    specify "mkArraySortN" $ \ctx ->
+      (do
+        s1 <- Z3.mkIntSort ctx
+        s2 <- Z3.mkBoolSort ctx
+        s3 <- Z3.mkRealSort ctx
+        aSort <- Z3.mkArraySortN ctx [s1,s2] s3
+        Z3.getSymbolString ctx =<< Z3.getSortName ctx aSort)
+      `shouldReturn` "Array"
+
+    specify "mkEnumerationSort" $ \ctx ->
+      (do
+        a <- Z3.mkStringSymbol ctx "A"
+        b <- Z3.mkStringSymbol ctx "B"
+        c <- Z3.mkStringSymbol ctx "C"
+        s <- Z3.mkStringSymbol ctx "S"
+        (eSort, consts, tests) <- Z3.mkEnumerationSort ctx s [a,b,c]
+        let [aCon, bCon, cCon] = consts
+            [aTest, bTest, cTest] = tests
+        solver <- Z3.mkSolver ctx
+        aConst <- Z3.mkApp ctx aCon []
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkApp ctx aTest [aConst]
+        bConst <- Z3.mkApp ctx bCon []
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkApp ctx bTest [bConst]
+        cConst <- Z3.mkApp ctx cCon []
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkApp ctx cTest [cConst]
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkNot ctx =<< Z3.mkApp ctx aTest [cConst]
+        r <- Z3.solverCheck ctx solver
+        sName <- Z3.getSymbolString ctx =<< Z3.getSortName ctx eSort
+        return (sName, length consts, length tests, r))
+      `shouldReturn` ("S", 3, 3, Z3.Sat)
+
+    specify "mkListSort" $ \ctx ->
+      (do
+        name <- Z3.mkStringSymbol ctx "intList"
+        int <- Z3.mkIntSort ctx
+        (lSort, nil, isNil, cons, isCons, lHead, lTail) <- Z3.mkListSort ctx name int
+        i1 <- Z3.mkIntNum ctx 1
+        emp <- Z3.mkApp ctx nil []
+        sing <- Z3.mkApp ctx cons [i1, emp]
+        t <- Z3.mkApp ctx lTail [sing]
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkNot ctx =<< Z3.mkEq ctx t emp
+        r <- Z3.solverCheck ctx solver
+        sName <- Z3.getSymbolString ctx =<< Z3.getSortName ctx lSort
+        return (sName, r))
+      `shouldReturn` ("intList", Z3.Unsat)
+
   context "Propositional Logic and Equality" $ do
 
     specify "mkBool" $ \ctx -> property $ \b ->
