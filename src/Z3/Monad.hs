@@ -27,7 +27,7 @@ module Z3.Monad
 
   -- * Types
   , Symbol
-  , AST
+  , AST(..)
   , Sort
   , FuncDecl
   , App
@@ -462,7 +462,7 @@ module Z3.Monad
 import Z3.Opts
 import Z3.Base
   ( Symbol
-  , AST
+  , AST(..)
   , Sort
   , TupleType
   , FuncDecl
@@ -2381,16 +2381,16 @@ optimizeAssertSoft :: MonadOptimize z3 => AST -> String -> Symbol -> z3 ()
 optimizeAssertSoft = undefined
 
 optimizeMaximize :: MonadOptimize z3 => AST -> z3 Int
-optimizeMaximize = liftOptimize1 Base.optimizeMaximize 
+optimizeMaximize = liftOptimize1 Base.optimizeMaximize
 
 optimizeMinimize :: MonadOptimize z3 => AST -> z3 Int
-optimizeMinimize = liftOptimize1 Base.optimizeMinimize 
+optimizeMinimize = liftOptimize1 Base.optimizeMinimize
 
 optimizePush :: MonadOptimize z3 => z3 ()
 optimizePush = liftOptimize0 Base.optimizePush
 
 optimizePop :: MonadOptimize z3 => z3 ()
-optimizePop = liftOptimize0 Base.optimizePop 
+optimizePop = liftOptimize0 Base.optimizePop
 
 optimizeCheck :: MonadOptimize z3 => [AST] -> z3 Result
 optimizeCheck = liftOptimize1 Base.optimizeCheck
@@ -2427,7 +2427,7 @@ optimizeFromString = liftOptimize1 Base.optimizeFromString
 
 optimizeFromFile :: MonadOptimize z3 => String -> z3 ()
 optimizeFromFile = liftOptimize1 Base.optimizeFromFile
- 
+
 optimizeGetHelp :: MonadOptimize z3 => z3 String
 optimizeGetHelp = liftOptimize0 Base.optimizeGetHelp
 
