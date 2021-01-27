@@ -420,9 +420,9 @@ foreign import ccall unsafe "Z3_mk_array_sort"
 
 foreign import ccall unsafe "Z3_mk_array_sort_n"
     z3_mk_array_sort_n :: Ptr Z3_context
-                       -> CUInt        -- ^ number of arguments
-                       -> Ptr Z3_sort  -- ^ domain
-                       -> Ptr Z3_sort  -- ^ range
+                       -> CUInt              -- ^ number of arguments
+                       -> Ptr (Ptr Z3_sort)  -- ^ domain
+                       -> Ptr Z3_sort        -- ^ range
                        -> IO (Ptr Z3_sort)
 
 
@@ -446,18 +446,16 @@ foreign import ccall unsafe "Z3_mk_enumeration_sort"
                            -> Ptr (Ptr Z3_func_decl)
                            -> IO (Ptr Z3_sort)
 
--- TODO the func_decls need be Ptr(Ptr) I think
---      test it
 foreign import ccall unsafe "Z3_mk_list_sort"
     z3_mk_list_sort :: Ptr Z3_context
                     -> Ptr Z3_symbol
                     -> Ptr Z3_sort
-                    -> Ptr Z3_func_decl
-                    -> Ptr Z3_func_decl
-                    -> Ptr Z3_func_decl
-                    -> Ptr Z3_func_decl
-                    -> Ptr Z3_func_decl
-                    -> Ptr Z3_func_decl
+                    -> Ptr (Ptr Z3_func_decl)
+                    -> Ptr (Ptr Z3_func_decl)
+                    -> Ptr (Ptr Z3_func_decl)
+                    -> Ptr (Ptr Z3_func_decl)
+                    -> Ptr (Ptr Z3_func_decl)
+                    -> Ptr (Ptr Z3_func_decl)
                     -> IO (Ptr Z3_sort)
 
 -- | Reference <http://z3prover.github.io/api/html/group__capi.html#gaa779e39f7050b9d51857887954b5f9b0>
