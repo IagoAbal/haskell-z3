@@ -562,7 +562,8 @@ foreign import ccall unsafe "Z3_add_rec_def"
     z3_add_rec_def :: Ptr Z3_context
                    -> Ptr Z3_func_decl
                    -> CUInt
-                   -> Ptr Z3_ast_vector
+--                   -> Ptr Z3_ast_vector
+                   -> Ptr (Ptr Z3_ast)
                    -> Ptr Z3_ast
                    -> IO ()
 
