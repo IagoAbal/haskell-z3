@@ -8,6 +8,9 @@ import Control.Monad.IO.Class (liftIO)
 run :: IO ()
 run = evalZ3 datatypeScript
 
+{- Create a recursive int list datatype
+
+-}
 mkIntListDatatype :: Z3 Sort
 mkIntListDatatype = do
 
@@ -44,12 +47,12 @@ datatypeScript = do
   [[],[hdA, tlA]] <- getDatatypeSortConstructorAccessors intList
   
   
-  liftIO $ putStrLn "*** List constructors are named"
+  liftIO $ putStrLn "*** List constructors are named (should be nil, cons)"
   printFuncs [nilC, consC]
   liftIO $ putStrLn "*** List recognizers are named"
   printFuncs [nilR, consR]
 
-  liftIO $ putStrLn "*** List accessors are named"
+  liftIO $ putStrLn "*** List accessors are named (should be hd, tl)"
   printFuncs [hdA, tlA]
 
   let listToAST [] = mkApp nilC []
@@ -69,24 +72,24 @@ datatypeScript = do
   l4 <- mkApp consC [ eightyTwo, l2]
   
   push
+  -- Simple test of the recursive list datatype with mkEq
 
   liftIO $ putStrLn "*** Is nil != cons 42 nil?  Expect Unsat"
   
   p <- mkNot =<< mkEq nil l1
   mkNot p >>= assert
   
-  -- solverToString >>= liftIO . putStr
-
   check >>= liftIO . print
-
   pop 1
 
-
-  push
-
-  liftIO $ putStrLn "*** list-equiv test"
-
+  push 
+  {- list-equiv is a recursive function that returns true when two
+     integer lists are "equivalent," i.e., when adding one to the elements
+     of the first list gives the second. -}
+    
   boolS <- mkBoolSort
+
+  -- Build the list-equiv function
 
   listEquivSym <- mkStringSymbol "list-equiv"
 
@@ -96,27 +99,51 @@ datatypeScript = do
 
   rnil1 <- mkApp nilR [l1s]
   rnil2 <- mkApp nilR [l2s]
+  nilPred <- mkAnd [rnil1, rnil2] -- Both lists are nil
 
-  nilPred <- mkAnd [rnil1, rnil2]
-
-  rcons1 <- mkApp consR [l1s]
-  rcons2 <- mkApp consR [l2s]
+  rcons1 <- mkApp consR [l1s] -- First list is cons
+  
+  rcons2 <- mkApp consR [l2s] -- Second list is cons
+  
   hd1 <- mkApp hdA [l1s]
+  one <- mkInteger 1
+  hd1' <- mkAdd [hd1, one]
   hd2 <- mkApp hdA [l2s]
-  hdeq <- mkEq hd1 hd2
+  hdeq <- mkEq hd1' hd2  -- First head + 1 = second head
+  
   tl1 <- mkApp tlA [l1s]
   tl2 <- mkApp tlA [l2s]
-  tlequiv <- mkApp listEquivF [tl1, tl2]
-
+  tlequiv <- mkApp listEquivF [tl1, tl2] -- list-equiv tl1 tl2
+  
   consPred <- mkAnd [rcons1, rcons2, hdeq, tlequiv]
 
-  equivBody <- mkOr [nilPred, consPred]
+  equivBody <- mkOr [nilPred, consPred] -- lists are nil or cons and equivalent
 
+  -- Define the body of the function
   addRecDef listEquivF [l1s, l2s] equivBody
+
+  push
+
+  l4 <- listToAST [3,4,5]
+  l5 <- listToAST [4,5,6]
+
+  liftIO $ putStrLn "*** Comparing two 'equiv' lists.  Generated SMTLIB2 code:"
+
+  mkApp listEquivF [l4, l5] >>= mkNot >>= assert
+  
+  solverToString >>= liftIO . putStr
+
+  liftIO $ putStrLn "*** list-equiv [3,4,5] [4,5,6] Expecting Unsat (equiv-list is always true)"  
+  check >>= liftIO . print
+
+  pop 1
 
   let twoListsEquiv l1 l2 = do
         liftIO $ putStrLn $ "*** list-equiv " ++ show l1 ++ " " ++ show l2 ++
-          " expecting " ++ if l1 == l2 then "Unsat" else "Sat"
+          " expecting " ++
+          if map (+1) l1 == l2
+          then "Unsat (list-equiv is always true)"
+          else "Sat (list-equiv can be false)"
         push
         l1' <- listToAST l1
         l2' <- listToAST l2
@@ -125,85 +152,15 @@ datatypeScript = do
         check >>= liftIO . print
         pop 1
         
-  push
+  twoListsEquiv [] []  -- equiv
+  twoListsEquiv [1] [1] -- not equiv
+  twoListsEquiv [1] [2] -- equiv
+  twoListsEquiv [1] [2,2] -- not equiv
+  twoListsEquiv [1,2,3] [2,3,4] -- equiv
+  twoListsEquiv [1,2,3,4,5,6] [2,3,4,5,6,6] -- not equiv
+  twoListsEquiv [1,2,3,4] [2,3,4] -- not equiv
+  twoListsEquiv [1,2,3,4,5,5,6] [2,3,4,5,6,6,7] -- equiv
   
-  l4 <- listToAST [3,4,5]
-  l5 <- listToAST [3,4,8]
-
-  mkApp listEquivF [l4, l5] >>= mkNot >>= assert
-
-  solverToString >>= liftIO . putStr
-  check >>= liftIO . print
-
-  (ch, m) <- getModel
-
-  case m of Just m' -> showModel m' >>= liftIO . putStrLn
-            otherwise -> liftIO . print $ ch
-
-  pop 1
-
-  twoListsEquiv [] []
-  twoListsEquiv [1] [1]
-  twoListsEquiv [1] [1,2]
-  twoListsEquiv [1,2,3] [1,2,3]
-  twoListsEquiv [1,2,3,4,5,6] [1,2,3,5,5,6]
-  twoListsEquiv [1,2,3,4] [1,2,3]
-  twoListsEquiv [1,2,3,4,5,5,6] [1,2,3,4,5,5,6]
   pop 1
    
   return ()
-
-{-
-  intList <- mkIntListDatatype
-
-  [nil, cons] <- getDatatypeSortConstructors intList
-
-  push
-  foo <- mkFreshConst "l" intList
-
-  nil' <- mkApp nil []
-
-  mkEq nil' foo
-
-  check >>= liftIO . print
-
-  solv <- solverToString -- >>= liftIO . putStr
-  liftIO $ putStrLn solv
-
-  pop 1
-
-  liftIO $ putStrLn "Hello World"
-
--}
-
-{-
-  [nilF, consF] <- getDatatypeSortConstructors forest
-  [nilT, consT] <- getDatatypeSortConstructors tree
-
-  nilF' <- mkApp nilF []
-
-  t1 <- mkApp consT [nilF', nilF']
-  f1 <- mkApp consF [t1, nilF']
-
-  liftIO $ putStrLn "prove (NilF != ConsF(ConsT(NilT, NilT), NilF)) //Expect Unsat"
-  p <- (mkEq nilF' f1 >>= mkNot)
-  push
-  mkNot p >>= assert
-  check >>= liftIO . print
-  pop 1
-
-  liftIO $ putStrLn "prove (consF (x,u) = consF(y,v) => x = y && u = v) //Expect Unsat"
-  [x,y] <- mapM (flip mkFreshConst tree) ["x","y"]
-  [u,v] <- mapM (flip mkFreshConst forest) ["u","v"]
-  f1 <- mkApp consF [x, u]
-  f2 <- mkApp consF [y, v]
-  p1 <- mkEq f1 f2
-  p2 <- mkEq x y
-  p3 <- mkEq u v
-  p4 <- mkAnd [p2, p3]
-  p5 <- mkImplies p1 p4
-  push
-  mkNot p5 >>= assert
-  check >>= liftIO . print
-  pop 1
--}
