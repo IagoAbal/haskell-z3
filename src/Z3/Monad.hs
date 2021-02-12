@@ -268,6 +268,8 @@ module Z3.Monad
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDatatypeSortConstructorAccessors
+  , mkAtMost
+  , mkAtLeast
   , getDeclName
   , getArity
   , getDomain
@@ -1861,6 +1863,20 @@ getDatatypeSortConstructorAccessors :: MonadZ3 z3
                            -> z3 [[FuncDecl]]  -- ^ Constructor recognizers.
 getDatatypeSortConstructorAccessors = liftFun1 Base.getDatatypeSortConstructorAccessors
 
+-- | At most @k@ of the arguments @ps@ may be true, i.e. encode @p1 + p2
+-- + ... + pn <= k@.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf2501779266a6dc2738a8928d1fc858c>
+mkAtMost :: MonadZ3 z3 => [AST] -> Int -> z3 AST
+mkAtMost = liftFun2 Base.mkAtMost
+
+-- | At least @k@ of the arguments @ps@ may be true, i.e. encode @p1 +
+-- p2 + ... + pn >= k@.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaaa996ab58cf979d5849178f1d2963efb>
+mkAtLeast :: MonadZ3 z3 => [AST] -> Int -> z3 AST
+mkAtLeast = liftFun2 Base.mkAtLeast
+
 -- | Return the constant declaration name as a symbol.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga741b1bf11cb92aa2ec9ef2fef73ff129>
@@ -2381,16 +2397,16 @@ optimizeAssertSoft :: MonadOptimize z3 => AST -> String -> Symbol -> z3 ()
 optimizeAssertSoft = undefined
 
 optimizeMaximize :: MonadOptimize z3 => AST -> z3 Int
-optimizeMaximize = liftOptimize1 Base.optimizeMaximize 
+optimizeMaximize = liftOptimize1 Base.optimizeMaximize
 
 optimizeMinimize :: MonadOptimize z3 => AST -> z3 Int
-optimizeMinimize = liftOptimize1 Base.optimizeMinimize 
+optimizeMinimize = liftOptimize1 Base.optimizeMinimize
 
 optimizePush :: MonadOptimize z3 => z3 ()
 optimizePush = liftOptimize0 Base.optimizePush
 
 optimizePop :: MonadOptimize z3 => z3 ()
-optimizePop = liftOptimize0 Base.optimizePop 
+optimizePop = liftOptimize0 Base.optimizePop
 
 optimizeCheck :: MonadOptimize z3 => [AST] -> z3 Result
 optimizeCheck = liftOptimize1 Base.optimizeCheck
@@ -2427,7 +2443,7 @@ optimizeFromString = liftOptimize1 Base.optimizeFromString
 
 optimizeFromFile :: MonadOptimize z3 => String -> z3 ()
 optimizeFromFile = liftOptimize1 Base.optimizeFromFile
- 
+
 optimizeGetHelp :: MonadOptimize z3 => z3 String
 optimizeGetHelp = liftOptimize0 Base.optimizeGetHelp
 

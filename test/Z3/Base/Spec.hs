@@ -180,6 +180,71 @@ spec = around withContext $ do
           Z3.getBoolValue ctx ast
         assert $ x == Just b
 
+    specify "mkAtMost0" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtMost ctx [a, b, c] 0
+        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
+        mapM (Z3.evalBool ctx model) [a, b, c])
+      `shouldReturn` [Just False, Just False, Just False]
+
+    specify "mkAtMost2" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtMost ctx [a, b, c] 2
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAnd ctx [a, b, c]
+        Z3.solverCheck ctx solver)
+      `shouldReturn` Z3.Unsat
+
+    specify "mkAtMost4" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtMost ctx [a, b, c] 4
+        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
+        mapM (Z3.evalBool ctx model) [a, b, c])
+      `shouldReturn` [Just False, Just False, Just False]
+
+    specify "mkAtLeast0" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtLeast ctx [a, b, c] 0
+        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
+        mapM (Z3.evalBool ctx model) [a, b, c])
+      `shouldReturn` [Just False, Just False, Just False]
+
+    specify "mkAtLeast2" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtLeast ctx [a, b, c] 2
+        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
+        mapM (Z3.evalBool ctx model) [a, b, c])
+      `shouldReturn` [Just True, Just True, Just False]
+
+    specify "mkAtLeast4" $ \ctx ->
+      (do
+        a <- Z3.mkFreshBoolVar ctx "A"
+        b <- Z3.mkFreshBoolVar ctx "B"
+        c <- Z3.mkFreshBoolVar ctx "C"
+        solver <- Z3.mkSolver ctx
+        Z3.solverAssertCnstr ctx solver =<< Z3.mkAtLeast ctx [a, b, c] 4
+        Z3.solverCheck ctx solver)
+      `shouldReturn` Z3.Unsat
+
   context "Numerals" $ do
 
     specify "mkInt" $ \ctx -> property $ \(i :: Integer) ->
@@ -197,7 +262,7 @@ spec = around withContext $ do
           p <- Z3.mkPower ctx iAst jAst
           sol <- Z3.mkSolver ctx
           (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
-          Z3.evalInt ctx model p 
+          Z3.evalInt ctx model p
         assert $ x == Just (z3powerDef i j)
 
   context "AST Equality and Substitution" $ do
