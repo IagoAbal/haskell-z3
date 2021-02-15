@@ -4,6 +4,7 @@ module Z3.Base.Spec
   ( spec )
   where
 
+import Data.Maybe (fromJust)
 import Test.Hspec
 import Test.QuickCheck ( property, choose )
 import Test.QuickCheck.Arbitrary
@@ -209,9 +210,8 @@ spec = around withContext $ do
         c <- Z3.mkFreshBoolVar ctx "C"
         solver <- Z3.mkSolver ctx
         Z3.solverAssertCnstr ctx solver =<< Z3.mkAtMost ctx [a, b, c] 4
-        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
-        mapM (Z3.evalBool ctx model) [a, b, c])
-      `shouldReturn` [Just False, Just False, Just False]
+        Z3.solverCheck ctx solver)
+      `shouldReturn` Z3.Sat
 
     specify "mkAtLeast0" $ \ctx ->
       (do
@@ -220,9 +220,8 @@ spec = around withContext $ do
         c <- Z3.mkFreshBoolVar ctx "C"
         solver <- Z3.mkSolver ctx
         Z3.solverAssertCnstr ctx solver =<< Z3.mkAtLeast ctx [a, b, c] 0
-        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
-        mapM (Z3.evalBool ctx model) [a, b, c])
-      `shouldReturn` [Just False, Just False, Just False]
+        Z3.solverCheck ctx solver)
+      `shouldReturn` Z3.Sat
 
     specify "mkAtLeast2" $ \ctx ->
       (do
@@ -231,9 +230,8 @@ spec = around withContext $ do
         c <- Z3.mkFreshBoolVar ctx "C"
         solver <- Z3.mkSolver ctx
         Z3.solverAssertCnstr ctx solver =<< Z3.mkAtLeast ctx [a, b, c] 2
-        (_r, Just model) <- Z3.solverCheckAndGetModel ctx solver
-        mapM (Z3.evalBool ctx model) [a, b, c])
-      `shouldReturn` [Just True, Just True, Just False]
+        Z3.solverCheck ctx solver)
+      `shouldReturn` Z3.Sat
 
     specify "mkAtLeast4" $ \ctx ->
       (do
