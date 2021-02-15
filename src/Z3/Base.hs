@@ -2313,6 +2313,12 @@ mkAtLeast  ctx es  n =
   h2c n $ \n' ->
   f esLen esArr n'
 
+-- TODO: Z3_mk_pble
+
+-- TODO: Z3_mk_pbge
+
+-- TODO: Z3_mk_pbeq
+
 -- TODO: Z3_func_decl_to_ast
 
 -- TODO: Z3_is_eq_func_decl
