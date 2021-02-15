@@ -1,0 +1,19 @@
+name: API coverage
+
+on: push
+
+jobs:
+  compute-coverage:
+    name: Compute the API coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Run coverage script
+        run: ./coverage.sh
+#      - name: Archive results
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: api-coverage.log
+#          path: api-coverage.log
