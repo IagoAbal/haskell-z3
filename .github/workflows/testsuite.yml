@@ -1,0 +1,23 @@
+name: Testsuite
+on: [push]
+jobs:
+  test:
+    name: Download z3 and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1
+        with:
+          ghc-version: '8.10'
+          cabal-version: '3.2'
+      - run: |
+          Z3_URL=https://github.com$(curl -sL https://github.com/z3prover/z3/releases/latest | grep -oe "href.*x64-ubuntu.*\.zip\"" | sed -e "s/href=\"\(.*\)\"/\1/g")
+          echo "z3_url=$Z3_URL" >> $GITHUB_ENV
+          echo "z3_dir=$(basename $Z3_URL .zip)" >> $GITHUB_ENV
+      - run: |
+          cd $HOME
+          wget ${{env.z3_url}}
+          unzip ${{env.z3_dir}}.zip
+      - run: |
+          cabal --enable-executable-dynamic --extra-include-dirs="$HOME/${{env.z3_dir}}/include" --extra-lib-dirs="$HOME/${{env.z3_dir}}/bin" run
+
