@@ -446,9 +446,11 @@ module Z3.Base (
   , orElseTactic
   , skipTactic
   , tryForTactic
+  , repeatTactic
   , mkQuantifierEliminationTactic
   , mkAndInverterGraphTactic
   , applyTactic
+  , applyResultToString
   , getApplyResultNumSubgoals
   , getApplyResultSubgoal
   , getApplyResultSubgoals
@@ -457,6 +459,7 @@ module Z3.Base (
   , getGoalSize
   , getGoalFormula
   , getGoalFormulas
+  , goalToString
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -1892,10 +1895,9 @@ mkSeqUnit :: Context -> AST -> IO AST
 mkSeqUnit = liftFun1 z3_mk_seq_unit
 
 -- | Concatenate sequences.
-mkSeqConcat :: (Integral int) => Context -> int -> [AST] -> IO AST
-mkSeqConcat c i as
-  | i <  0            = error "Z3.Base.mkSeqConcat: negative size"
-  | i >= 0 && null as = error "Z3.Base.mkSeqConcet: empty list of expressions"
+mkSeqConcat :: Context -> [AST] -> IO AST
+mkSeqConcat c as
+  | null as = error "Z3.Base.mkSeqConcet: empty list of expressions"
   | otherwise         = marshal z3_mk_seq_concat c $ marshalArrayLen as
 
 -- | Check if prefix is a prefix of s.
@@ -2977,6 +2979,9 @@ skipTactic = liftFun0 z3_tactic_skip
 tryForTactic :: Context -> Tactic -> Int -> IO Tactic
 tryForTactic = liftFun2 z3_tactic_try_for
 
+repeatTactic :: Context -> Tactic -> Int -> IO Tactic
+repeatTactic = liftFun2 z3_tactic_repeat
+
 mkQuantifierEliminationTactic :: Context -> IO Tactic
 mkQuantifierEliminationTactic ctx = mkTactic ctx "qe"
 
@@ -2985,6 +2990,9 @@ mkAndInverterGraphTactic ctx = mkTactic ctx "aig"
 
 applyTactic :: Context -> Tactic -> Goal -> IO ApplyResult
 applyTactic = liftFun2 z3_tactic_apply
+
+applyResultToString :: Context -> ApplyResult -> IO String
+applyResultToString = liftFun1 z3_apply_result_to_string
 
 getApplyResultNumSubgoals :: Context -> ApplyResult -> IO Int
 getApplyResultNumSubgoals = liftFun1 z3_apply_result_get_num_subgoals
@@ -3013,6 +3021,9 @@ getGoalFormulas :: Context -> Goal -> IO [AST]
 getGoalFormulas ctx g = do
   n <- getGoalSize ctx g
   T.forM [0..n-1] (getGoalFormula ctx g)
+
+goalToString :: Context -> Goal -> IO String
+goalToString = liftFun1 z3_goal_to_string
 
 ---------------------------------------------------------------------
 -- Parser interface
