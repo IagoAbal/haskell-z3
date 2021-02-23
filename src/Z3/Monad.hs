@@ -76,6 +76,8 @@ module Z3.Monad
   , mkConst
   , mkFreshConst
   , mkFreshFuncDecl
+  , mkRecFuncDecl
+  , addRecDef
   -- ** Helpers
   , mkVar
   , mkBoolVar
@@ -841,6 +843,14 @@ mkFreshConst = liftFun2 Base.mkFreshConst
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga1f60c7eb41c5603e55a188a14dc929ec>
 mkFreshFuncDecl :: MonadZ3 z3 => String -> [Sort] -> Sort -> z3 FuncDecl
 mkFreshFuncDecl = liftFun3 Base.mkFreshFuncDecl
+
+-- | A recursive Z3 function
+mkRecFuncDecl :: MonadZ3 z3 => Symbol -> [Sort] -> Sort -> z3 FuncDecl
+mkRecFuncDecl = liftFun3 Base.mkRecFuncDecl
+
+-- | Define the body of a recursive Z3 function
+addRecDef :: MonadZ3 z3 => FuncDecl -> [AST] -> AST -> z3 ()
+addRecDef = liftFun3 Base.addRecDef
 
 -------------------------------------------------
 -- ** Helpers

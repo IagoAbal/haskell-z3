@@ -11,6 +11,7 @@ import qualified Example.Monad.QuantifierElimination
 import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
 import qualified Example.Monad.ParserInterface
+import qualified Example.Monad.IntList
 
 import System.Environment
 
@@ -44,6 +45,9 @@ examples =
     )
   , ("parserInterface"
     , Example.Monad.ParserInterface.run
+    )
+  , ("intList"
+    , Example.Monad.IntList.run
     )
   ]
 

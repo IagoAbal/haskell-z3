@@ -155,6 +155,8 @@ module Z3.Base (
   , mkConst
   , mkFreshFuncDecl
   , mkFreshConst
+  , mkRecFuncDecl
+  , addRecDef
   -- ** Helpers
   , mkVar
   , mkBoolVar
@@ -1174,6 +1176,33 @@ mkFreshConst :: Context -- ^ Logical context.
              -> Sort    -- ^ Sort of the constant.
              -> IO AST
 mkFreshConst = liftFun2 z3_mk_fresh_const
+
+-- | Declare a recursive function.
+mkRecFuncDecl :: Context   -- ^ Logical context.
+            -> Symbol   -- ^ Name of the function (or constant).
+            -> [Sort]   -- ^ Function domain (empty for constants).
+            -> Sort     -- ^ Return sort of the function.
+            -> IO FuncDecl
+mkRecFuncDecl ctx smb dom rng =
+  marshal z3_mk_rec_func_decl ctx $ \f ->
+    h2c smb $ \ptrSym ->
+    marshalArrayLen dom $ \domNum domArr ->
+    h2c rng $ \ptrRange ->
+      f ptrSym domNum domArr ptrRange
+
+-- | Define the body of a recursive function.
+-- Declare it first with mkRecFuncDecl
+addRecDef :: Context -- ^ Logical context.
+          -> FuncDecl -- ^ Declaration of the function being defined.
+          -> [AST] -- ^ Constants to use as the function's formal arguments.
+          -> AST   -- ^ Body of the function to define
+          -> IO ()
+addRecDef ctx decl args body =
+  marshal z3_add_rec_def ctx $ \f ->
+    h2c decl $ \declPtr ->
+    marshalArrayLen args $ \argsNum argsArr ->
+    h2c body $ \bodyPtr ->
+      f declPtr argsNum argsArr bodyPtr
 
 -------------------------------------------------
 -- ** Helpers
