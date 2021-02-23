@@ -1375,10 +1375,10 @@ foreign import ccall unsafe "Z3_get_relation_column"
     z3_get_relation_column :: Ptr Z3_context -> Ptr Z3_sort -> CUInt -> IO (Ptr Z3_sort)
 
 foreign import ccall unsafe "Z3_mk_atmost"
-    z3_mk_atmost :: Ptr Z3_context -> CUInt -> Ptr Z3_ast_vector -> CUInt -> IO (Ptr Z3_ast)
+    z3_mk_atmost :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> CUInt -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_atleast"
-    z3_mk_atleast :: Ptr Z3_context -> CUInt -> Ptr Z3_ast_vector -> CUInt -> IO (Ptr Z3_ast)
+    z3_mk_atleast :: Ptr Z3_context -> CUInt -> Ptr (Ptr Z3_ast) -> CUInt -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_pble"
     z3_mk_pble :: Ptr Z3_context -> CUInt -> Ptr Z3_ast_vector -> Ptr CInt -> CInt -> IO (Ptr Z3_ast)

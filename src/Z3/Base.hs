@@ -349,6 +349,8 @@ module Z3.Base (
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDatatypeSortConstructorAccessors
+  , mkAtMost
+  , mkAtLeast
   , getDeclName
   , getArity
   , getDomain
@@ -2215,7 +2217,7 @@ mkExistsConst = flip mkExistsWConst 0
 getSymbolString :: Context -> Symbol -> IO String
 getSymbolString = liftFun1 z3_get_symbol_string
 
--- | Return the sort name as a symbol. 
+-- | Return the sort name as a symbol.
 getSortName :: Context -> Sort -> IO Symbol
 getSortName = liftFun1 z3_get_sort_name
 
@@ -2323,6 +2325,28 @@ getDatatypeSortConstructorAccessors c dtSort =
 -- TODO: Z3_get_relation_arity
 
 -- TODO: Z3_get_relation_column
+
+mkAtMost :: Context -> [AST] -> Int -> IO AST
+mkAtMost _ctx [] _n = error "Z3.Base.mkAtMost: empty list of expressions"
+mkAtMost  ctx es  n =
+  marshal z3_mk_atmost ctx $ \f ->
+  marshalArrayLen es $ \esLen esArr ->
+  h2c n $ \n' ->
+  f esLen esArr n'
+
+mkAtLeast :: Context -> [AST] -> Int -> IO AST
+mkAtLeast _ctx [] _n = error "Z3.Base.mkAtLeast: empty list of expressions"
+mkAtLeast  ctx es  n =
+  marshal z3_mk_atleast ctx $ \f ->
+  marshalArrayLen es $ \esLen esArr ->
+  h2c n $ \n' ->
+  f esLen esArr n'
+
+-- TODO: Z3_mk_pble
+
+-- TODO: Z3_mk_pbge
+
+-- TODO: Z3_mk_pbeq
 
 -- TODO: Z3_func_decl_to_ast
 
@@ -3211,7 +3235,7 @@ optimizeFromString = liftFun2 z3_optimize_from_string
 
 optimizeFromFile :: Context -> Optimize -> String -> IO ()
 optimizeFromFile = liftFun2 z3_optimize_from_file
- 
+
 optimizeGetHelp :: Context -> Optimize -> IO String
 optimizeGetHelp = liftFun1 z3_optimize_get_help
 
