@@ -2085,7 +2085,6 @@ type MkZ3Quantifier = Ptr Z3_context -> CUInt
                       -> Ptr Z3_ast
                       -> IO (Ptr Z3_ast)
 
--- TODO: Allow the user to specify the quantifier weight!
 marshalMkQ :: MkZ3Quantifier
           -> Context
           -> Int
