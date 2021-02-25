@@ -346,6 +346,9 @@ module Z3.Base (
   , getSortId
   , getSortKind
   , getBvSortSize
+  , getTupleSortMkDecl
+  , getTupleSortNumFields
+  , getTupleSortFieldDecl
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDatatypeSortConstructorAccessors
@@ -2267,11 +2270,14 @@ getArraySortDomain = liftFun1 z3_get_array_sort_domain
 getArraySortRange :: Context -> Sort -> IO Sort
 getArraySortRange = liftFun1 z3_get_array_sort_range
 
--- TODO: Z3_get_tuple_sort_mk_decl
+getTupleSortMkDecl :: Context -> Sort -> IO FuncDecl
+getTupleSortMkDecl = liftFun1 z3_get_tuple_sort_mk_decl
 
--- TODO: Z3_get_tuple_sort_num_fields
+getTupleSortNumFields :: Context -> Sort -> IO Int
+getTupleSortNumFields = liftFun1 z3_get_tuple_sort_num_fields
 
--- TODO: Z3_get_tuple_sort_field_decl
+getTupleSortFieldDecl :: Context -> Sort -> Int -> IO FuncDecl
+getTupleSortFieldDecl = liftFun2 z3_get_tuple_sort_field_decl
 
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: Context

@@ -398,7 +398,11 @@ spec = around withContext $ do
         f3 <- Z3.mkStringSymbol ctx "f3"
         int <- Z3.mkIntSort ctx
         bool <- Z3.mkBoolSort ctx
-        (_, cons, [f1proj, f2proj, f3proj]) <- Z3.mkTupleSort ctx name [(f1, int), (f2, bool), (f3, bool)]
+        (myTuple, cons, [f1proj, f2proj, f3proj]) <- Z3.mkTupleSort ctx name [(f1, int), (f2, bool), (f3, bool)]
+
+        correctDecl <- (== cons) <$> Z3.getTupleSortMkDecl ctx myTuple
+        correctNumFields <- (== 3) <$> Z3.getTupleSortNumFields ctx myTuple
+        correctGetFieldDecl <- (== f2proj) <$> Z3.getTupleSortFieldDecl ctx myTuple 1
 
         one <- Z3.mkIntNum ctx i
         b1 <- Z3.mkBool ctx b1v
@@ -412,8 +416,9 @@ spec = around withContext $ do
         x1 <- Z3.evalInt ctx model =<< Z3.mkApp ctx f1proj [tuple]
         x2 <- Z3.evalBool ctx model =<< Z3.mkApp ctx f2proj [tuple]
         x3 <- Z3.evalBool ctx model =<< Z3.mkApp ctx f3proj [tuple]
-        return (x1,x2,x3)
-      ) `shouldReturn` (Just i, Just b1v, Just b2v)
+        return (correctDecl, correctNumFields, correctGetFieldDecl, x1,x2,x3)
+
+      ) `shouldReturn` (True, True, True, Just i, Just b1v, Just b2v)
 
     specify "mkTupleType, mkTuple, mkIndexTuple, mkProjTuple" $ \ctx -> property $ \(i::Integer) (b1v::Bool) (b2v::Bool) ->
       (do
