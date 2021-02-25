@@ -484,3 +484,16 @@ spec = around withContext $ do
           s <- Z3.mkFiniteDomainSort ctx name i
           Z3.getFiniteDomainSortSize ctx s
         ) `shouldReturn` Just i)
+
+  context "Function Declarations" $ do
+
+    specify "getArity" $ \ctx ->
+      (do
+        fun <- Z3.mkStringSymbol ctx "fun"
+        int <- Z3.mkIntSort ctx
+        bool <- Z3.mkBoolSort ctx
+        fdecl <- Z3.mkFuncDecl ctx fun [int, int, int] bool
+        arity <- Z3.getArity ctx fdecl
+        return arity
+      ) `shouldReturn` 3
+

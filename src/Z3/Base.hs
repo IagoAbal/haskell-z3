@@ -359,12 +359,14 @@ module Z3.Base (
   , getArity
   , getDomain
   , getRange
+  , getDeclNumParameters
   , appToAst
   , getAppDecl
   , getAppNumArgs
   , getAppArg
   , getAppArgs
   , getSort
+  , isWellSorted
   , getArraySortDomain
   , getArraySortRange
   , getBoolValue
@@ -2393,7 +2395,8 @@ getDomain = liftFun2 z3_get_domain
 getRange :: Context -> FuncDecl -> IO Sort
 getRange = liftFun1 z3_get_range
 
--- TODO: Z3_get_decl_num_parameters
+getDeclNumParameters :: Context -> FuncDecl -> IO Int
+getDeclNumParameters = liftFun1 z3_get_decl_num_parameters
 
 -- TODO: Z3_get_decl_parameter_kind
 
@@ -2443,7 +2446,8 @@ getAppArgs ctx a = do
 getSort :: Context -> AST -> IO Sort
 getSort = liftFun1 z3_get_sort
 
--- TODO: Z3_is_well_sorted
+isWellSorted :: Context -> AST -> IO Bool
+isWellSorted = liftFun1 z3_is_well_sorted
 
 -- TODO: fix doc
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
