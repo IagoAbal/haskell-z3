@@ -1337,9 +1337,8 @@ foreign import ccall unsafe "Z3_get_sort_kind"
 foreign import ccall unsafe "Z3_get_bv_sort_size"
     z3_get_bv_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
 
--- TODO is CULong correct?
 foreign import ccall unsafe "Z3_get_finite_domain_sort_size"
-    z3_get_finite_domain_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> Ptr CULong -> IO Z3_bool
+    z3_get_finite_domain_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> Ptr CULLong -> IO Z3_bool
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6ffa46d55e4632d761db4dfae7441c09>
 foreign import ccall unsafe "Z3_get_array_sort_domain"

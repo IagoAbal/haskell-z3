@@ -346,6 +346,7 @@ module Z3.Base (
   , getSortId
   , getSortKind
   , getBvSortSize
+  , getFiniteDomainSortSize
   , getTupleSortMkDecl
   , getTupleSortNumFields
   , getTupleSortFieldDecl
@@ -2259,7 +2260,16 @@ getSortKind ctx sort = toSortKind <$> liftFun1 z3_get_sort_kind ctx sort
 getBvSortSize :: Context -> Sort -> IO Int
 getBvSortSize = liftFun1 z3_get_bv_sort_size
 
--- TODO: Z3_get_finite_domain_sort_size
+getFiniteDomainSortSize :: Context -> Sort -> IO (Maybe Word64)
+getFiniteDomainSortSize ctx sort = alloca $ \sizePtr ->
+  withContext ctx $ \ctxPtr ->
+    h2c sort $ \sortPtr ->
+      do success <- toBool <$> (z3_get_finite_domain_sort_size ctxPtr sortPtr sizePtr)
+         if success then do
+           size <- fromIntegral <$> peek sizePtr
+           return $ Just size
+         else
+           return Nothing
 
 -- TODO: Z3_get_array_sort_size
 

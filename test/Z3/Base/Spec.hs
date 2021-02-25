@@ -6,9 +6,11 @@ module Z3.Base.Spec
 
 import Data.Maybe (fromJust)
 import Test.Hspec
-import Test.QuickCheck ( property, choose )
+import Test.QuickCheck ( property, choose, (==>) )
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Monadic
+
+import Data.Word(Word64)
 
 import qualified Z3.Base as Z3
 
@@ -470,3 +472,15 @@ spec = around withContext $ do
 
         Z3.evalInt ctx model =<< mkApp' ctx f1proj =<< mkApp' ctx f2proj =<< mkApp' ctx t2cons =<< Z3.mkApp ctx t1cons [x]
       ) `shouldReturn` Just i
+
+
+  context "Finite Domain Sorts" $ do
+
+    specify "mkFiniteDomainSort, getFiniteDomainSortSize" $ \ctx -> property $ \(i::Word64) ->
+      -- Z3 does not allow empty sorts
+      (i /= 0 ==>
+        (do
+          name <- Z3.mkStringSymbol ctx "name"
+          s <- Z3.mkFiniteDomainSort ctx name i
+          Z3.getFiniteDomainSortSize ctx s
+        ) `shouldReturn` Just i)
