@@ -784,12 +784,9 @@ globalParamResetAll = z3_global_param_reset_all
 globalParamGet :: String -> IO (Maybe String)
 globalParamGet param =
   withCString param $ \cParam ->
-    alloca $ \(cValuePtr::Ptr CString) ->
-       do success <- z3_global_param_get cParam cValuePtr
-          if success /= Z3_bool 0 then
-            Just <$> (peekCString =<< peek cValuePtr)
-          else
-            return Nothing
+    alloca $ \cValuePtr ->
+      do success <- toBool <$> z3_global_param_get cParam cValuePtr
+         returnValueToMaybe success $ peekCString =<< peek cValuePtr
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -2267,11 +2264,8 @@ getFiniteDomainSortSize ctx sort = alloca $ \sizePtr ->
   withContext ctx $ \ctxPtr ->
     h2c sort $ \sortPtr ->
       do success <- toBool <$> (z3_get_finite_domain_sort_size ctxPtr sortPtr sizePtr)
-         if success then do
-           size <- fromIntegral <$> peek sizePtr
-           return $ Just size
-         else
-           return Nothing
+         returnValueToMaybe success $ (fromIntegral <$> peek sizePtr)
+
 
 -- TODO: Z3_get_array_sort_size
 
@@ -3791,3 +3785,12 @@ unBool False = z3_false
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
+
+-- | Wraps a monadic value in a Maybe as indicated by a boolean flag
+returnValueToMaybe :: Monad m => Bool -> m a -> m (Maybe a)
+returnValueToMaybe success m = if success then do
+                                 val <- m
+                                 return $ Just val
+                               else
+                                 return Nothing
+                                  
