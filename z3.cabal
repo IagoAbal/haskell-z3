@@ -126,10 +126,12 @@ Test-suite spec
     Default-extensions: ScopedTypeVariables
 
     Hs-source-dirs:     test
+                        examples
 
     Main-is:            Spec.hs
 
     Other-modules:      Z3.Base.Spec
+                        Z3.Monad.Spec
                         Z3.Regression
 
     Build-depends:      base >= 4.5,
