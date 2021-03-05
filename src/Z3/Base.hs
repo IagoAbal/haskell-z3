@@ -346,6 +346,10 @@ module Z3.Base (
   , getSortId
   , getSortKind
   , getBvSortSize
+  , getFiniteDomainSortSize
+  , getTupleSortMkDecl
+  , getTupleSortNumFields
+  , getTupleSortFieldDecl
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDatatypeSortConstructorAccessors
@@ -355,12 +359,14 @@ module Z3.Base (
   , getArity
   , getDomain
   , getRange
+  , getDeclNumParameters
   , appToAst
   , getAppDecl
   , getAppNumArgs
   , getAppArg
   , getAppArgs
   , getSort
+  , isWellSorted
   , getArraySortDomain
   , getArraySortRange
   , getBoolValue
@@ -535,6 +541,7 @@ module Z3.Base (
   ) where
 
 import Z3.Base.C
+import Z3.Common
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
@@ -778,12 +785,9 @@ globalParamResetAll = z3_global_param_reset_all
 globalParamGet :: String -> IO (Maybe String)
 globalParamGet param =
   withCString param $ \cParam ->
-    alloca $ \(cValuePtr::Ptr CString) ->
-       do success <- z3_global_param_get cParam cValuePtr
-          if success /= Z3_bool 0 then
-            Just <$> (peekCString =<< peek cValuePtr)
-          else
-            return Nothing
+    alloca $ \cValuePtr ->
+      do success <- toBool <$> z3_global_param_get cParam cValuePtr
+         returnValueToMaybe success $ peekCString =<< peek cValuePtr
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -2082,7 +2086,6 @@ type MkZ3Quantifier = Ptr Z3_context -> CUInt
                       -> Ptr Z3_ast
                       -> IO (Ptr Z3_ast)
 
--- TODO: Allow the user to specify the quantifier weight!
 marshalMkQ :: MkZ3Quantifier
           -> Context
           -> Int
@@ -2257,7 +2260,13 @@ getSortKind ctx sort = toSortKind <$> liftFun1 z3_get_sort_kind ctx sort
 getBvSortSize :: Context -> Sort -> IO Int
 getBvSortSize = liftFun1 z3_get_bv_sort_size
 
--- TODO: Z3_get_finite_domain_sort_size
+getFiniteDomainSortSize :: Context -> Sort -> IO (Maybe Word64)
+getFiniteDomainSortSize ctx sort = alloca $ \sizePtr ->
+  withContext ctx $ \ctxPtr ->
+    h2c sort $ \sortPtr ->
+      do success <- toBool <$> (z3_get_finite_domain_sort_size ctxPtr sortPtr sizePtr)
+         returnValueToMaybe success $ (fromIntegral <$> peek sizePtr)
+
 
 -- TODO: Z3_get_array_sort_size
 
@@ -2267,11 +2276,14 @@ getArraySortDomain = liftFun1 z3_get_array_sort_domain
 getArraySortRange :: Context -> Sort -> IO Sort
 getArraySortRange = liftFun1 z3_get_array_sort_range
 
--- TODO: Z3_get_tuple_sort_mk_decl
+getTupleSortMkDecl :: Context -> Sort -> IO FuncDecl
+getTupleSortMkDecl = liftFun1 z3_get_tuple_sort_mk_decl
 
--- TODO: Z3_get_tuple_sort_num_fields
+getTupleSortNumFields :: Context -> Sort -> IO Int
+getTupleSortNumFields = liftFun1 z3_get_tuple_sort_num_fields
 
--- TODO: Z3_get_tuple_sort_field_decl
+getTupleSortFieldDecl :: Context -> Sort -> Int -> IO FuncDecl
+getTupleSortFieldDecl = liftFun2 z3_get_tuple_sort_field_decl
 
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: Context
@@ -2378,7 +2390,8 @@ getDomain = liftFun2 z3_get_domain
 getRange :: Context -> FuncDecl -> IO Sort
 getRange = liftFun1 z3_get_range
 
--- TODO: Z3_get_decl_num_parameters
+getDeclNumParameters :: Context -> FuncDecl -> IO Int
+getDeclNumParameters = liftFun1 z3_get_decl_num_parameters
 
 -- TODO: Z3_get_decl_parameter_kind
 
@@ -2428,7 +2441,8 @@ getAppArgs ctx a = do
 getSort :: Context -> AST -> IO Sort
 getSort = liftFun1 z3_get_sort
 
--- TODO: Z3_is_well_sorted
+isWellSorted :: Context -> AST -> IO Bool
+isWellSorted = liftFun1 z3_is_well_sorted
 
 -- TODO: fix doc
 -- | Return Z3_L_TRUE if a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF
@@ -3772,3 +3786,4 @@ unBool False = z3_false
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
+

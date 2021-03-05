@@ -267,6 +267,9 @@ module Z3.Monad
   , isEqSort
   , getSortKind
   , getBvSortSize
+  , getTupleSortMkDecl
+  , getTupleSortNumFields
+  , getTupleSortFieldDecl
   , getDatatypeSortConstructors
   , getDatatypeSortRecognizers
   , getDatatypeSortConstructorAccessors
@@ -1854,6 +1857,16 @@ getSortKind = liftFun1 Base.getSortKind
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga8fc3550edace7bc046e16d1f96ddb419>
 getBvSortSize :: MonadZ3 z3 => Sort -> z3 Int
 getBvSortSize = liftFun1 Base.getBvSortSize
+
+
+getTupleSortMkDecl :: MonadZ3 z3 => Sort -> z3 FuncDecl
+getTupleSortMkDecl = liftFun1 Base.getTupleSortMkDecl
+
+getTupleSortNumFields :: MonadZ3 z3 => Sort -> z3 Int
+getTupleSortNumFields = liftFun1 Base.getTupleSortNumFields
+
+getTupleSortFieldDecl :: MonadZ3 z3 => Sort -> Int -> z3 FuncDecl
+getTupleSortFieldDecl = liftFun2 Base.getTupleSortFieldDecl
 
 -- | Get list of constructors for datatype.
 getDatatypeSortConstructors :: MonadZ3 z3

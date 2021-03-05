@@ -53,6 +53,9 @@ Library
 
         Z3.Monad
 
+    Other-Modules:
+	    Z3.Common
+
     -- TODO: Add flag to compile with -Werror, Hackage doesn't like it.
     ghc-options: -Wall
 
@@ -133,6 +136,7 @@ Test-suite spec
     Other-modules:      Z3.Base.Spec
                         Z3.Monad.Spec
                         Z3.Regression
+                        Example.Monad.IntList
 
     Build-depends:      base >= 4.5,
                         z3,
