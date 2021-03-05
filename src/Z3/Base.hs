@@ -541,6 +541,7 @@ module Z3.Base (
   ) where
 
 import Z3.Base.C
+import Z3.Common
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
@@ -3786,11 +3787,3 @@ ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
 
--- | Wraps a monadic value in a Maybe as indicated by a boolean flag
-returnValueToMaybe :: Monad m => Bool -> m a -> m (Maybe a)
-returnValueToMaybe success m = if success then do
-                                 val <- m
-                                 return $ Just val
-                               else
-                                 return Nothing
-                                  
