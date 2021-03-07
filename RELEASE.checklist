@@ -1,0 +1,15 @@
+# Release checklist
+
+1. Pull latest changes: `git pull origin master`.
+2. Try it: `cabal sandbox delete && cabal sandbox init && cabal install --enable-tests --only-dependencies && cabal configure --enable-tests && cabal test`.
+3. Update release notes (CHANGES.md).
+4. Update z3.cabal (bump version, update copyright year).
+5. Commit: `git commit -am "Prepare release of version x.y"`.
+6. Tag: `git tag -a vx.y -m "Release vx.y"`.
+7. Create bundle: `rm -rf dist/* && cabal sdist`
+8. Try bundle.
+9. Check bundle: `cabal upload --check`.
+10. Upload: `cabal upload dist/*.tar.gz`.
+11. Upload docs: `cabal upload -d`.
+12. Push: `git push --tags origin master`.
+
