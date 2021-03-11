@@ -123,7 +123,7 @@ Test-suite spec
 
     Type:               exitcode-stdio-1.0
 
-    Ghc-options:        -Wall
+    Ghc-options:        -Wall -threaded -rtsopts -with-rtsopts=-N
 
     Default-language:   Haskell2010
     Default-extensions: ScopedTypeVariables

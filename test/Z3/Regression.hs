@@ -10,11 +10,18 @@ import Control.Monad.IO.Class
 import qualified Z3.Base as Z3
 import qualified Z3.Monad
 
+import System.Mem(performGC)
+import Control.Concurrent(threadDelay)
+
 spec :: Spec
 spec = do
   describe "issue#23: Crash on parseSMTLib2String" $ do
     it "should not crash" $
       Z3.Monad.evalZ3 issue23script `shouldReturn` Z3.Monad.Unsat
+
+  describe "issue#27: non-deterministic crashes during parallel GC" $ do
+    it "should not crash" $
+      issue27script `shouldReturn` ()
 
   describe "issue#29: evalBv" $ do
     it "should correctly evaluate example" $
@@ -46,3 +53,11 @@ issue29script = do
     (Z3.Monad.Sat, Just model) -> Z3.Monad.evalBv True model x
     _ -> return Nothing
 
+issue27script :: IO ()
+issue27script = do
+  cfg <- Z3.mkConfig
+  ctx <- Z3.mkContext cfg
+  sol <- Z3.mkSolver ctx
+  one <- Z3.mkIntNum ctx 1
+  forM_ [1..100] $ \i -> do
+    (mapM (Z3.mkIntNum ctx) [i*1000..i*1000+999]) >>= Z3.mkAdd ctx >>= Z3.mkEq ctx one
