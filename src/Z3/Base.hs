@@ -542,11 +542,11 @@ module Z3.Base (
 
 import Z3.Base.C
 import Z3.Common
+import Z3.RLock ( RLock, new, with)
 
 import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( join, when, forM )
-import Control.Concurrent.RLock ( RLock, new, acquire, release )
 import Data.Fixed ( Fixed, HasResolution )
 import Data.Foldable ( Foldable (..) )
 import Data.Int
@@ -833,7 +833,7 @@ mkContextWith mkCtx cfg = do
   count <- newIORef 1
   Context <$> newForeignPtr ctxPtr (contextDecRef ctxPtr count)
           <*> pure count
-          <*> Control.Concurrent.RLock.new
+          <*> Z3.RLock.new
 
 -- | Create a context using the given configuration.
 --
@@ -2625,7 +2625,7 @@ getReal c a = parse <$> getNumeralString c a
 ---------------------------------------------------------------------
 -- Modifiers
 
--- TODO Modifiers
+-- TODO Z3_update_term
 
 substituteVars :: Context -> AST -> [AST] -> IO AST
 substituteVars ctx a vars =
@@ -2643,6 +2643,8 @@ substitute ctx a substs =
     marshalArrayLen froms $ \fromsLen fromsArr ->
     marshalArray    tos   $ \         tosArr   ->
       f aPtr fromsLen fromsArr tosArr
+
+-- TODO Z3_translate
 
 ---------------------------------------------------------------------
 -- Models
@@ -3515,10 +3517,7 @@ using 'marshal'. Worst case scenario, write the marshalling code yourself.
 -- withIntegral x f = f (fromIntegral x)
 
 withContext :: Context -> (Ptr Z3_context -> IO r) -> IO r
-withContext c f = do acquire $ lock c
-                     r <- withForeignPtr (unContext c) f
-                     release $ lock c
-                     return r
+withContext c f = Z3.RLock.with (lock c) $ withForeignPtr (unContext c) f
 
 withContextError :: Context -> (Ptr Z3_context -> IO r) -> IO r
 withContextError c f = withContext c $ \cPtr -> checkError cPtr (f cPtr)
@@ -3595,10 +3594,8 @@ mkC2hRefCount mk incRef decRef ctx xPtr =
   withContext ctx $ \ctxPtr -> do
     incRef ctxPtr xPtr
     contextIncRef ctx
-    let xFinalizer = do acquire $ lock ctx
-                        decRef ctxPtr xPtr
-                        contextDecRef ctxPtr (refCount ctx)
-                        release $ lock ctx
+    let xFinalizer = Z3.RLock.with (lock ctx) $ (do decRef ctxPtr xPtr
+                                                    contextDecRef ctxPtr (refCount ctx))
     mk <$> newForeignPtr xPtr xFinalizer
 
 dummy_inc_ref :: Z3IncRefFun c

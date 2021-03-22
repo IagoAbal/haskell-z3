@@ -55,6 +55,8 @@ Library
 
     Other-Modules:
 	    Z3.Common
+	    Z3.RLock
+	    Z3.Lock
 
     -- TODO: Add flag to compile with -Werror, Hackage doesn't like it.
     ghc-options: -Wall
