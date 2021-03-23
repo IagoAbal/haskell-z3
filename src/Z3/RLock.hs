@@ -2,8 +2,7 @@
 
 -- |
 -- Module    : Z3.RLock
--- Copyright : (c) Iago Abal, 2013-2015
---             (c) David Castro, 2013
+-- Copyright  : (c) 2010-2011 Bas van Dijk & Roel van Dijk
 -- License   : BSD3
 -- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
@@ -101,7 +100,7 @@ release (RLock mv) = do
   mask_ $ do
     t@(mb, lock) <- takeMVar mv
     let err msg = do putMVar mv t
-                     error $ "Control.Concurrent.RLock.release: " ++ msg
+                     error $ "Z3.RLock.release: " ++ msg
     case mb of
       Nothing -> err "Can't release an unacquired RLock!"
       Just (tid, n)

@@ -1,7 +1,6 @@
 -- |
 -- Module    : Z3.Lock
--- Copyright : (c) Iago Abal, 2013-2015
---             (c) David Castro, 2013
+-- Copyright  : (c) 2010-2011 Bas van Dijk & Roel van Dijk
 -- License   : BSD3
 -- Maintainer: Iago Abal <mail@iagoabal.eu>,
 --             David Castro <david.castro.dcp@gmail.com>
@@ -58,7 +57,7 @@ If there are any threads blocked on 'acquire' the thread that first called
 release :: Lock -> IO ()
 release (Lock mv) = do
   b <- tryPutMVar mv ()
-  when (not b) $ error "Control.Concurrent.Lock.release: Can't release unlocked Lock!"
+  when (not b) $ error "Z3.Lock.release: Can't release unlocked Lock!"
 
 {-|
 * When the state is \"locked\", @wait@ /blocks/ until a call to 'release' in

@@ -114,6 +114,11 @@ This library automatically garbage collects all C objects created through its AP
 
 ## Concurrency
 
-If you intend to use this library's API from multiple threads,
-you must use a unique `Z3.Base.Context` object per thread.
+Since version `408.3`, this library implements thread-safety over the C API,
+i.e. API calls are serialized by locking on their `Context` argument.
+To safely compile for multi-threaded code please upgrade to `>= 408.3`.
 
+Operations and objects in different `Context`s can safely be accessed concurrently
+and are not synchronized by this library.
+So if you are creating multiple threads using this library you should use a unique `Context` per thread.
+The Z3 API contains various `*_translate_*` functions to use objects in different `Context`s.
