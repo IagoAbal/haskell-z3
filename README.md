@@ -1,5 +1,6 @@
-
 # Haskell bindings for Microsoft's Z3 (unofficial)
+
+![Testsuite workflow](https://github.com/IagoAbal/haskell-z3/actions/workflows/testsuite.yml/badge.svg)
 
 These are Haskell bindings for the Z3 theorem prover.
 We don't provide any high-level interface (e.g. in the form of a Haskell eDSL) here,
@@ -106,3 +107,20 @@ main = evalZ3 script >>= \mbSol ->
              Nothing  -> error "No solution found."
              Just sol -> putStr "Solution: " >> print sol
 ```
+
+## Garbage Collection
+
+This library automatically garbage collects all C objects created through its API.
+
+## Concurrency
+
+Since version `408.3`, this library implements thread-safety over the C API,
+i.e. API calls are serialized by locking on their `Context` argument.
+To safely compile for multi-threaded code please upgrade to `>= 408.3`.
+
+Operations and objects in different `Context`s can safely be accessed concurrently
+and are not synchronized by this library.
+Therefore, if you want to achieve real concurrency,
+you must use a different `Context` in each thread.
+You can use the `*_translate_*` functions from Z3's API to copy objects between different `Contexts`.
+

@@ -16,6 +16,10 @@ spec = do
     it "should not crash" $
       Z3.Monad.evalZ3 issue23script `shouldReturn` Z3.Monad.Unsat
 
+  describe "issue#27: non-deterministic crashes during parallel GC" $ do
+    it "should not crash" $
+      issue27script `shouldReturn` ()
+
   describe "issue#29: evalBv" $ do
     it "should correctly evaluate example" $
       Z3.Monad.evalZ3 issue29script `shouldReturn` Just 35
@@ -46,3 +50,10 @@ issue29script = do
     (Z3.Monad.Sat, Just model) -> Z3.Monad.evalBv True model x
     _ -> return Nothing
 
+issue27script :: IO ()
+issue27script = do
+  cfg <- Z3.mkConfig
+  ctx <- Z3.mkContext cfg
+  int <- Z3.mkIntSort ctx
+  forM_ [1..100000] $ \i -> do
+    Z3.mkNumeral ctx (show i) int

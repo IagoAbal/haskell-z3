@@ -55,6 +55,8 @@ Library
 
     Other-Modules:
 	    Z3.Common
+	    Z3.RLock
+	    Z3.Lock
 
     -- TODO: Add flag to compile with -Werror, Hackage doesn't like it.
     ghc-options: -Wall
@@ -123,7 +125,7 @@ Test-suite spec
 
     Type:               exitcode-stdio-1.0
 
-    Ghc-options:        -Wall
+    Ghc-options:        -Wall -threaded -rtsopts -with-rtsopts=-N
 
     Default-language:   Haskell2010
     Default-extensions: ScopedTypeVariables
