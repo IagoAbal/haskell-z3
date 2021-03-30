@@ -120,5 +120,7 @@ To safely compile for multi-threaded code please upgrade to `>= 408.3`.
 
 Operations and objects in different `Context`s can safely be accessed concurrently
 and are not synchronized by this library.
-So if you are creating multiple threads using this library you should use a unique `Context` per thread.
-The Z3 API contains various `*_translate_*` functions to use objects in different `Context`s.
+Therefore, if you want to achieve real concurrency,
+you must use a different `Context` in each thread.
+You can use the `*_translate_*` functions from Z3's API to copy objects between different `Contexts`.
+
