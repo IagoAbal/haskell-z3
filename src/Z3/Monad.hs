@@ -364,9 +364,11 @@ module Z3.Monad
   , orElseTactic
   , skipTactic
   , tryForTactic
+  , repeatTactic
   , mkQuantifierEliminationTactic
   , mkAndInverterGraphTactic
   , applyTactic
+  , applyResultToString
   , getApplyResultNumSubgoals
   , getApplyResultSubgoal
   , getApplyResultSubgoals
@@ -375,6 +377,7 @@ module Z3.Monad
   , getGoalSize
   , getGoalFormula
   , getGoalFormulas
+  , goalToString
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -1646,8 +1649,8 @@ mkSeqUnit :: MonadZ3 z3 => AST -> z3 AST
 mkSeqUnit = liftFun1 Base.mkSeqUnit
 
 -- | Concatenate sequences.
-mkSeqConcat :: (Integral int, MonadZ3 z3) => int -> [AST] -> z3 AST
-mkSeqConcat = liftFun2 Base.mkSeqConcat
+mkSeqConcat :: MonadZ3 z3 => [AST] -> z3 AST
+mkSeqConcat = liftFun1 Base.mkSeqConcat
 
 -- | Check if prefix is a prefix of s.
 mkSeqPrefix :: MonadZ3 z3
@@ -2276,6 +2279,9 @@ skipTactic = liftScalar Base.skipTactic
 tryForTactic :: MonadZ3 z3 => Tactic -> Int -> z3 Tactic
 tryForTactic = liftFun2 Base.tryForTactic
 
+repeatTactic :: MonadZ3 z3 => Tactic -> Int -> z3 Tactic
+repeatTactic = liftFun2 Base.repeatTactic
+
 mkQuantifierEliminationTactic :: MonadZ3 z3 => z3 Tactic
 mkQuantifierEliminationTactic = liftScalar Base.mkQuantifierEliminationTactic
 
@@ -2284,6 +2290,9 @@ mkAndInverterGraphTactic = liftScalar Base.mkAndInverterGraphTactic
 
 applyTactic :: MonadZ3 z3 => Tactic -> Goal -> z3 ApplyResult
 applyTactic = liftFun2 Base.applyTactic
+
+applyResultToString :: MonadZ3 z3 => ApplyResult -> z3 String
+applyResultToString = liftFun1 Base.applyResultToString
 
 getApplyResultNumSubgoals :: MonadZ3 z3 => ApplyResult -> z3 Int
 getApplyResultNumSubgoals = liftFun1 Base.getApplyResultNumSubgoals
@@ -2308,6 +2317,9 @@ getGoalFormula = liftFun2 Base.getGoalFormula
 
 getGoalFormulas :: MonadZ3 z3 => Goal -> z3 [AST]
 getGoalFormulas = liftFun1 Base.getGoalFormulas
+
+goalToString :: MonadZ3 z3 => Goal -> z3 String
+goalToString = liftFun1 Base.goalToString
 
 ---------------------------------------------------------------------
 -- String Conversion

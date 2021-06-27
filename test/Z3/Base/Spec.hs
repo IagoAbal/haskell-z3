@@ -473,7 +473,6 @@ spec = around withContext $ do
         Z3.evalInt ctx model =<< mkApp' ctx f1proj =<< mkApp' ctx f2proj =<< mkApp' ctx t2cons =<< Z3.mkApp ctx t1cons [x]
       ) `shouldReturn` Just i
 
-
   context "Finite Domain Sorts" $ do
 
     specify "mkFiniteDomainSort, getFiniteDomainSortSize" $ \ctx -> property $ \(i::Word64) ->
@@ -496,4 +495,27 @@ spec = around withContext $ do
         arity <- Z3.getArity ctx fdecl
         return arity
       ) `shouldReturn` 3
+
+  context "Tactics" $ do
+
+    specify "mkTactic, applyTactic, repeatTactic, applyResultToString" $ \ctx ->
+      (do real <- Z3.mkRealSort ctx
+          xsym <- Z3.mkStringSymbol ctx "x"
+          ysym <- Z3.mkStringSymbol ctx "y"
+          x <- Z3.mkConst ctx xsym real
+          y <- Z3.mkConst ctx ysym real
+          r0 <- Z3.mkReal ctx 0 1
+          r2 <- Z3.mkReal ctx 2 1
+
+          goal <- Z3.mkGoal ctx False False False
+          xLt0 <- Z3.mkLt ctx x r0
+          xGt0 <- Z3.mkGt ctx x r0
+          Z3.goalAssert ctx goal =<< Z3.mkOr ctx [xLt0, xGt0]
+          Z3.goalAssert ctx goal =<< Z3.mkEq ctx x =<< Z3.mkAdd ctx [y, r2]
+          Z3.goalAssert ctx goal =<< Z3.mkLt ctx y r0
+
+          simplify <- Z3.mkTactic ctx "solve-eqs"
+          tactic <- Z3.repeatTactic ctx simplify 10
+          Z3.applyResultToString ctx =<< Z3.applyTactic ctx tactic goal)
+          `shouldReturn` "(goals\n(goal\n  (or (not (<= (- 2.0) y)) (not (<= y (- 2.0))))\n  (not (<= 0.0 y)))\n)"
 
