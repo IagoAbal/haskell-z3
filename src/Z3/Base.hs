@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards              #-}
 {-# LANGUAGE NamedFieldPuns             #-}
@@ -59,7 +60,7 @@ module Z3.Base (
     Config
   , Context
   , Symbol
-  , AST
+  , AST(..)
   , Sort
   , TupleType(..)
   , FuncDecl
@@ -568,6 +569,7 @@ import Foreign.C
   , peekCString
   , withCString )
 import Foreign.Concurrent
+import GHC.Generics ( Generic )
 
 ---------------------------------------------------------------------
 -- * Types
@@ -595,7 +597,7 @@ newtype Symbol = Symbol { unSymbol :: Ptr Z3_symbol }
 --
 -- This is the data-structure used in Z3 to represent terms, formulas and types.
 newtype AST = AST { unAST :: ForeignPtr Z3_ast }
-    deriving (Eq, Ord, Show, Typeable)
+    deriving (Eq, Ord, Show, Typeable, Generic)
 
 -- | A kind of AST representing /types/.
 newtype Sort = Sort { unSort :: ForeignPtr Z3_sort }
@@ -614,7 +616,7 @@ tupleProjs = map snd . namedTupleProjs
 
 -- | A kind of AST representing function symbols.
 newtype FuncDecl = FuncDecl { unFuncDecl :: ForeignPtr Z3_func_decl }
-    deriving (Eq, Ord, Show, Typeable)
+    deriving (Eq, Ord, Show, Typeable, Generic)
 
 -- | A kind of AST representing constant and function declarations.
 newtype App = App { unApp :: ForeignPtr Z3_app }
@@ -3077,7 +3079,7 @@ data Z3Error = Z3Error
     { errCode :: Z3ErrorCode
     , errMsg  :: String
     }
-  deriving Typeable
+  deriving (Typeable, Generic)
 
 instance Show Z3Error where
   show (Z3Error _ s) = "Z3 error: " ++ s
@@ -3086,7 +3088,7 @@ instance Show Z3Error where
 data Z3ErrorCode = SortError | IOB | InvalidArg | ParserError | NoParser
   | InvalidPattern | MemoutFail  | FileAccessError | InternalFatal
   | InvalidUsage   | DecRefError | Z3Exception
-  deriving (Show, Typeable)
+  deriving (Show, Typeable, Generic)
 
 toZ3Error :: Z3_error_code -> Z3ErrorCode
 toZ3Error e

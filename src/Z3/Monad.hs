@@ -27,7 +27,7 @@ module Z3.Monad
 
   -- * Types
   , Symbol
-  , AST
+  , AST(..)
   , Sort
   , FuncDecl
   , App
@@ -472,7 +472,7 @@ module Z3.Monad
 import Z3.Opts
 import Z3.Base
   ( Symbol
-  , AST
+  , AST(..)
   , Sort
   , TupleType
   , FuncDecl
