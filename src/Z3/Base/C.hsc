@@ -1944,7 +1944,7 @@ foreign import ccall unsafe "Z3_parse_smtlib2_file"
                         -> CUInt
                         -> Ptr (Ptr Z3_symbol)
                         -> Ptr (Ptr Z3_func_decl)
-                        -> IO (Ptr Z3_ast)
+                        -> IO (Ptr Z3_ast_vector)
 
 foreign import ccall unsafe "Z3_eval_smtlib2_string"
   z3_eval_smtlib2_string :: Ptr Z3_context

@@ -531,6 +531,7 @@ module Z3.Base (
   , solverGetNumScopes
   , solverAssertCnstr
   , solverAssertAndTrack
+  , solverFromFile
   , solverGetAssertions
   , solverCheck
   , solverCheckAssumptions
@@ -3057,7 +3058,7 @@ parseSMTLib2File :: Context
                  -> [FuncDecl] -- ^ declarations
                  -> IO [AST]
 parseSMTLib2File ctx file sortNames sorts declNames decls =
-  marshal z3_parse_smtlib2_string ctx $ \f ->
+  marshal z3_parse_smtlib2_file ctx $ \f ->
     withCString file $ \fileName ->
     marshalArrayLen sorts $ \sortNum sortArr ->
     marshalArray sortNames $ \sortNameArr ->
@@ -3453,6 +3454,9 @@ solverAssertCnstr = liftFun2 z3_solver_assert
 
 solverAssertAndTrack :: Context -> Solver -> AST -> AST -> IO ()
 solverAssertAndTrack = liftFun3 z3_solver_assert_and_track
+
+solverFromFile :: Context -> Solver -> String -> IO ()
+solverFromFile = liftFun2 z3_solver_from_file
 
 solverGetAssertions :: Context -> Solver -> IO [AST]
 solverGetAssertions = liftFun1 z3_solver_get_assertions
