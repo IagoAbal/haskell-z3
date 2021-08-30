@@ -24,7 +24,7 @@ spec = do
   describe "Section: Sequences" $ do
     describe "Section: Strings" $ do
       it "stringConcatentation" $
-        Z3.Monad.evalZ3 stringConcatentation `shouldReturn` "b -> \"ab\"\na -> \"cab\"\n"
+        Z3.Monad.evalZ3 stringConcatentation `shouldReturn` "b -> \"\"\na -> \"abc\"\n"
 
 {-
   (declare-const a String)
