@@ -618,6 +618,13 @@ liftOptimize2 f a b = do
   slv <- getOptimize
   liftIO $ f ctx slv a b
 
+liftOptimize3 :: MonadOptimize z3 => (Base.Context -> Base.Optimize -> a -> b -> c -> IO d)
+                             -> a -> b -> c -> z3 d
+liftOptimize3 f a b c = do
+  ctx <- getContext
+  slv <- getOptimize
+  liftIO $ f ctx slv a b c
+
 -------------------------------------------------
 -- A simple Z3 monad.
 
@@ -2428,8 +2435,8 @@ optimizeAssert = liftOptimize1 Base.optimizeAssert
 optimizeAssertAndTrack :: MonadOptimize z3 => AST -> AST -> z3 ()
 optimizeAssertAndTrack = liftOptimize2 Base.optimizeAssertAndTrack
 
-optimizeAssertSoft :: MonadOptimize z3 => AST -> String -> Symbol -> z3 ()
-optimizeAssertSoft = undefined
+optimizeAssertSoft :: MonadOptimize z3 => AST -> String -> Symbol -> z3 Int
+optimizeAssertSoft = liftOptimize3 Base.optimizeAssertSoft
 
 optimizeMaximize :: MonadOptimize z3 => AST -> z3 Int
 optimizeMaximize = liftOptimize1 Base.optimizeMaximize
