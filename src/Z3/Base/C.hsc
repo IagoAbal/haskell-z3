@@ -2659,19 +2659,19 @@ foreign import ccall unsafe "Z3_mk_fpa_neg"
     z3_mk_fpa_neg :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_add"
-    z3_mk_fpa_add :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_fpa_add :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_sub"
-    z3_mk_fpa_sub :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_fpa_sub :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_mul"
-    z3_mk_fpa_mul :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_fpa_mul :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_div"
-    z3_mk_fpa_div :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_fpa_div :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_fma"
-    z3_mk_fpa_fma :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
+    z3_mk_fpa_fma :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_sqrt"
     z3_mk_fpa_sqrt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
