@@ -473,6 +473,24 @@ module Z3.Monad
   , mkFpaToSbv
   , mkFpaToReal
 
+  -- * Z3-specific floating-point extensions
+  , fpaGetEbits
+  , fpaGetSbits
+  , fpaIsNumeralNaN
+  , fpaIsNumeralInf
+  , fpaIsNumeralZero
+  , fpaIsNumeralNormal
+  , fpaIsNumeralSubnormal
+  , fpaIsNumeralPositive
+  , fpaIsNumeralNegative
+  , fpaGetNumeralSignBv
+  , fpaGetNumeralSignificandBv
+  , fpaGetNumeralSignificandString
+  , fpaGetNumeralExponentString
+  , fpaGetNumeralExponentBv
+  , mkFpaToIEEEBv
+  , mkFpaToFpIntReal
+
   -- * Optimization
   , MonadOptimize(..)
   , Optimize
@@ -2801,6 +2819,83 @@ mkFpaToSbv = liftFun3 Base.mkFpaToSbv
 -- term.
 mkFpaToReal :: MonadZ3 z3 => AST -> z3 AST
 mkFpaToReal = liftFun1 Base.mkFpaToReal
+
+---------------------------------------------------------------------
+-- Z3-specific floating-point extensions
+
+-- | Retrieves the number of bits reserved for the exponent in a
+-- FloatingPoint sort.
+fpaGetEbits :: (MonadZ3 z3, Integral int) => Sort -> z3 int
+fpaGetEbits = liftFun1 Base.fpaGetEbits
+
+-- | Retrieves the number of bits reserved for the significand in
+-- a FloatingPoint sort.
+fpaGetSbits :: (MonadZ3 z3, Integral int) => Sort -> z3 int
+fpaGetSbits = liftFun1 Base.fpaGetSbits
+
+-- | Checks whether a given floating-point numeral is a NaN.
+fpaIsNumeralNaN :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNaN = liftFun1 Base.fpaIsNumeralNaN
+
+-- | Checks whether a given floating-point numeral is a +oo or -oo.
+fpaIsNumeralInf :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralInf = liftFun1 Base.fpaIsNumeralInf
+
+-- | Checks whether a given floating-point numeral is a +zero or
+-- -zero.
+fpaIsNumeralZero :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralZero = liftFun1 Base.fpaIsNumeralZero
+
+-- | Checks whether a given floating-point numeral is normal.
+fpaIsNumeralNormal :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNormal = liftFun1 Base.fpaIsNumeralNormal
+
+-- | Checks whether a given floating-point numeral is subnormal.
+fpaIsNumeralSubnormal :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralSubnormal = liftFun1 Base.fpaIsNumeralSubnormal
+
+-- | Checks whether a given floating-point numeral is positive.
+fpaIsNumeralPositive :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralPositive = liftFun1 Base.fpaIsNumeralPositive
+
+-- | Checks whether a given floating-point numeral is negative.
+fpaIsNumeralNegative :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNegative = liftFun1 Base.fpaIsNumeralNegative
+
+-- | Retrieves the sign of a floating-point literal as a bit-vector
+-- expression.
+fpaGetNumeralSignBv :: MonadZ3 z3 => AST -> z3 AST
+fpaGetNumeralSignBv = liftFun1 Base.fpaGetNumeralSignBv
+
+-- | Retrieves the significand of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralSignificandBv :: MonadZ3 z3 => AST -> z3 AST
+fpaGetNumeralSignificandBv = liftFun1 Base.fpaGetNumeralSignificandBv
+
+-- | Return the significand value of a floating-point numeral as a
+-- string.
+fpaGetNumeralSignificandString :: MonadZ3 z3 => AST -> z3 String
+fpaGetNumeralSignificandString = liftFun1 Base.fpaGetNumeralSignificandString
+
+-- | Return the exponent value of a floating-point numeral as a
+-- string.
+fpaGetNumeralExponentString :: MonadZ3 z3 => AST -> Bool -> z3 String
+fpaGetNumeralExponentString = liftFun2 Base.fpaGetNumeralExponentString
+
+-- | Retrieves the exponent of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralExponentBv :: MonadZ3 z3 => AST -> Bool -> z3 AST
+fpaGetNumeralExponentBv = liftFun2 Base.fpaGetNumeralExponentBv
+
+-- | Conversion of a floating-point term into a bit-vector term
+-- in IEEE 754-2008 format.
+mkFpaToIEEEBv :: MonadZ3 z3 => AST -> z3 AST
+mkFpaToIEEEBv = liftFun1 Base.mkFpaToIEEEBv
+
+-- | Conversion of a real-sorted significand and an integer-sorted
+-- exponent into a term of FloatingPoint sort.
+mkFpaToFpIntReal :: MonadZ3 z3 => AST -> AST -> AST -> Sort -> z3 AST
+mkFpaToFpIntReal = liftFun4 Base.mkFpaToFpIntReal
 
 ---------------------------------------------------------------------
 -- Optimization
