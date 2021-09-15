@@ -3391,7 +3391,7 @@ mkFpaNumeralDouble :: Context -> Double -> Sort -> IO AST
 mkFpaNumeralDouble = liftFun2 z3_mk_fpa_numeral_double
 
 -- | Create a numeral of FloatingPoint sort from a signed integer.
-mkFpaNumeralInt :: Context -> Int32 -> Sort -> IO AST
+mkFpaNumeralInt :: Integral int => Context -> int -> Sort -> IO AST
 mkFpaNumeralInt = liftFun2 z3_mk_fpa_numeral_int
 
 -- | Create a numeral of FLoatingPoint sort from a sign bit and
@@ -3575,6 +3575,7 @@ mkFpaToSbv = liftFun3 z3_mk_fpa_to_sbv
 -- term.
 mkFpaToReal :: Context -> AST -> IO AST
 mkFpaToReal = liftFun1 z3_mk_fpa_to_real
+
 ---------------------------------------------------------------------
 -- Optimization facilities
 
