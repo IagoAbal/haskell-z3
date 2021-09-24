@@ -492,6 +492,87 @@ module Z3.Base (
   , fixedpointGetAnswer
   , fixedpointGetAssertions
 
+  -- * Floating-Point Arithmetic
+  , mkFpaRoundingModeSort
+  , mkFpaRoundNearestTiesToEven
+  , mkFpaRne
+  , mkFpaRoundNearestTiesToAway
+  , mkFpaRna
+  , mkFpaRoundTowardPositive
+  , mkFpaRtp
+  , mkFpaRoundTowardNegative
+  , mkFpaRtn
+  , mkFpaRoundTowardZero
+  , mkFpaRtz
+  , mkFpaSort
+  , mkFpaSortHalf
+  , mkFpaSort16
+  , mkFpaSortSingle
+  , mkFpaSort32
+  , mkFpaSortDouble
+  , mkFpaSort64
+  , mkFpaSortQuadruple
+  , mkFpaSort128
+  , mkFpaNaN
+  , mkFpaInf
+  , mkFpaZero
+  , mkFpaFp
+  , mkFpaNumeralFloat
+  , mkFpaNumeralDouble
+  , mkFpaNumeralInt
+  , mkFpaNumeralIntUInt
+  , mkFpaNumeralInt64UInt64
+  , mkFpaAbs
+  , mkFpaNeg
+  , mkFpaAdd
+  , mkFpaSub
+  , mkFpaMul
+  , mkFpaDiv
+  , mkFpaFma
+  , mkFpaSqrt
+  , mkFpaRem
+  , mkFpaRoundToIntegral
+  , mkFpaMin
+  , mkFpaMax
+  , mkFpaLeq
+  , mkFpaLt
+  , mkFpaGeq
+  , mkFpaGt
+  , mkFpaEq
+  , mkFpaIsNormal
+  , mkFpaIsSubnormal
+  , mkFpaIsZero
+  , mkFpaIsInfinite
+  , mkFpaIsNaN
+  , mkFpaIsNegative
+  , mkFpaIsPositive
+  , mkFpaToFpBv
+  , mkFpaToFpFloat
+  , mkFpaToFpReal
+  , mkFpaToFpSigned
+  , mkFpaToFpUnsigned
+  , mkFpaToUbv
+  , mkFpaToSbv
+  , mkFpaToReal
+
+  -- * Z3-specific floating-point extensions
+  , fpaGetEbits
+  , fpaGetSbits
+  , fpaIsNumeralNaN
+  , fpaIsNumeralInf
+  , fpaIsNumeralZero
+  , fpaIsNumeralNormal
+  , fpaIsNumeralSubnormal
+  , fpaIsNumeralPositive
+  , fpaIsNumeralNegative
+  , fpaGetNumeralSignBv
+  , fpaGetNumeralSignificandBv
+  , fpaGetNumeralSignificandString
+  , fpaGetNumeralExponentString
+  , fpaGetNumeralExponentBv
+  , mkFpaToIEEEBv
+  , mkFpaToFpIntReal
+
   -- * Optimization
   , Optimize (..)
   , mkOptimize
@@ -565,7 +646,7 @@ import Data.Word
 import Foreign hiding ( toBool, newForeignPtr )
 import Foreign.Storable ( peek )
 import Foreign.C
-  ( CDouble, CInt, CUInt, CLLong, CULLong, CString
+  ( CFloat, CDouble, CInt, CUInt, CLong, CULong, CLLong, CULLong, CString
   , peekCString
   , withCString )
 import Foreign.Concurrent
@@ -3189,6 +3270,409 @@ fixedpointGetAssertions :: Context -> Fixedpoint -> IO [AST]
 fixedpointGetAssertions = liftFun1 z3_fixedpoint_get_assertions
 
 ---------------------------------------------------------------------
+-- Floating-Point Arithmetic
+
+-- | Create the RoundingMode sort.
+mkFpaRoundingModeSort :: Context -> IO Sort
+mkFpaRoundingModeSort = liftFun0 z3_mk_fpa_rounding_mode_sort
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToEven rounding mode.
+mkFpaRoundNearestTiesToEven :: Context -> IO AST
+mkFpaRoundNearestTiesToEven = liftFun0 z3_mk_fpa_round_nearest_ties_to_even
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToEven rounding mode.
+mkFpaRne :: Context -> IO AST
+mkFpaRne = liftFun0 z3_mk_fpa_rne
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToAway rounding mode.
+mkFpaRoundNearestTiesToAway :: Context -> IO AST
+mkFpaRoundNearestTiesToAway = liftFun0 z3_mk_fpa_round_nearest_ties_to_away
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToAway rounding mode.
+mkFpaRna :: Context -> IO AST
+mkFpaRna = liftFun0 z3_mk_fpa_rna
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardPositive rounding mode.
+mkFpaRoundTowardPositive :: Context -> IO AST
+mkFpaRoundTowardPositive = liftFun0 z3_mk_fpa_round_toward_positive
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardPositive rounding mode.
+mkFpaRtp :: Context -> IO AST
+mkFpaRtp = liftFun0 z3_mk_fpa_rtp
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardNegative rounding mode.
+mkFpaRoundTowardNegative :: Context -> IO AST
+mkFpaRoundTowardNegative = liftFun0 z3_mk_fpa_round_toward_negative
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardNegative rounding mode.
+mkFpaRtn :: Context -> IO AST
+mkFpaRtn = liftFun0 z3_mk_fpa_rtn
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardZero rounding mode.
+mkFpaRoundTowardZero :: Context -> IO AST
+mkFpaRoundTowardZero = liftFun0 z3_mk_fpa_round_toward_zero
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardZero rounding mode.
+mkFpaRtz :: Context -> IO AST
+mkFpaRtz = liftFun0 z3_mk_fpa_rtz
+
+-- | Create a FloatingPoint sort.
+mkFpaSort :: Integral int 
+          => Context -- ^ Context
+          -> int -- ^ Number of exponent bits
+          -> int -- ^ Number of significand bits
+          -> IO Sort
+mkFpaSort = liftFun2 z3_mk_fpa_sort
+
+-- | Create the half-precision (16-bit) FloatingPoint sort.
+mkFpaSortHalf :: Context -> IO Sort
+mkFpaSortHalf = liftFun0 z3_mk_fpa_sort_half
+
+-- | Create the half-precision (16-bit) FloatingPoint sort.
+mkFpaSort16 :: Context -> IO Sort
+mkFpaSort16 = liftFun0 z3_mk_fpa_sort_16
+
+-- | Create the single-precision (32-bit) FloatingPoint sort.
+mkFpaSortSingle :: Context -> IO Sort
+mkFpaSortSingle = liftFun0 z3_mk_fpa_sort_single
+
+-- | Create the single-precision (32-bit) FloatingPoint sort.
+mkFpaSort32 :: Context -> IO Sort
+mkFpaSort32 = liftFun0 z3_mk_fpa_sort_32
+
+-- | Create the double-precision (64-bit) FloatingPoint sort.
+mkFpaSortDouble :: Context -> IO Sort
+mkFpaSortDouble = liftFun0 z3_mk_fpa_sort_double
+
+-- | Create the double-precision (64-bit) FloatingPoint sort.
+mkFpaSort64 :: Context -> IO Sort
+mkFpaSort64 = liftFun0 z3_mk_fpa_sort_64
+
+-- | Create the quadruple-precision (128-bit) FloatingPoint sort.
+mkFpaSortQuadruple :: Context -> IO Sort
+mkFpaSortQuadruple = liftFun0 z3_mk_fpa_sort_quadruple
+
+-- | Create the quadruple-precision (128-bit) FloatingPoint sort.
+mkFpaSort128 :: Context -> IO Sort
+mkFpaSort128 = liftFun0 z3_mk_fpa_sort_128
+
+-- | Create a floating-point NaN of sort @s@.
+mkFpaNaN :: Context -> Sort -> IO AST
+mkFpaNaN = liftFun1 z3_mk_fpa_nan
+
+-- | Create a floating-point infinity of sort @s@.
+mkFpaInf :: Context -- ^ Context
+         -> Sort    -- ^ Target sort
+         -> Bool    -- ^ Indicates whether the result should be negative
+         -> IO AST
+mkFpaInf = liftFun2 z3_mk_fpa_inf
+
+-- | Create a floating-point zero of sort @s@.
+mkFpaZero :: Context -- ^ Context
+          -> Sort    -- ^ Target sort
+          -> Bool    -- ^ Indicates whether the result should be negative
+          -> IO AST
+mkFpaZero = liftFun2 z3_mk_fpa_zero
+
+-- | Create an expression of FloatingPoint sort from three bit-vector
+-- expressions.
+--
+-- This is the operator named `fp' in the SMT FP theory definition.
+-- Note that @sgn@ is required to be a bit-vector of size 1.
+-- Significand and exponent are required to be longer than 1 and 2
+-- respectively. The FloatingPoint sort of the resulting expression
+-- is automatically determined from the bit-vector sizes of the
+-- arguments. The exponent is assumed to be in IEEE-754 biased
+-- representation.
+mkFpaFp :: Context -- ^ Context
+        -> AST     -- ^ Sign
+        -> AST     -- ^ Exponent
+        -> AST     -- ^ Significand
+        -> IO AST
+mkFpaFp = liftFun3 z3_mk_fpa_fp
+
+-- | Create a numeral of FloatingPoint sort from a float.
+mkFpaNumeralFloat :: Context -> Float -> Sort -> IO AST
+mkFpaNumeralFloat = liftFun2 z3_mk_fpa_numeral_float
+
+-- | Create a numeral of FloatingPoint sort from a double.
+mkFpaNumeralDouble :: Context -> Double -> Sort -> IO AST
+mkFpaNumeralDouble = liftFun2 z3_mk_fpa_numeral_double
+
+-- | Create a numeral of FloatingPoint sort from a signed integer.
+mkFpaNumeralInt :: Integral int => Context -> int -> Sort -> IO AST
+mkFpaNumeralInt = liftFun2 z3_mk_fpa_numeral_int
+
+-- | Create a numeral of FLoatingPoint sort from a sign bit and
+-- two integers.
+mkFpaNumeralIntUInt :: Integral int 
+                    => Context -- ^ Context
+                    -> Bool    -- ^ Sign bit (true == negative)
+                    -> int     -- ^ Significand
+                    -> int     -- ^ Exponent
+                    -> Sort    -- ^ Result sort
+                    -> IO AST
+mkFpaNumeralIntUInt = liftFun4 z3_mk_fpa_numeral_int_uint
+
+-- | Create a numeral of FloatingPoint sort from a sign bit and
+-- two 64-bit integers.
+mkFpaNumeralInt64UInt64 :: Integral int 
+                        => Context -- ^ Context
+                        -> Bool    -- ^ Sign bit (true == negative)
+                        -> int     -- ^ Significand
+                        -> int     -- ^ Exponent
+                        -> Sort    -- ^ Result sort
+                        -> IO AST
+mkFpaNumeralInt64UInt64 = liftFun4 z3_mk_fpa_numeral_int64_uint64
+
+-- | Floating-point absolute value.
+mkFpaAbs :: Context -> AST -> IO AST
+mkFpaAbs = liftFun1 z3_mk_fpa_abs
+
+-- | Floating-point negation.
+mkFpaNeg :: Context -> AST -> IO AST
+mkFpaNeg = liftFun1 z3_mk_fpa_neg
+
+-- | Floating-point addition.
+mkFpaAdd :: Context -- ^ Context
+         -> AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> IO AST
+mkFpaAdd = liftFun3 z3_mk_fpa_add
+
+-- | Floating-point subtraction.
+mkFpaSub :: Context -- ^ Context
+         -> AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> IO AST
+mkFpaSub = liftFun3 z3_mk_fpa_sub
+
+-- | Floating-point multiplication.
+mkFpaMul :: Context -- ^ Context
+         -> AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> IO AST
+mkFpaMul = liftFun3 z3_mk_fpa_mul
+
+-- | Floating-point division.
+mkFpaDiv :: Context -- ^ Context
+         -> AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> IO AST
+mkFpaDiv = liftFun3 z3_mk_fpa_div
+
+-- | Floating-point fused multiply-add.
+--
+-- The result is @round((t1 * t2) + t3)@.
+mkFpaFma :: Context -> AST -> AST -> AST -> AST -> IO AST
+mkFpaFma = liftFun4 z3_mk_fpa_fma
+
+-- | Floating-point square root.
+mkFpaSqrt :: Context -> AST -> AST -> IO AST
+mkFpaSqrt = liftFun2 z3_mk_fpa_sqrt
+
+-- | Floating-point remainder.
+mkFpaRem :: Context -> AST -> AST -> IO AST
+mkFpaRem = liftFun2 z3_mk_fpa_rem
+
+-- | Floating-point roundToIntegral. Rounds a floating-point number
+-- to the closest integer, again represented as a floating-point
+-- number.
+mkFpaRoundToIntegral :: Context -> AST -> AST -> IO AST
+mkFpaRoundToIntegral = liftFun2 z3_mk_fpa_round_to_integral
+
+-- | Minimum of floating-point numbers.
+mkFpaMin :: Context -> AST -> AST -> IO AST
+mkFpaMin = liftFun2 z3_mk_fpa_min
+
+-- | Maximum of floating-point numbers.
+mkFpaMax :: Context -> AST -> AST -> IO AST
+mkFpaMax = liftFun2 z3_mk_fpa_max
+
+-- | Floating-point less than or equal.
+mkFpaLeq :: Context -> AST -> AST -> IO AST
+mkFpaLeq = liftFun2 z3_mk_fpa_leq
+
+-- | Floating-point less than.
+mkFpaLt :: Context -> AST -> AST -> IO AST
+mkFpaLt = liftFun2 z3_mk_fpa_lt
+
+-- | Floating-point greater than or equal.
+mkFpaGeq :: Context -> AST -> AST -> IO AST
+mkFpaGeq = liftFun2 z3_mk_fpa_geq
+
+-- | Floating-point greater than.
+mkFpaGt :: Context -> AST -> AST -> IO AST
+mkFpaGt = liftFun2 z3_mk_fpa_gt
+
+-- | Floating-point equality.
+mkFpaEq :: Context -> AST -> AST -> IO AST
+mkFpaEq = liftFun2 z3_mk_fpa_eq
+
+-- | Predicate indicating whether @t@ is a normal floating-point
+-- number.
+mkFpaIsNormal :: Context -> AST -> IO AST
+mkFpaIsNormal = liftFun1 z3_mk_fpa_is_normal
+
+-- | Predicate indicating whether @t@ is a subnormal floating-point
+-- number.
+mkFpaIsSubnormal :: Context -> AST -> IO AST
+mkFpaIsSubnormal = liftFun1 z3_mk_fpa_is_subnormal
+
+-- | Predicate indicating whether @t@ is a floating-point number
+-- with zero value, i.e., +zero or -zero.
+mkFpaIsZero :: Context -> AST -> IO AST
+mkFpaIsZero = liftFun1 z3_mk_fpa_is_zero
+
+-- | Predicate indicating whether @t@ is a floating-point number
+-- representing infinity, i.e., +oo or -oo.
+mkFpaIsInfinite :: Context -> AST -> IO AST
+mkFpaIsInfinite = liftFun1 z3_mk_fpa_is_infinite
+
+-- | Predicate indicating whether @t@ is NaN.
+mkFpaIsNaN :: Context -> AST -> IO AST
+mkFpaIsNaN = liftFun1 z3_mk_fpa_is_nan
+
+-- | Predicate indicating whether @t@ is a negative floating-point
+-- number.
+mkFpaIsNegative :: Context -> AST -> IO AST
+mkFpaIsNegative = liftFun1 z3_mk_fpa_is_negative
+
+-- | Predicate indicating whether @t@ is a positive floating-point
+-- number.
+mkFpaIsPositive :: Context -> AST -> IO AST
+mkFpaIsPositive = liftFun1 z3_mk_fpa_is_positive
+
+-- | Conversion of a single IEEE 754-2008 bit-vector into a
+-- floating-point number.
+mkFpaToFpBv :: Context -> AST -> Sort -> IO AST
+mkFpaToFpBv = liftFun2 z3_mk_fpa_to_fp_bv
+
+-- | Conversion of a FloatingPoint term into another term of
+-- different FloatingPoint sort.
+mkFpaToFpFloat :: Context -> AST -> AST -> Sort -> IO AST
+mkFpaToFpFloat = liftFun3 z3_mk_fpa_to_fp_float
+
+-- | Conversion of a term of real sort into a term of
+-- FloatingPoint sort.
+mkFpaToFpReal :: Context -> AST -> AST -> Sort -> IO AST
+mkFpaToFpReal = liftFun3 z3_mk_fpa_to_fp_real
+
+-- | Conversion of a 2's complement signed bit-vector term into
+-- a term of FloatingPoint sort.
+mkFpaToFpSigned :: Context -> AST -> AST -> Sort -> IO AST
+mkFpaToFpSigned = liftFun3 z3_mk_fpa_to_fp_signed
+
+-- | Conversion of a 2's complement unsigned bit-vector term into
+-- a term of FloatingPoint sort.
+mkFpaToFpUnsigned :: Context -> AST -> AST -> Sort -> IO AST
+mkFpaToFpUnsigned = liftFun3 z3_mk_fpa_to_fp_unsigned
+
+-- | Conversion of a floating-point term into an unsigned bit-vector.
+mkFpaToUbv :: Integral int => Context -> AST -> AST -> int -> IO AST
+mkFpaToUbv = liftFun3 z3_mk_fpa_to_ubv
+
+-- | Conversion of a floating-point term into a signed bit-vector.
+mkFpaToSbv :: Integral int => Context -> AST -> AST -> int -> IO AST
+mkFpaToSbv = liftFun3 z3_mk_fpa_to_sbv
+
+-- | Conversion of a floating-point term into an real-numbered
+-- term.
+mkFpaToReal :: Context -> AST -> IO AST
+mkFpaToReal = liftFun1 z3_mk_fpa_to_real
+
+---------------------------------------------------------------------
+-- Z3-specific floating-point extensions
+
+-- | Retrieves the number of bits reserved for the exponent in a
+-- FloatingPoint sort.
+fpaGetEbits :: Integral int => Context -> Sort -> IO int
+fpaGetEbits = liftFun1 z3_fpa_get_ebits
+
+-- | Retrieves the number of bits reserved for the significand in
+-- a FloatingPoint sort.
+fpaGetSbits :: Integral int => Context -> Sort -> IO int
+fpaGetSbits = liftFun1 z3_fpa_get_sbits
+
+-- | Checks whether a given floating-point numeral is a NaN.
+fpaIsNumeralNaN :: Context -> AST -> IO Bool
+fpaIsNumeralNaN = liftFun1 z3_fpa_is_numeral_nan
+
+-- | Checks whether a given floating-point numeral is a +oo or -oo.
+fpaIsNumeralInf :: Context -> AST -> IO Bool
+fpaIsNumeralInf = liftFun1 z3_fpa_is_numeral_inf
+
+-- | Checks whether a given floating-point numeral is a +zero or
+-- -zero.
+fpaIsNumeralZero :: Context -> AST -> IO Bool
+fpaIsNumeralZero = liftFun1 z3_fpa_is_numeral_zero
+
+-- | Checks whether a given floating-point numeral is normal.
+fpaIsNumeralNormal :: Context -> AST -> IO Bool
+fpaIsNumeralNormal = liftFun1 z3_fpa_is_numeral_normal
+
+-- | Checks whether a given floating-point numeral is subnormal.
+fpaIsNumeralSubnormal :: Context -> AST -> IO Bool
+fpaIsNumeralSubnormal = liftFun1 z3_fpa_is_numeral_subnormal
+
+-- | Checks whether a given floating-point numeral is positive.
+fpaIsNumeralPositive :: Context -> AST -> IO Bool
+fpaIsNumeralPositive = liftFun1 z3_fpa_is_numeral_positive
+
+-- | Checks whether a given floating-point numeral is negative.
+fpaIsNumeralNegative :: Context -> AST -> IO Bool
+fpaIsNumeralNegative = liftFun1 z3_fpa_is_numeral_negative
+
+-- | Retrieves the sign of a floating-point literal as a bit-vector
+-- expression.
+fpaGetNumeralSignBv :: Context -> AST -> IO AST
+fpaGetNumeralSignBv = liftFun1 z3_fpa_get_numeral_sign_bv
+
+-- | Retrieves the significand of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralSignificandBv :: Context -> AST -> IO AST
+fpaGetNumeralSignificandBv = liftFun1 z3_fpa_get_numeral_significand_bv
+
+-- | Return the significand value of a floating-point numeral as a
+-- string.
+fpaGetNumeralSignificandString :: Context -> AST -> IO String
+fpaGetNumeralSignificandString = liftFun1 z3_fpa_get_numeral_significand_string
+
+-- | Return the exponent value of a floating-point numeral as a
+-- string.
+fpaGetNumeralExponentString :: Context -> AST -> Bool -> IO String
+fpaGetNumeralExponentString = liftFun2 z3_fpa_get_numeral_exponent_string
+
+-- | Retrieves the exponent of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralExponentBv :: Context -> AST -> Bool -> IO AST
+fpaGetNumeralExponentBv = liftFun2 z3_fpa_get_numeral_exponent_bv
+
+-- | Conversion of a floating-point term into a bit-vector term
+-- in IEEE 754-2008 format.
+mkFpaToIEEEBv :: Context -> AST -> IO AST
+mkFpaToIEEEBv = liftFun1 z3_mk_fpa_to_ieee_bv
+
+-- | Conversion of a real-sorted significand and an integer-sorted
+-- exponent into a term of FloatingPoint sort.
+mkFpaToFpIntReal :: Context -> AST -> AST -> AST -> Sort -> IO AST
+mkFpaToFpIntReal = liftFun4 z3_mk_fpa_to_fp_int_real
+
+---------------------------------------------------------------------
 -- Optimization facilities
 
 newtype Optimize = Optimize { unOptimize :: ForeignPtr Z3_optimize }
@@ -3646,6 +4130,14 @@ instance Integral h => Marshal h CUInt where
   c2h _ = return . fromIntegral
   h2c i f = f (fromIntegral i)
 
+instance Integral h => Marshal h CLong where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
+
+instance Integral h => Marshal h CULong where
+  c2h _ = return . fromIntegral
+  h2c i f = f (fromIntegral i)
+
 instance Integral h => Marshal h CLLong where
   c2h _ = return . fromIntegral
   h2c i f = f (fromIntegral i)
@@ -3653,6 +4145,10 @@ instance Integral h => Marshal h CLLong where
 instance Integral h => Marshal h CULLong where
   c2h _ = return . fromIntegral
   h2c i f = f (fromIntegral i)
+
+instance Marshal Float CFloat where
+  c2h _ = return . realToFrac
+  h2c d f = f (realToFrac d)
 
 instance Marshal Double CDouble where
   c2h _ = return . realToFrac
@@ -3776,6 +4272,14 @@ liftFun3 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal rh rc) =>
 liftFun3 f c x y z = h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
   toHsCheckError c $ \cPtr -> f cPtr x1 y1 z1
 {-# INLINE liftFun3 #-}
+
+liftFun4 :: (Marshal ah ac, Marshal bh bc, Marshal ch cc, Marshal dh dc,
+            Marshal rh rc) => (Ptr Z3_context -> ac -> bc -> cc -> dc ->
+                               IO rc) ->
+            Context -> ah -> bh -> ch -> dh -> IO rh
+liftFun4 f c x y z zz = h2c x $ \x1 -> h2c y $ \y1 -> h2c z $ \z1 ->
+  h2c zz $ \zz1 -> toHsCheckError c $ \cPtr -> f cPtr x1 y1 z1 zz1
+{-# INLINE liftFun4 #-}
 
 ---------------------------------------------------------------------
 -- Utils

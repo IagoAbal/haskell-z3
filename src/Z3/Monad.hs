@@ -410,6 +410,87 @@ module Z3.Monad
   , fixedpointGetAnswer
   , fixedpointGetAssertions
 
+  -- * Floating-Point Arithmetic
+  , mkFpaRoundingModeSort
+  , mkFpaRoundNearestTiesToEven
+  , mkFpaRne
+  , mkFpaRoundNearestTiesToAway
+  , mkFpaRna
+  , mkFpaRoundTowardPositive
+  , mkFpaRtp
+  , mkFpaRoundTowardNegative
+  , mkFpaRtn
+  , mkFpaRoundTowardZero
+  , mkFpaRtz
+  , mkFpaSort
+  , mkFpaSortHalf
+  , mkFpaSort16
+  , mkFpaSortSingle
+  , mkFpaSort32
+  , mkFpaSortDouble
+  , mkFpaSort64
+  , mkFpaSortQuadruple
+  , mkFpaSort128
+  , mkFpaNaN
+  , mkFpaInf
+  , mkFpaZero
+  , mkFpaFp
+  , mkFpaNumeralFloat
+  , mkFpaNumeralDouble
+  , mkFpaNumeralInt
+  , mkFpaNumeralIntUInt
+  , mkFpaNumeralInt64UInt64
+  , mkFpaAbs
+  , mkFpaNeg
+  , mkFpaAdd
+  , mkFpaSub
+  , mkFpaMul
+  , mkFpaDiv
+  , mkFpaFma
+  , mkFpaSqrt
+  , mkFpaRem
+  , mkFpaRoundToIntegral
+  , mkFpaMin
+  , mkFpaMax
+  , mkFpaLeq
+  , mkFpaLt
+  , mkFpaGeq
+  , mkFpaGt
+  , mkFpaEq
+  , mkFpaIsNormal
+  , mkFpaIsSubnormal
+  , mkFpaIsZero
+  , mkFpaIsInfinite
+  , mkFpaIsNaN
+  , mkFpaIsNegative
+  , mkFpaIsPositive
+  , mkFpaToFpBv
+  , mkFpaToFpFloat
+  , mkFpaToFpReal
+  , mkFpaToFpSigned
+  , mkFpaToFpUnsigned
+  , mkFpaToUbv
+  , mkFpaToSbv
+  , mkFpaToReal
+
+  -- * Z3-specific floating-point extensions
+  , fpaGetEbits
+  , fpaGetSbits
+  , fpaIsNumeralNaN
+  , fpaIsNumeralInf
+  , fpaIsNumeralZero
+  , fpaIsNumeralNormal
+  , fpaIsNumeralSubnormal
+  , fpaIsNumeralPositive
+  , fpaIsNumeralNegative
+  , fpaGetNumeralSignBv
+  , fpaGetNumeralSignificandBv
+  , fpaGetNumeralSignificandString
+  , fpaGetNumeralExponentString
+  , fpaGetNumeralExponentBv
+  , mkFpaToIEEEBv
+  , mkFpaToFpIntReal
+
   -- * Optimization
   , MonadOptimize(..)
   , Optimize
@@ -2422,6 +2503,406 @@ fixedpointGetAnswer = liftFixedpoint0 Base.fixedpointGetAnswer
 
 fixedpointGetAssertions :: MonadFixedpoint z3 => z3 [AST]
 fixedpointGetAssertions = liftFixedpoint0 Base.fixedpointGetAssertions
+
+---------------------------------------------------------------------
+-- Floating-Point Arithmetic
+
+-- | Create the RoundingMode sort.
+mkFpaRoundingModeSort :: MonadZ3 z3 => z3 Sort
+mkFpaRoundingModeSort = liftScalar Base.mkFpaRoundingModeSort
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToEven rounding mode.
+mkFpaRoundNearestTiesToEven :: MonadZ3 z3 => z3 AST
+mkFpaRoundNearestTiesToEven = liftScalar Base.mkFpaRoundNearestTiesToEven
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToEven rounding mode.
+mkFpaRne :: MonadZ3 z3 => z3 AST
+mkFpaRne = liftScalar Base.mkFpaRne
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToAway rounding mode.
+mkFpaRoundNearestTiesToAway :: MonadZ3 z3 => z3 AST
+mkFpaRoundNearestTiesToAway = liftScalar Base.mkFpaRoundNearestTiesToAway
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- NearestTiesToAway rounding mode.
+mkFpaRna :: MonadZ3 z3 => z3 AST
+mkFpaRna = liftScalar Base.mkFpaRna
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardPositive rounding mode.
+mkFpaRoundTowardPositive :: MonadZ3 z3 => z3 AST
+mkFpaRoundTowardPositive = liftScalar Base.mkFpaRoundTowardPositive
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardPositive rounding mode.
+mkFpaRtp :: MonadZ3 z3 => z3 AST
+mkFpaRtp = liftScalar Base.mkFpaRtp
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardNegative rounding mode.
+mkFpaRoundTowardNegative :: MonadZ3 z3 => z3 AST
+mkFpaRoundTowardNegative = liftScalar Base.mkFpaRoundTowardNegative
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardNegative rounding mode.
+mkFpaRtn :: MonadZ3 z3 => z3 AST
+mkFpaRtn = liftScalar Base.mkFpaRtn
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardZero rounding mode.
+mkFpaRoundTowardZero :: MonadZ3 z3 => z3 AST
+mkFpaRoundTowardZero = liftScalar Base.mkFpaRoundTowardZero
+
+-- | Create a numeral of RoundingMode sort which represents the
+-- TowardZero rounding mode.
+mkFpaRtz :: MonadZ3 z3 => z3 AST
+mkFpaRtz = liftScalar Base.mkFpaRtz
+
+-- | Create a FloatingPoint sort.
+mkFpaSort :: (MonadZ3 z3, Integral int)
+          => int -- ^ Number of exponent bits
+          -> int -- ^ Number of significand bits
+          -> z3 Sort
+mkFpaSort = liftFun2 Base.mkFpaSort
+
+-- | Create the half-precision (16-bit) FloatingPoint sort.
+mkFpaSortHalf :: MonadZ3 z3 => z3 Sort
+mkFpaSortHalf = liftScalar Base.mkFpaSortHalf
+
+-- | Create the half-precision (16-bit) FloatingPoint sort.
+mkFpaSort16 :: MonadZ3 z3 => z3 Sort
+mkFpaSort16 = liftScalar Base.mkFpaSort16
+
+-- | Create the single-precision (32-bit) FloatingPoint sort.
+mkFpaSortSingle :: MonadZ3 z3 => z3 Sort
+mkFpaSortSingle = liftScalar Base.mkFpaSortSingle
+
+-- | Create the single-precision (32-bit) FloatingPoint sort.
+mkFpaSort32 :: MonadZ3 z3 => z3 Sort
+mkFpaSort32 = liftScalar Base.mkFpaSort32
+
+-- | Create the double-precision (64-bit) FloatingPoint sort.
+mkFpaSortDouble :: MonadZ3 z3 => z3 Sort
+mkFpaSortDouble = liftScalar Base.mkFpaSortDouble
+
+-- | Create the double-precision (64-bit) FloatingPoint sort.
+mkFpaSort64 :: MonadZ3 z3 => z3 Sort
+mkFpaSort64 = liftScalar Base.mkFpaSort64
+
+-- | Create the quadruple-precision (128-bit) FloatingPoint sort.
+mkFpaSortQuadruple :: MonadZ3 z3 => z3 Sort
+mkFpaSortQuadruple = liftScalar Base.mkFpaSortQuadruple
+
+-- | Create the quadruple-precision (128-bit) FloatingPoint sort.
+mkFpaSort128 :: MonadZ3 z3 => z3 Sort
+mkFpaSort128 = liftScalar Base.mkFpaSort128
+
+-- | Create a floating-point NaN of sort @s@.
+mkFpaNaN :: MonadZ3 z3 => Sort -> z3 AST
+mkFpaNaN = liftFun1 Base.mkFpaNaN
+
+-- | Create a floating-point infinity of sort @s@.
+mkFpaInf :: MonadZ3 z3
+         => Sort    -- ^ Target sort
+         -> Bool    -- ^ Indicates whether the result should be negative
+         -> z3 AST
+mkFpaInf = liftFun2 Base.mkFpaInf
+
+-- | Create a floating-point zero of sort @s@.
+mkFpaZero :: MonadZ3 z3 
+          => Sort    -- ^ Target sort
+          -> Bool    -- ^ Indicates whether the result should be negative
+          -> z3 AST
+mkFpaZero = liftFun2 Base.mkFpaZero
+
+-- | Create an expression of FloatingPoint sort from three bit-vector
+-- expressions.
+--
+-- This is the operator named `fp' in the SMT FP theory definition.
+-- Note that @sgn@ is required to be a bit-vector of size 1.
+-- Significand and exponent are required to be longer than 1 and 2
+-- respectively. The FloatingPoint sort of the resulting expression
+-- is automatically determined from the bit-vector sizes of the
+-- arguments. The exponent is assumed to be in IEEE-754 biased
+-- representation.
+mkFpaFp :: MonadZ3 z3
+        => AST     -- ^ Sign
+        -> AST     -- ^ Exponent
+        -> AST     -- ^ Significand
+        -> z3 AST
+mkFpaFp = liftFun3 Base.mkFpaFp
+
+-- | Create a numeral of FloatingPoint sort from a float.
+mkFpaNumeralFloat :: MonadZ3 z3 => Float -> Sort -> z3 AST
+mkFpaNumeralFloat = liftFun2 Base.mkFpaNumeralFloat
+
+-- | Create a numeral of FloatingPoint sort from a double.
+mkFpaNumeralDouble :: MonadZ3 z3 => Double -> Sort -> z3 AST
+mkFpaNumeralDouble = liftFun2 Base.mkFpaNumeralDouble
+
+-- | Create a numeral of FloatingPoint sort from a signed integer.
+mkFpaNumeralInt :: (MonadZ3 z3, Integral int) => int -> Sort -> z3 AST
+mkFpaNumeralInt = liftFun2 Base.mkFpaNumeralInt
+
+-- | Create a numeral of FLoatingPoint sort from a sign bit and
+-- two integers.
+mkFpaNumeralIntUInt :: (MonadZ3 z3, Integral int)
+                    => Bool    -- ^ Sign bit (true == negative)
+                    -> int     -- ^ Significand
+                    -> int     -- ^ Exponent
+                    -> Sort    -- ^ Result sort
+                    -> z3 AST
+mkFpaNumeralIntUInt = liftFun4 Base.mkFpaNumeralIntUInt
+
+-- | Create a numeral of FloatingPoint sort from a sign bit and
+-- two 64-bit integers.
+mkFpaNumeralInt64UInt64 :: (MonadZ3 z3, Integral int)
+                        => Bool    -- ^ Sign bit (true == negative)
+                        -> int     -- ^ Significand
+                        -> int     -- ^ Exponent
+                        -> Sort    -- ^ Result sort
+                        -> z3 AST
+mkFpaNumeralInt64UInt64 = liftFun4 Base.mkFpaNumeralInt64UInt64
+
+-- | Floating-point absolute value.
+mkFpaAbs :: MonadZ3 z3 => AST -> z3 AST
+mkFpaAbs = liftFun1 Base.mkFpaAbs
+
+-- | Floating-point negation.
+mkFpaNeg :: MonadZ3 z3 => AST -> z3 AST
+mkFpaNeg = liftFun1 Base.mkFpaNeg
+
+-- | Floating-point addition.
+mkFpaAdd :: MonadZ3 z3
+         => AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> z3 AST
+mkFpaAdd = liftFun3 Base.mkFpaAdd
+
+-- | Floating-point subtraction.
+mkFpaSub :: MonadZ3 z3
+         => AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> z3 AST
+mkFpaSub = liftFun3 Base.mkFpaSub
+
+-- | Floating-point multiplication.
+mkFpaMul :: MonadZ3 z3
+         => AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> z3 AST
+mkFpaMul = liftFun3 Base.mkFpaMul
+
+-- | Floating-point division.
+mkFpaDiv :: MonadZ3 z3
+         => AST     -- ^ Rounding Mode
+         -> AST     -- ^ FloatingPoint sort term
+         -> AST     -- ^ FloatingPoint sort term
+         -> z3 AST
+mkFpaDiv = liftFun3 Base.mkFpaDiv
+
+-- | Floating-point fused multiply-add.
+--
+-- The result is @round((t1 * t2) + t3)@.
+mkFpaFma :: MonadZ3 z3 => AST -> AST -> AST -> AST -> z3 AST
+mkFpaFma = liftFun4 Base.mkFpaFma
+
+-- | Floating-point square root.
+mkFpaSqrt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaSqrt = liftFun2 Base.mkFpaSqrt
+
+-- | Floating-point remainder.
+mkFpaRem :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaRem = liftFun2 Base.mkFpaRem
+
+-- | Floating-point roundToIntegral. Rounds a floating-point number
+-- to the closest integer, again represented as a floating-point
+-- number.
+mkFpaRoundToIntegral :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaRoundToIntegral = liftFun2 Base.mkFpaRoundToIntegral
+
+-- | Minimum of floating-point numbers.
+mkFpaMin :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaMin = liftFun2 Base.mkFpaMin
+
+-- | Maximum of floating-point numbers.
+mkFpaMax :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaMax = liftFun2 Base.mkFpaMax
+
+-- | Floating-point less than or equal.
+mkFpaLeq :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaLeq = liftFun2 Base.mkFpaLeq
+
+-- | Floating-point less than.
+mkFpaLt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaLt = liftFun2 Base.mkFpaLt
+
+-- | Floating-point greater than or equal.
+mkFpaGeq :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaGeq = liftFun2 Base.mkFpaGeq
+
+-- | Floating-point greater than.
+mkFpaGt :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaGt = liftFun2 Base.mkFpaGt
+
+-- | Floating-point equality.
+mkFpaEq :: MonadZ3 z3 => AST -> AST -> z3 AST
+mkFpaEq = liftFun2 Base.mkFpaEq
+
+-- | Predicate indicating whether @t@ is a normal floating-point
+-- number.
+mkFpaIsNormal :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsNormal = liftFun1 Base.mkFpaIsNormal
+
+-- | Predicate indicating whether @t@ is a subnormal floating-point
+-- number.
+mkFpaIsSubnormal :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsSubnormal = liftFun1 Base.mkFpaIsSubnormal
+
+-- | Predicate indicating whether @t@ is a floating-point number
+-- with zero value, i.e., +zero or -zero.
+mkFpaIsZero :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsZero = liftFun1 Base.mkFpaIsZero
+
+-- | Predicate indicating whether @t@ is a floating-point number
+-- representing infinity, i.e., +oo or -oo.
+mkFpaIsInfinite :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsInfinite = liftFun1 Base.mkFpaIsInfinite
+
+-- | Predicate indicating whether @t@ is NaN.
+mkFpaIsNaN :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsNaN = liftFun1 Base.mkFpaIsNaN
+
+-- | Predicate indicating whether @t@ is a negative floating-point
+-- number.
+mkFpaIsNegative :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsNegative = liftFun1 Base.mkFpaIsNegative
+
+-- | Predicate indicating whether @t@ is a positive floating-point
+-- number.
+mkFpaIsPositive :: MonadZ3 z3 => AST -> z3 AST
+mkFpaIsPositive = liftFun1 Base.mkFpaIsPositive
+
+-- | Conversion of a single IEEE 754-2008 bit-vector into a
+-- floating-point number.
+mkFpaToFpBv :: MonadZ3 z3 => AST -> Sort -> z3 AST
+mkFpaToFpBv = liftFun2 Base.mkFpaToFpBv
+
+-- | Conversion of a FloatingPoint term into another term of
+-- different FloatingPoint sort.
+mkFpaToFpFloat :: MonadZ3 z3 => AST -> AST -> Sort -> z3 AST
+mkFpaToFpFloat = liftFun3 Base.mkFpaToFpFloat
+
+-- | Conversion of a term of real sort into a term of
+-- FloatingPoint sort.
+mkFpaToFpReal :: MonadZ3 z3 => AST -> AST -> Sort -> z3 AST
+mkFpaToFpReal = liftFun3 Base.mkFpaToFpReal
+
+-- | Conversion of a 2's complement signed bit-vector term into
+-- a term of FloatingPoint sort.
+mkFpaToFpSigned :: MonadZ3 z3 => AST -> AST -> Sort -> z3 AST
+mkFpaToFpSigned = liftFun3 Base.mkFpaToFpSigned
+
+-- | Conversion of a 2's complement unsigned bit-vector term into
+-- a term of FloatingPoint sort.
+mkFpaToFpUnsigned :: MonadZ3 z3 => AST -> AST -> Sort -> z3 AST
+mkFpaToFpUnsigned = liftFun3 Base.mkFpaToFpUnsigned
+
+-- | Conversion of a floating-point term into an unsigned bit-vector.
+mkFpaToUbv :: (MonadZ3 z3, Integral int) => AST -> AST -> int -> z3 AST
+mkFpaToUbv = liftFun3 Base.mkFpaToUbv
+
+-- | Conversion of a floating-point term into a signed bit-vector.
+mkFpaToSbv :: (MonadZ3 z3, Integral int) => AST -> AST -> int -> z3 AST
+mkFpaToSbv = liftFun3 Base.mkFpaToSbv
+
+-- | Conversion of a floating-point term into an real-numbered
+-- term.
+mkFpaToReal :: MonadZ3 z3 => AST -> z3 AST
+mkFpaToReal = liftFun1 Base.mkFpaToReal
+
+---------------------------------------------------------------------
+-- Z3-specific floating-point extensions
+
+-- | Retrieves the number of bits reserved for the exponent in a
+-- FloatingPoint sort.
+fpaGetEbits :: (MonadZ3 z3, Integral int) => Sort -> z3 int
+fpaGetEbits = liftFun1 Base.fpaGetEbits
+
+-- | Retrieves the number of bits reserved for the significand in
+-- a FloatingPoint sort.
+fpaGetSbits :: (MonadZ3 z3, Integral int) => Sort -> z3 int
+fpaGetSbits = liftFun1 Base.fpaGetSbits
+
+-- | Checks whether a given floating-point numeral is a NaN.
+fpaIsNumeralNaN :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNaN = liftFun1 Base.fpaIsNumeralNaN
+
+-- | Checks whether a given floating-point numeral is a +oo or -oo.
+fpaIsNumeralInf :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralInf = liftFun1 Base.fpaIsNumeralInf
+
+-- | Checks whether a given floating-point numeral is a +zero or
+-- -zero.
+fpaIsNumeralZero :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralZero = liftFun1 Base.fpaIsNumeralZero
+
+-- | Checks whether a given floating-point numeral is normal.
+fpaIsNumeralNormal :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNormal = liftFun1 Base.fpaIsNumeralNormal
+
+-- | Checks whether a given floating-point numeral is subnormal.
+fpaIsNumeralSubnormal :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralSubnormal = liftFun1 Base.fpaIsNumeralSubnormal
+
+-- | Checks whether a given floating-point numeral is positive.
+fpaIsNumeralPositive :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralPositive = liftFun1 Base.fpaIsNumeralPositive
+
+-- | Checks whether a given floating-point numeral is negative.
+fpaIsNumeralNegative :: MonadZ3 z3 => AST -> z3 Bool
+fpaIsNumeralNegative = liftFun1 Base.fpaIsNumeralNegative
+
+-- | Retrieves the sign of a floating-point literal as a bit-vector
+-- expression.
+fpaGetNumeralSignBv :: MonadZ3 z3 => AST -> z3 AST
+fpaGetNumeralSignBv = liftFun1 Base.fpaGetNumeralSignBv
+
+-- | Retrieves the significand of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralSignificandBv :: MonadZ3 z3 => AST -> z3 AST
+fpaGetNumeralSignificandBv = liftFun1 Base.fpaGetNumeralSignificandBv
+
+-- | Return the significand value of a floating-point numeral as a
+-- string.
+fpaGetNumeralSignificandString :: MonadZ3 z3 => AST -> z3 String
+fpaGetNumeralSignificandString = liftFun1 Base.fpaGetNumeralSignificandString
+
+-- | Return the exponent value of a floating-point numeral as a
+-- string.
+fpaGetNumeralExponentString :: MonadZ3 z3 => AST -> Bool -> z3 String
+fpaGetNumeralExponentString = liftFun2 Base.fpaGetNumeralExponentString
+
+-- | Retrieves the exponent of a floating-point literal as a
+-- bit-vector expression.
+fpaGetNumeralExponentBv :: MonadZ3 z3 => AST -> Bool -> z3 AST
+fpaGetNumeralExponentBv = liftFun2 Base.fpaGetNumeralExponentBv
+
+-- | Conversion of a floating-point term into a bit-vector term
+-- in IEEE 754-2008 format.
+mkFpaToIEEEBv :: MonadZ3 z3 => AST -> z3 AST
+mkFpaToIEEEBv = liftFun1 Base.mkFpaToIEEEBv
+
+-- | Conversion of a real-sorted significand and an integer-sorted
+-- exponent into a term of FloatingPoint sort.
+mkFpaToFpIntReal :: MonadZ3 z3 => AST -> AST -> AST -> Sort -> z3 AST
+mkFpaToFpIntReal = liftFun4 Base.mkFpaToFpIntReal
 
 ---------------------------------------------------------------------
 -- Optimization
