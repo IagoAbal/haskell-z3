@@ -21,10 +21,6 @@ spec = do
         Z3.Monad.evalZ3 simplifySolveEqs `shouldReturn` "(goals\n(goal\n  (not (<= y (- 2.0)))\n  (not (<= y 0.0)))\n)"
       it "Apply split-clause tactic" $
         Z3.Monad.evalZ3 applySplitClause `shouldReturn` "(goals\n(goal\n  (< x 0.0)\n  (= x (+ y 1.0))\n  (< y 0.0))\n(goal\n  (> x 0.0)\n  (= x (+ y 1.0))\n  (< y 0.0))\n)"
-  describe "Section: Sequences" $ do
-    describe "Section: Strings" $ do
-      it "stringConcatentation" $
-        Z3.Monad.evalZ3 stringConcatentation `shouldReturn` "b -> \"\"\na -> \"abc\"\n"
 
 {-
   (declare-const a String)
