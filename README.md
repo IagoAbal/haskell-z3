@@ -1,5 +1,6 @@
 # Haskell bindings for Microsoft's Z3 (unofficial)
 
+![Version](https://img.shields.io/hackage/v/z3)
 ![Testsuite workflow](https://github.com/IagoAbal/haskell-z3/actions/workflows/testsuite.yml/badge.svg)
 
 These are Haskell bindings for the Z3 theorem prover.
