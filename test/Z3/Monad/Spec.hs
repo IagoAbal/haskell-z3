@@ -15,6 +15,42 @@ assertFuncName f expected = do actual <- Z3.getDeclName f >>= Z3.getSymbolString
 
 spec :: Spec
 spec = do
+
+  context "Example using assert-soft" $ do
+    specify "model should satisfy hard constraint" $ do
+      (x3,x4) <- liftIO (Z3.evalZ3 (do
+          int <- Z3.mkIntSort
+          def <- Z3.mkStringSymbol "default"
+          x1 <- Z3.mkFreshIntVar "x1"
+          x2 <- Z3.mkFreshIntVar "x2"
+          x3 <- Z3.mkFreshIntVar "x3"
+          x4 <- Z3.mkFreshIntVar "x4"
+          i0 <- Z3.mkIntNum 0
+          i2 <- Z3.mkIntNum 2
+          i4 <- Z3.mkIntNum 4
+          i6 <- Z3.mkIntNum 6
+          i8 <- Z3.mkIntNum 8
+          Z3.optimizeAssert =<< Z3.mkNot =<< Z3.mkEq i0 =<< Z3.mkAdd [x1, x2]
+          Z3.optimizeAssert =<< Z3.mkNot =<< Z3.mkEq i0 =<< Z3.mkAdd [x2, x3]
+          Z3.optimizeAssert =<< Z3.mkEq i0 =<< Z3.mkAdd [x3, x4]
+          eq1 <- Z3.mkEq x1 i2
+          eq2 <- Z3.mkEq x2 i4
+          eq3 <- Z3.mkEq x3 i6
+          eq4 <- Z3.mkEq x4 i8
+          Z3.optimizeAssertSoft eq1 "1" def
+          Z3.optimizeAssertSoft eq2 "1" def
+          Z3.optimizeAssertSoft eq3 "1" def
+          Z3.optimizeAssertSoft eq4 "1" def
+          _ <- Z3.optimizeCheck []
+          model <- Z3.optimizeGetModel
+          x3v <- Z3.evalInt model x3
+          x4v <- Z3.evalInt model x4
+          return (x3v, x4v)
+        ))
+      (x3,x4) `shouldSatisfy` (\(x3, x4) -> case (x3, x4) of
+        (Just x3, Just x4) -> x3 + x4 == 0
+        _ -> False)
+
   context "IntList example with assertions" $ do
     specify "should run" $ do
       Z3.evalZ3 $ do
