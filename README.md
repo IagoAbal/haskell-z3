@@ -1,5 +1,6 @@
 # Haskell bindings for Microsoft's Z3 (unofficial)
 
+![Version](https://img.shields.io/hackage/v/z3)
 ![Testsuite workflow](https://github.com/IagoAbal/haskell-z3/actions/workflows/testsuite.yml/badge.svg)
 
 These are Haskell bindings for the Z3 theorem prover.
@@ -27,9 +28,8 @@ In the meantime I will do my best to keep it alive.
 ## Supported versions and version policy
 
 Z3 releases come out often and sometimes introduce backwards incompatible changes.
-In order to avoid #ifdef-ery, we only try to support a reasonably recent version
-of Z3, ideally the latest one.
-We use semantic versioning to reflect which version(s) are supported:
+In order to avoid churn and `#ifdef`-ery, we only support recent releases of the latest Z3 minor version.
+We use semantic versioning to reflect which versions are supported:
 
     <z3-version>.<bindings-version>[.<patch-level>]
 
@@ -37,6 +37,17 @@ The `<z3-version>` indicates which version of Z3 is supported, it is computed as
 _x*100+y_ for Z3 _x.y_. For example, versions _408.y.z_ of these bindings are
 meant to support versions _4.8.*_ of Z3.
 This version policy is in line with Haskell's PVP.
+If you are using an older solver version you can check compatibility with these bindings below:
+
+### Z3-4.8.* compatibility
+
+| Bindings version / Z3 version  | 4.8.12  | 4.8.11  | 4.8.10  | 4.8.9   | 4.8.7   | 4.8.6   | 4.8.5   | 4.8.4   | 4.8.3   | 4.8.1   |
+| ----              | ---    | ---    | ---    | ---    | ---    | ---    | ---    | ---    | ---    | ---    |
+| 408.3             | ✔      | ✔      | ✔      | ✔      | ❌     | ❌     | ❌     | ❌     | ❌     | ❌     |
+| 408.2             | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ❌     | ❌     | ❌     |
+| 408.1             | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      | ✔      |
+| 408.0             | ❌     | ❌     | ❌     | ❌     | ❌     | ❌     | ❌     | ✔      | ✔      | ✔      |
+
 
 ## Installation
 
