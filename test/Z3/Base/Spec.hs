@@ -37,6 +37,30 @@ z3powerDef i j = i ^ j
 spec :: Spec
 spec = around withContext $ do
 
+  context "Floating point" $ do
+
+    specify "algebraicIsValue" $ \ctx ->
+      (do
+        ds <- Z3.mkFpaSortSingle ctx
+        xsym <- Z3.mkStringSymbol ctx "x"
+        xvar <- Z3.mkVar ctx xsym ds
+        rm <- Z3.mkFpaRtn ctx
+        sol <- Z3.mkSolver ctx
+        x <- Z3.mkFpaNumeralFloat ctx 1099511627776 ds
+        z <- Z3.mkFpaEq ctx xvar =<< (Z3.mkFpaAdd ctx rm x x)
+        Z3.solverAssertCnstr ctx sol z
+        (Z3.Sat,Just m) <- Z3.solverCheckAndGetModel ctx sol
+        Just r <- Z3.modelEval ctx m xvar False
+        sign <- Z3.fpaIsNumeralPositive ctx r
+        significand <- Z3.fpaGetNumeralSignificandString ctx r
+        exponent <- Z3.fpaGetNumeralExponentString ctx r False
+        return (sign, significand, exponent)
+        {-
+        This encodes the constraint 'x = 1099511627776 + 1099511627776'.
+        Since 1099511627776 = 2^40, the result is 2^41 and thus the significand 1 and exponent 41.
+        -}
+      ) `shouldReturn` (True, "1", "41")
+
   context "Algebraic Numbers" $ do
 
     specify "algebraicIsValue" $ \ctx ->
