@@ -1076,15 +1076,15 @@ mkTupleSort c sym symSorts = withContextError c $ \cPtr ->
     outProjs  <- peekArray n outProjsPtr
     tupleSort <- c2h c srtPtr
     tupleCons <- c2h c outConstr
-    tupleProjs <- mapM (c2h c) outProjs
-    return (tupleSort, tupleCons, tupleProjs)
+    tupleProjections <- mapM (c2h c) outProjs
+    return (tupleSort, tupleCons, tupleProjections)
   where (syms, sorts) = unzip symSorts
 
 -- | Like 'mkTupleSort' but wraps the result in a 'TupleType' record
 mkTupleType :: Context -> Symbol -> [(String, Sort)] -> IO TupleType
 mkTupleType ctx sym fs = do fs' <- flip zip (map snd fs) <$> mapM (mkStringSymbol ctx . fst) fs
-                            (tupleSort, tupleCons, tupleProjs) <- mkTupleSort ctx sym fs'
-                            let namedTupleProjs = zip (map fst fs) tupleProjs
+                            (tupleSort, tupleCons, tupleProjections) <- mkTupleSort ctx sym fs'
+                            let namedTupleProjs = zip (map fst fs) tupleProjections
                             return $ TupleType {tupleSort, tupleCons, namedTupleProjs}
 
 -- | Create an instance of the tuple sort wrapped in 'TupleType'
