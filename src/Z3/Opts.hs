@@ -51,11 +51,6 @@ import qualified Z3.Base as Base
 
 import           Data.Fixed  ( Fixed )
 import qualified Data.Fixed as Fixed
-import           Data.Monoid ( Monoid(..) )
-
-#if MIN_VERSION_base(4,9,0)
-import           Data.Semigroup ( Semigroup (..) )
-#endif
 
 ---------------------------------------------------------------------
 -- Configuration

@@ -629,7 +629,6 @@ import Z3.Base.C
 import Z3.Common
 import Z3.RLock ( RLock, new, with)
 
-import Control.Applicative ( (<$>), (<*>), (<*), pure )
 import Control.Exception ( Exception, bracket, throw )
 import Control.Monad ( join, when, forM )
 import Data.Fixed ( Fixed, HasResolution )
@@ -639,12 +638,10 @@ import Data.IORef ( IORef, newIORef, atomicModifyIORef' )
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty)
 import Data.Maybe ( fromJust )
 import Data.Ratio ( numerator, denominator, (%) )
-import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 import Data.Typeable ( Typeable )
 import Data.Word
 import Foreign hiding ( toBool, newForeignPtr )
-import Foreign.Storable ( peek )
 import Foreign.C
   ( CFloat, CDouble, CInt, CUInt, CLong, CULong, CLLong, CULLong, CString
   , peekCString

@@ -555,7 +555,6 @@ import Z3.Base
   ( Symbol
   , AST
   , Sort
-  , TupleType
   , FuncDecl
   , App
   , Pattern
@@ -580,9 +579,7 @@ import Z3.Base
   )
 import qualified Z3.Base as Base
 
-import Control.Applicative ( Applicative )
 import Data.Fixed ( Fixed, HasResolution )
-import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Class ( lift )
 import Control.Monad.Trans.Reader ( ReaderT(..), runReaderT, asks )
@@ -591,8 +588,7 @@ import Control.Monad.Trans.State.Strict as StStrict ( StateT(..) )
 import Control.Monad.Fix ( MonadFix )
 import Data.Int ( Int64 )
 import Data.List.NonEmpty (NonEmpty)
-import Data.Word ( Word, Word64 )
-import Data.Traversable ( Traversable )
+import Data.Word ( Word64 )
 import qualified Data.Traversable as T
 
 ---------------------------------------------------------------------
