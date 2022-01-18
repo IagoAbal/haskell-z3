@@ -3324,7 +3324,7 @@ mkFpaRtz :: Context -> IO AST
 mkFpaRtz = liftFun0 z3_mk_fpa_rtz
 
 -- | Create a FloatingPoint sort.
-mkFpaSort :: Integral int 
+mkFpaSort :: Integral int
           => Context -- ^ Context
           -> int -- ^ Number of exponent bits
           -> int -- ^ Number of significand bits
@@ -3412,7 +3412,7 @@ mkFpaNumeralInt = liftFun2 z3_mk_fpa_numeral_int
 
 -- | Create a numeral of FLoatingPoint sort from a sign bit and
 -- two integers.
-mkFpaNumeralIntUInt :: Integral int 
+mkFpaNumeralIntUInt :: Integral int
                     => Context -- ^ Context
                     -> Bool    -- ^ Sign bit (true == negative)
                     -> int     -- ^ Significand
@@ -3423,7 +3423,7 @@ mkFpaNumeralIntUInt = liftFun4 z3_mk_fpa_numeral_int_uint
 
 -- | Create a numeral of FloatingPoint sort from a sign bit and
 -- two 64-bit integers.
-mkFpaNumeralInt64UInt64 :: Integral int 
+mkFpaNumeralInt64UInt64 :: Integral int
                         => Context -- ^ Context
                         -> Bool    -- ^ Sign bit (true == negative)
                         -> int     -- ^ Significand
@@ -4308,4 +4308,3 @@ unBool False = z3_false
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
-

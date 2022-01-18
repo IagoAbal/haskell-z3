@@ -2619,7 +2619,7 @@ mkFpaInf :: MonadZ3 z3
 mkFpaInf = liftFun2 Base.mkFpaInf
 
 -- | Create a floating-point zero of sort @s@.
-mkFpaZero :: MonadZ3 z3 
+mkFpaZero :: MonadZ3 z3
           => Sort    -- ^ Target sort
           -> Bool    -- ^ Indicates whether the result should be negative
           -> z3 AST
