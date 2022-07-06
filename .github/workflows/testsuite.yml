@@ -8,6 +8,11 @@ jobs:
       fail-fast: false
       matrix:
         z3_release:
+          - https://github.com/Z3Prover/z3/releases/download/z3-4.8.17/z3-4.8.17-x64-glibc-2.31.zip
+          - https://github.com/Z3Prover/z3/releases/download/z3-4.8.16/z3-4.8.16-x64-glibc-2.31.zip
+          - https://github.com/Z3Prover/z3/releases/download/z3-4.8.15/z3-4.8.15-x64-glibc-2.31.zip
+          - https://github.com/Z3Prover/z3/releases/download/z3-4.8.14/z3-4.8.14-x64-glibc-2.31.zip
+          - https://github.com/Z3Prover/z3/releases/download/z3-4.8.13/z3-4.8.13-x64-glibc-2.31.zip
           - https://github.com/Z3Prover/z3/releases/download/z3-4.8.12/z3-4.8.12-x64-glibc-2.31.zip
           - https://github.com/Z3Prover/z3/releases/download/z3-4.8.11/z3-4.8.11-x64-glibc-2.31.zip
           - https://github.com/Z3Prover/z3/releases/download/z3-4.8.10/z3-4.8.10-x64-ubuntu-18.04.zip
