@@ -403,6 +403,7 @@ module Z3.Base (
   , substitute
 
   -- * Models
+  , modelTranslate
   , modelEval
   , evalArray
   , getConstInterp
@@ -460,6 +461,7 @@ module Z3.Base (
   , getGoalFormula
   , getGoalFormulas
   , goalToString
+  , convertModel
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -613,6 +615,7 @@ module Z3.Base (
   , solverAssertCnstr
   , solverAssertAndTrack
   , solverFromFile
+  , solverFromString
   , solverGetAssertions
   , solverCheck
   , solverCheckAssumptions
@@ -2763,6 +2766,9 @@ getConstInterp ctx m fd = marshal z3_model_get_const_interp ctx $ \f ->
   h2c fd $ \fdPtr ->
     f mPtr fdPtr
 
+modelTranslate :: Context -> Model -> Context -> IO Model
+modelTranslate = liftFun2 z3_model_translate
+
 hasInterp :: Context -> Model -> FuncDecl -> IO Bool
 hasInterp = liftFun2 z3_model_has_interp
 
@@ -3111,6 +3117,9 @@ getGoalFormulas ctx g = do
 
 goalToString :: Context -> Goal -> IO String
 goalToString = liftFun1 z3_goal_to_string
+
+convertModel :: Context -> Goal -> Model -> IO Model
+convertModel = liftFun2 z3_goal_convert_model
 
 ---------------------------------------------------------------------
 -- Parser interface
@@ -3942,6 +3951,9 @@ solverAssertAndTrack = liftFun3 z3_solver_assert_and_track
 solverFromFile :: Context -> Solver -> String -> IO ()
 solverFromFile = liftFun2 z3_solver_from_file
 
+solverFromString :: Context -> Solver -> String -> IO ()
+solverFromString = liftFun2 z3_solver_from_string
+
 solverGetAssertions :: Context -> Solver -> IO [AST]
 solverGetAssertions = liftFun1 z3_solver_get_assertions
 
@@ -4157,6 +4169,10 @@ instance Marshal Double CDouble where
 instance Marshal String CString where
   c2h _ = peekCString
   h2c   = withCString
+
+instance Marshal Context (Ptr Z3_context) where
+  c2h _ ctx = withConfig $ mkContextWith (const (return ctx)) 
+  h2c ctx = withForeignPtr (unContext ctx)
 
 instance Marshal App (Ptr Z3_app) where
   c2h = mkC2hRefCount App
