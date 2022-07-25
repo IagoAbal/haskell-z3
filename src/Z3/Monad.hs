@@ -585,6 +585,7 @@ import qualified Z3.Base as Base
 
 import Control.Applicative ( Applicative )
 import Data.Fixed ( Fixed, HasResolution )
+import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Class ( lift )
@@ -598,6 +599,7 @@ import Data.Word ( Word, Word64 )
 import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 
+
 ---------------------------------------------------------------------
 -- The Z3 monad-class
 
@@ -606,6 +608,10 @@ class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
   getContext :: m Base.Context
 
 instance MonadZ3 m => MonadZ3 (ReaderT r m) where
+  getSolver = lift getSolver
+  getContext = lift getContext
+
+instance MonadZ3 m => MonadZ3 (ExceptT e m) where
   getSolver = lift getSolver
   getContext = lift getContext
 
