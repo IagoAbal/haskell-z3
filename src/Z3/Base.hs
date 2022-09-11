@@ -447,6 +447,7 @@ module Z3.Base (
   , orElseTactic
   , skipTactic
   , tryForTactic
+  , tacticUsingParams
   , repeatTactic
   , mkQuantifierEliminationTactic
   , mkAndInverterGraphTactic
@@ -3071,6 +3072,9 @@ skipTactic = liftFun0 z3_tactic_skip
 
 tryForTactic :: Context -> Tactic -> Int -> IO Tactic
 tryForTactic = liftFun2 z3_tactic_try_for
+
+tacticUsingParams :: Context -> Tactic -> Params -> IO Tactic
+tacticUsingParams = liftFun2 z3_tactic_using_params
 
 repeatTactic :: Context -> Tactic -> Int -> IO Tactic
 repeatTactic = liftFun2 z3_tactic_repeat
