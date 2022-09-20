@@ -12,6 +12,8 @@ import qualified Example.Monad.ToSMTLib
 import qualified Example.Monad.Tuple
 import qualified Example.Monad.ParserInterface
 import qualified Example.Monad.IntList
+import qualified Example.Monad.UnsatFile
+import qualified Example.Monad.SatFile
 
 import System.Environment
 
@@ -49,9 +51,21 @@ examples =
   , ("intList"
     , Example.Monad.IntList.run
     )
+  , ("unsatFile"
+    , Example.Monad.UnsatFile.run
+    )
+  , ("satFile"
+    , Example.Monad.SatFile.run
+    )
   ]
 
 runExample :: String -> IO ()
+runExample "all" = mapM_ go examples
+  where
+    go :: (String, IO ()) -> IO ()
+    go (name, run) = do
+      putStrLn $ "\nRunning " ++ name ++ ":"
+      run
 runExample x = case lookup x examples of
                     Just x  -> x
                     Nothing -> error "Example not found"
