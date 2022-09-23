@@ -103,18 +103,8 @@ z3_l_true  = Z3_lbool (#const Z3_L_TRUE)
 z3_l_false = Z3_lbool (#const Z3_L_FALSE)
 z3_l_undef = Z3_lbool (#const Z3_L_UNDEF)
 
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga3a65ded0ada3ee285865759a21140eeb>
-newtype Z3_bool = Z3_bool CInt
-  deriving Eq
-
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga311274c8a65a5d25cf715ebdf0c68747>
 type Z3_error_handler = Ptr Z3_context -> Z3_error_code -> IO ()
-
-z3_true, z3_false :: Z3_bool
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gad86c8730a2e4e61bac585b240a6288d4>
-z3_true  = Z3_bool(#const Z3_TRUE)
--- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga1d9cee57472b2c7623642f123b8f1781>
-z3_false = Z3_bool(#const Z3_FALSE)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga49f047b93b0282e686956678da5b86b1>
 type Z3_string = CString
@@ -195,16 +185,16 @@ z3_unknown_ast = #const Z3_UNKNOWN_AST
 -- * Algebraic Numbers
 
 foreign import ccall unsafe "Z3_algebraic_is_value"
-    z3_algebraic_is_value :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_is_value :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_is_pos"
-    z3_algebraic_is_pos :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_is_pos :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_is_neg"
-    z3_algebraic_is_neg :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_is_neg :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_is_zero"
-    z3_algebraic_is_zero :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_is_zero :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_sign"
     z3_algebraic_sign :: Ptr Z3_context -> Ptr Z3_ast -> IO CInt
@@ -228,22 +218,22 @@ foreign import ccall unsafe "Z3_algebraic_power"
     z3_algebraic_power :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_algebraic_lt"
-    z3_algebraic_lt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_lt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_gt"
-    z3_algebraic_gt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_gt :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_le"
-    z3_algebraic_le :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_le :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_ge"
-    z3_algebraic_ge :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_ge :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_eq"
-    z3_algebraic_eq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_eq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_neq"
-    z3_algebraic_neq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Z3_bool
+    z3_algebraic_neq :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_algebraic_roots"
     z3_algebraic_roots :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast_vector)
@@ -267,7 +257,7 @@ foreign import ccall unsafe "Z3_global_param_reset_all"
     z3_global_param_reset_all :: IO ()
 
 foreign import ccall unsafe "Z3_global_param_get"
-    z3_global_param_get :: Z3_string -> Ptr Z3_string -> IO Z3_bool
+    z3_global_param_get :: Z3_string -> Ptr Z3_string -> IO Bool
 
 ---------------------------------------------------------------------
 -- * Create configuration
@@ -331,7 +321,7 @@ foreign import ccall unsafe "Z3_params_dec_ref"
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga39e3df967eaad45b343256d56c54e91c>
 foreign import ccall unsafe "Z3_params_set_bool"
     z3_params_set_bool :: Ptr Z3_context -> Ptr Z3_params -> Ptr Z3_symbol ->
-                          Z3_bool -> IO ()
+                          Bool -> IO ()
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga4974397cb652c7f7f479012eb465e250>
 foreign import ccall unsafe "Z3_params_set_uint"
@@ -847,11 +837,11 @@ foreign import ccall unsafe "Z3_mk_int2bv"
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gac87b227dc3821d57258d7f53a28323d4>
 foreign import ccall unsafe "Z3_mk_bv2int"
-    z3_mk_bv2int :: Ptr Z3_context -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_mk_bv2int :: Ptr Z3_context -> Ptr Z3_ast -> Bool -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga88f6b5ec876f05e0d7ba51e96c4b077f>
 foreign import ccall unsafe "Z3_mk_bvadd_no_overflow"
-    z3_mk_bvadd_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_mk_bvadd_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Bool -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga1e2b1927cf4e50000c1600d47a152947>
 foreign import ccall unsafe "Z3_mk_bvadd_no_underflow"
@@ -875,7 +865,7 @@ foreign import ccall unsafe "Z3_mk_bvneg_no_overflow"
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga86f4415719d295a2f6845c70b3aaa1df>
 foreign import ccall unsafe "Z3_mk_bvmul_no_overflow"
-    z3_mk_bvmul_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_mk_bvmul_no_overflow :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Bool -> IO (Ptr Z3_ast)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga501ccc01d737aad3ede5699741717fda>
 foreign import ccall unsafe "Z3_mk_bvmul_no_underflow"
@@ -1020,7 +1010,7 @@ foreign import ccall unsafe "Z3_mk_unsigned_int64"
 foreign import ccall unsafe "Z3_mk_bv_numeral"
     z3_mk_bv_numeral :: Ptr Z3_context
                      -> CUInt
-                     -> Ptr Z3_bool
+                     -> Ptr Bool
                      -> IO (Ptr Z3_ast)
 
 ---------------------------------------------------------------------
@@ -1030,7 +1020,7 @@ foreign import ccall unsafe "Z3_mk_seq_sort"
     z3_mk_seq_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)
 
 foreign import ccall unsafe "Z3_is_seq_sort"
-    z3_is_seq_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Z3_bool
+    z3_is_seq_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Bool
 
 foreign import ccall unsafe "Z3_get_seq_sort_basis"
     z3_get_seq_sort_basis :: Ptr Z3_context
@@ -1041,7 +1031,7 @@ foreign import ccall unsafe "Z3_mk_re_sort"
     z3_mk_re_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_sort)
 
 foreign import ccall unsafe "Z3_is_re_sort"
-    z3_is_re_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Z3_bool
+    z3_is_re_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Bool
 
 foreign import ccall unsafe "Z3_get_re_sort_basis"
     z3_get_re_sort_basis :: Ptr Z3_context
@@ -1052,7 +1042,7 @@ foreign import ccall unsafe "Z3_mk_string_sort"
     z3_mk_string_sort :: Ptr Z3_context -> IO (Ptr Z3_sort)
 
 foreign import ccall unsafe "Z3_is_string_sort"
-    z3_is_string_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Z3_bool
+    z3_is_string_sort :: Ptr Z3_context -> Ptr Z3_sort -> IO Bool
 
 foreign import ccall unsafe "Z3_mk_string"
     z3_mk_string :: Ptr Z3_context -> Z3_string -> IO (Ptr Z3_ast)
@@ -1061,7 +1051,7 @@ foreign import ccall unsafe "Z3_mk_lstring"
     z3_mk_lstring :: Ptr Z3_context -> CUInt -> Z3_string -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_is_string"
-    z3_is_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_is_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_get_string"
     z3_get_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
@@ -1207,7 +1197,7 @@ foreign import ccall unsafe "Z3_mk_exists"
 
 foreign import ccall unsafe "Z3_mk_quantifier"
     z3_mk_quantifier :: Ptr Z3_context
-                     -> Z3_bool
+                     -> Bool
                      -> CUInt
                      -> CUInt
                      -> Ptr (Ptr Z3_pattern)
@@ -1219,7 +1209,7 @@ foreign import ccall unsafe "Z3_mk_quantifier"
 
 foreign import ccall unsafe "Z3_mk_quantifier_ex"
     z3_mk_quantifier_ex :: Ptr Z3_context
-                        -> Z3_bool
+                        -> Bool
                         -> CUInt
                         -> Ptr Z3_symbol
                         -> Ptr Z3_symbol
@@ -1257,7 +1247,7 @@ foreign import ccall unsafe "Z3_mk_exists_const"
 
 foreign import ccall unsafe "Z3_mk_quantifier_const"
     z3_mk_quantifier_const :: Ptr Z3_context
-                           -> Z3_bool
+                           -> Bool
                            -> CUInt
                            -> CUInt
                            -> Ptr (Ptr Z3_app)
@@ -1268,7 +1258,7 @@ foreign import ccall unsafe "Z3_mk_quantifier_const"
 
 foreign import ccall unsafe "Z3_mk_quantifier_const_ex"
     z3_mk_quantifier_const_ex :: Ptr Z3_context
-                              -> Z3_bool
+                              -> Bool
                               -> CUInt
                               -> Ptr Z3_symbol
                               -> Ptr Z3_symbol
@@ -1327,7 +1317,7 @@ foreign import ccall unsafe "Z3_sort_to_ast"
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf260f3b5bc786cd0552e1ed4f8232a4b>
 foreign import ccall unsafe "Z3_is_eq_sort"
-    z3_is_eq_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Z3_bool)
+    z3_is_eq_sort :: Ptr Z3_context -> Ptr Z3_sort -> Ptr Z3_sort -> IO (Bool)
 
 -- Reference: <http://z3prover.github.io/api/html/group__capi.html#gacd85d48842c7bfaa696596d16875681a>
 foreign import ccall unsafe "Z3_get_sort_kind"
@@ -1338,7 +1328,7 @@ foreign import ccall unsafe "Z3_get_bv_sort_size"
     z3_get_bv_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
 
 foreign import ccall unsafe "Z3_get_finite_domain_sort_size"
-    z3_get_finite_domain_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> Ptr CULLong -> IO Z3_bool
+    z3_get_finite_domain_sort_size :: Ptr Z3_context -> Ptr Z3_sort -> Ptr CULLong -> IO Bool
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga6ffa46d55e4632d761db4dfae7441c09>
 foreign import ccall unsafe "Z3_get_array_sort_domain"
@@ -1402,7 +1392,7 @@ foreign import ccall unsafe "Z3_func_decl_to_ast"
     z3_func_decl_to_ast :: Ptr Z3_context -> Ptr Z3_func_decl -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_is_eq_func_decl"
-    z3_is_eq_func_decl :: Ptr Z3_context -> Ptr Z3_func_decl -> Ptr Z3_func_decl -> IO Z3_bool
+    z3_is_eq_func_decl :: Ptr Z3_context -> Ptr Z3_func_decl -> Ptr Z3_func_decl -> IO Bool
 
 foreign import ccall unsafe "Z3_get_func_decl_id"
     z3_get_func_decl_id :: Ptr Z3_context -> Ptr Z3_func_decl -> IO CUInt
@@ -1477,7 +1467,7 @@ foreign import ccall unsafe "Z3_is_eq_ast"
     z3_is_eq_ast :: Ptr Z3_context
                  -> Ptr Z3_ast
                  -> Ptr Z3_ast
-                 -> IO Z3_bool
+                 -> IO Bool
 
 foreign import ccall unsafe "Z3_get_ast_id"
     z3_get_ast_id :: Ptr Z3_context
@@ -1494,7 +1484,7 @@ foreign import ccall unsafe "Z3_get_sort"
     z3_get_sort :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_sort)
 
 foreign import ccall unsafe "Z3_is_well_sorted"
-    z3_is_well_sorted :: Ptr Z3_context -> Ptr Z3_ast -> IO (Z3_bool)
+    z3_is_well_sorted :: Ptr Z3_context -> Ptr Z3_ast -> IO (Bool)
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga133aaa1ec31af9b570ed7627a3c8c5a4>
 foreign import ccall unsafe "Z3_get_bool_value"
@@ -1506,13 +1496,13 @@ foreign import ccall unsafe "Z3_get_ast_kind"
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga87a4f9add28db792a24476a1082b4fe4>
 foreign import ccall unsafe "Z3_is_app"
-    z3_is_app :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_is_app :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_is_numeral_ast"
-    z3_is_numeral_ast :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_is_numeral_ast :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_is_algebraic_number"
-    z3_is_algebraic_number :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_is_algebraic_number :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
 foreign import ccall unsafe "Z3_to_app"
@@ -1543,22 +1533,22 @@ foreign import ccall unsafe "Z3_get_denominator"
   z3_get_denominator :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_get_numeral_small"
-  z3_get_numeral_small :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Ptr CLong -> IO Z3_bool
+  z3_get_numeral_small :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Ptr CLong -> IO Bool
 
 foreign import ccall unsafe "Z3_get_numeral_int"
-  z3_get_numeral_int :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CInt -> IO Z3_bool
+  z3_get_numeral_int :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CInt -> IO Bool
 
 foreign import ccall unsafe "Z3_get_numeral_uint"
-  z3_get_numeral_uint :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CUInt -> IO Z3_bool
+  z3_get_numeral_uint :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CUInt -> IO Bool
 
 foreign import ccall unsafe "Z3_get_numeral_uint64"
-  z3_get_numeral_uint64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CULong -> IO Z3_bool
+  z3_get_numeral_uint64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CULong -> IO Bool
 
 foreign import ccall unsafe "Z3_get_numeral_int64"
-  z3_get_numeral_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> IO Z3_bool
+  z3_get_numeral_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> IO Bool
 
 foreign import ccall unsafe "Z3_get_numeral_rational_int64"
-  z3_get_numeral_rational_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Ptr CLong -> IO Z3_bool
+  z3_get_numeral_rational_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Ptr CLong -> IO Bool
 
 foreign import ccall unsafe "Z3_get_algebraic_number_lower"
   z3_get_algebraic_number_lower :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
@@ -1582,13 +1572,13 @@ foreign import ccall unsafe "Z3_get_index_value"
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gac47b42af13aee024d34bb37ffaa0ad75>
 foreign import ccall unsafe "Z3_is_quantifier_forall"
-  z3_is_quantifier_forall :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+  z3_is_quantifier_forall :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_is_quantifier_exists"
-  z3_is_quantifier_exists :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+  z3_is_quantifier_exists :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_is_lambda"
-  z3_is_lambda :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+  z3_is_lambda :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaa5820368b5ae944bd17f10c2f8247c11>
 foreign import ccall unsafe "Z3_get_quantifier_weight"
@@ -1680,9 +1670,9 @@ foreign import ccall unsafe "Z3_model_eval"
     z3_model_eval :: Ptr Z3_context
                   -> Ptr Z3_model
                   -> Ptr Z3_ast
-                  -> Z3_bool
+                  -> Bool
                   -> Ptr (Ptr Z3_ast)
-                  -> IO Z3_bool
+                  -> IO Bool
 
 -- | Reference: https://z3prover.github.io/api/html/group__capi.html#ga01bc2993f3eb358f7bd3b2d2d4cf5e51
 foreign import ccall unsafe "Z3_model_get_const_interp"
@@ -1696,7 +1686,7 @@ foreign import ccall unsafe "Z3_model_has_interp"
     z3_model_has_interp :: Ptr Z3_context
                         -> Ptr Z3_model
                         -> Ptr Z3_func_decl
-                        -> IO Z3_bool
+                        -> IO Bool
 
 -- | Reference: https://z3prover.github.io/api/html/group__capi.html#gaf5e9adb229e98b29cbeb7cebf41433a3
 foreign import ccall unsafe "Z3_model_get_func_interp"
@@ -1759,7 +1749,7 @@ foreign import ccall unsafe "Z3_model_translate"
 foreign import ccall unsafe "Z3_is_as_array"
     z3_is_as_array :: Ptr Z3_context
                    -> Ptr Z3_ast
-                   -> IO Z3_bool
+                   -> IO Bool
 
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#ga7d9262dc6e79f2aeb23fd4a383589dda>
@@ -1869,16 +1859,16 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 -- * Interaction logging
 
 foreign import ccall unsafe "Z3_open_log"
-    z3_open_log :: Z3_string -> IO Z3_bool
+    z3_open_log :: Z3_string -> IO Bool
 
 foreign import ccall unsafe "Z3_append_log"
-    z3_append_log :: Z3_string -> IO Z3_bool
+    z3_append_log :: Z3_string -> IO Bool
 
 foreign import ccall unsafe "Z3_close_log"
     z3_close_log :: IO ()
 
 foreign import ccall unsafe "Z3_toggle_warning_messages"
-    z3_toggle_warning_messages :: Z3_bool -> IO ()
+    z3_toggle_warning_messages :: Bool -> IO ()
 
 ---------------------------------------------------------------------
 -- * String Conversion
@@ -1998,7 +1988,7 @@ foreign import ccall unsafe "Z3_finalize_memory"
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga631394a36c83a1e0db7825fe92d8aebe>
 foreign import ccall unsafe "Z3_mk_goal"
-    z3_mk_goal :: Ptr Z3_context -> Z3_bool -> Z3_bool -> Z3_bool -> IO (Ptr Z3_goal)
+    z3_mk_goal :: Ptr Z3_context -> Bool -> Bool -> Bool -> IO (Ptr Z3_goal)
 
 -- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga63a581c33213fb14efe9e6175c74546b>
 foreign import ccall unsafe "Z3_goal_inc_ref"
@@ -2016,7 +2006,7 @@ foreign import ccall unsafe "Z3_goal_assert"
     z3_goal_assert :: Ptr Z3_context -> Ptr Z3_goal -> Ptr Z3_ast -> IO ()
 
 foreign import ccall unsafe "Z3_goal_inconsistent"
-    z3_goal_inconsistent :: Ptr Z3_context -> Ptr Z3_goal -> IO Z3_bool
+    z3_goal_inconsistent :: Ptr Z3_context -> Ptr Z3_goal -> IO Bool
 
 foreign import ccall unsafe "Z3_goal_depth"
     z3_goal_depth :: Ptr Z3_context -> Ptr Z3_goal -> IO CUInt
@@ -2036,10 +2026,10 @@ foreign import ccall unsafe "Z3_goal_num_exprs"
     z3_goal_num_exprs :: Ptr Z3_context -> Ptr Z3_goal -> IO CUInt
 
 foreign import ccall unsafe "Z3_goal_is_decided_sat"
-    z3_goal_is_decided_sat :: Ptr Z3_context -> Ptr Z3_goal -> IO Z3_bool
+    z3_goal_is_decided_sat :: Ptr Z3_context -> Ptr Z3_goal -> IO Bool
 
 foreign import ccall unsafe "Z3_goal_is_decided_unsat"
-    z3_goal_is_decided_unsat :: Ptr Z3_context -> Ptr Z3_goal -> IO Z3_bool
+    z3_goal_is_decided_unsat :: Ptr Z3_context -> Ptr Z3_goal -> IO Bool
 
 foreign import ccall unsafe "Z3_goal_translate"
     z3_goal_translate :: Ptr Z3_context -> Ptr Z3_goal -> Ptr Z3_context -> IO (Ptr Z3_goal)
@@ -2371,10 +2361,10 @@ foreign import ccall unsafe "Z3_stats_get_key"
     z3_stats_get_key :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO Z3_string
 
 foreign import ccall unsafe "Z3_stats_is_uint"
-    z3_stats_is_uint :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO Z3_bool
+    z3_stats_is_uint :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO Bool
 
 foreign import ccall unsafe "Z3_stats_is_double"
-    z3_stats_is_double :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO Z3_bool
+    z3_stats_is_double :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO Bool
 
 foreign import ccall unsafe "Z3_stats_get_uint_value"
     z3_stats_get_uint_value :: Ptr Z3_context -> Ptr Z3_stats -> CUInt -> IO CUInt
@@ -2436,7 +2426,7 @@ foreign import ccall unsafe "Z3_ast_map_dec_ref"
     z3_ast_map_dec_ref :: Ptr Z3_context -> Ptr Z3_ast_map -> IO ()
 
 foreign import ccall unsafe "Z3_ast_map_contains"
-    z3_ast_map_contains :: Ptr Z3_context -> Ptr Z3_ast_map -> Ptr Z3_ast -> IO Z3_bool
+    z3_ast_map_contains :: Ptr Z3_context -> Ptr Z3_ast_map -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_ast_map_find"
     z3_ast_map_find :: Ptr Z3_context -> Ptr Z3_ast_map -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -2491,7 +2481,7 @@ foreign import ccall unsafe "Z3_fixedpoint_assert"
     z3_fixedpoint_assert :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_ast -> IO ()
 
 foreign import ccall unsafe "Z3_fixedpoint_query"
-    z3_fixedpoint_query :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_ast -> IO Z3_bool
+    z3_fixedpoint_query :: Ptr Z3_context -> Ptr Z3_fixedpoint -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fixedpoint_query_relations"
     z3_fixedpoint_query_relations :: Ptr Z3_context
@@ -2629,10 +2619,10 @@ foreign import ccall unsafe "Z3_mk_fpa_nan"
     z3_mk_fpa_nan :: Ptr Z3_context -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_inf"
-    z3_mk_fpa_inf :: Ptr Z3_context -> Ptr Z3_sort -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_mk_fpa_inf :: Ptr Z3_context -> Ptr Z3_sort -> Bool -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_zero"
-    z3_mk_fpa_zero :: Ptr Z3_context -> Ptr Z3_sort -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_mk_fpa_zero :: Ptr Z3_context -> Ptr Z3_sort -> Bool -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_fp"
     z3_mk_fpa_fp :: Ptr Z3_context -> Ptr Z3_ast -> Ptr Z3_ast -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -2647,10 +2637,10 @@ foreign import ccall unsafe "Z3_mk_fpa_numeral_int"
     z3_mk_fpa_numeral_int :: Ptr Z3_context -> CInt -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_numeral_int_uint"
-    z3_mk_fpa_numeral_int_uint :: Ptr Z3_context -> Z3_bool -> CInt -> CUInt -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+    z3_mk_fpa_numeral_int_uint :: Ptr Z3_context -> Bool -> CInt -> CUInt -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_numeral_int64_uint64"
-    z3_mk_fpa_numeral_int64_uint64 :: Ptr Z3_context -> Z3_bool -> CLong -> CULong -> Ptr Z3_sort -> IO (Ptr Z3_ast)
+    z3_mk_fpa_numeral_int64_uint64 :: Ptr Z3_context -> Bool -> CLong -> CULong -> Ptr Z3_sort -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_abs"
     z3_mk_fpa_abs :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -2758,25 +2748,25 @@ foreign import ccall unsafe "Z3_fpa_get_sbits"
     z3_fpa_get_sbits :: Ptr Z3_context -> Ptr Z3_sort -> IO CUInt
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_nan"
-    z3_fpa_is_numeral_nan :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_nan :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_inf"
-    z3_fpa_is_numeral_inf :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_inf :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_zero"
-    z3_fpa_is_numeral_zero :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_zero :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_normal"
-    z3_fpa_is_numeral_normal :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_normal :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_subnormal"
-    z3_fpa_is_numeral_subnormal :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_subnormal :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_positive"
-    z3_fpa_is_numeral_positive :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_positive :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_is_numeral_negative"
-    z3_fpa_is_numeral_negative :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_bool
+    z3_fpa_is_numeral_negative :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_sign_bv"
     z3_fpa_get_numeral_sign_bv :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -2785,22 +2775,22 @@ foreign import ccall unsafe "Z3_fpa_get_numeral_significand_bv"
     z3_fpa_get_numeral_significand_bv :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_sign"
-    z3_fpa_get_numeral_sign :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CInt -> IO Z3_bool
+    z3_fpa_get_numeral_sign :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CInt -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_significand_string"
     z3_fpa_get_numeral_significand_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_significand_uint64"
-    z3_fpa_get_numeral_significand_uint64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CULong -> IO Z3_bool
+    z3_fpa_get_numeral_significand_uint64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CULong -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_string"
-    z3_fpa_get_numeral_exponent_string :: Ptr Z3_context -> Ptr Z3_ast -> Z3_bool -> IO Z3_string
+    z3_fpa_get_numeral_exponent_string :: Ptr Z3_context -> Ptr Z3_ast -> Bool -> IO Z3_string
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_int64"
-    z3_fpa_get_numeral_exponent_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Z3_bool -> IO Z3_bool
+    z3_fpa_get_numeral_exponent_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Bool -> IO Bool
 
 foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_bv"
-    z3_fpa_get_numeral_exponent_bv :: Ptr Z3_context -> Ptr Z3_ast -> Z3_bool -> IO (Ptr Z3_ast)
+    z3_fpa_get_numeral_exponent_bv :: Ptr Z3_context -> Ptr Z3_ast -> Bool -> IO (Ptr Z3_ast)
 
 foreign import ccall unsafe "Z3_mk_fpa_to_ieee_bv"
     z3_mk_fpa_to_ieee_bv :: Ptr Z3_context -> Ptr Z3_ast -> IO (Ptr Z3_ast)
@@ -3045,37 +3035,37 @@ foreign import ccall unsafe "Z3_rcf_lt"
     z3_rcf_lt :: Ptr Z3_context
               -> Ptr Z3_rcf_num
               -> Ptr Z3_rcf_num
-              -> IO Z3_bool
+              -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_gt"
     z3_rcf_gt :: Ptr Z3_context
               -> Ptr Z3_rcf_num
               -> Ptr Z3_rcf_num
-              -> IO Z3_bool
+              -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_le"
     z3_rcf_le :: Ptr Z3_context
               -> Ptr Z3_rcf_num
               -> Ptr Z3_rcf_num
-              -> IO Z3_bool
+              -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_ge"
     z3_rcf_ge :: Ptr Z3_context
               -> Ptr Z3_rcf_num
               -> Ptr Z3_rcf_num
-              -> IO Z3_bool
+              -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_eq"
     z3_rcf_eq :: Ptr Z3_context
               -> Ptr Z3_rcf_num
               -> Ptr Z3_rcf_num
-              -> IO Z3_bool
+              -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_neq"
     z3_rcf_neq :: Ptr Z3_context
                -> Ptr Z3_rcf_num
                -> Ptr Z3_rcf_num
-               -> IO Z3_bool
+               -> IO Bool
 
 foreign import ccall unsafe "Z3_rcf_num_to_string"
     z3_rcf_num_to_string :: Ptr Z3_context
