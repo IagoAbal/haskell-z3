@@ -1,5 +1,5 @@
 Name:                z3
-Version:             408.2
+Version:             4011.0.1
 Synopsis:            Bindings for the Z3 Theorem Prover
 Description:
     Bindings for the Z3 4./x/ Theorem Prover (<https://github.com/Z3Prover/z3>).
@@ -30,7 +30,7 @@ License-file:        LICENSE
 Author:              Iago Abal <mail@iagoabal.eu>,
                      David Castro <david.castro.dcp@gmail.com>
 Maintainer:          Iago Abal <mail@iagoabal.eu>
-Copyright:           2012-2020, Iago Abal, David Castro
+Copyright:           2012-2022, Iago Abal, David Castro
 Category:            Math, SMT, Theorem Provers, Formal Methods, Bit vectors
 Build-type:          Simple
 Cabal-version:       >= 1.10

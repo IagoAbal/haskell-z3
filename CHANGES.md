@@ -1,6 +1,13 @@
 
 # Release Notes
 
+## 4011.0.1
+
+Made to compile with Z3 4.11.2.
+
+* Removed Z3_bool in favour of Bool:
+  https://github.com/Z3Prover/z3/commit/fc40e3c510c7114fcd31ee71758dfe5a80eba461
+
 ## 408.2
 
 Tested (sort of) with Z3 4.8.8.

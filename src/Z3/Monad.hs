@@ -2211,8 +2211,8 @@ getConstInterp = liftFun2 Base.getConstInterp
 getFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncInterp)
 getFuncInterp = liftFun2 Base.getFuncInterp
 
-modelTranslate :: MonadZ3 z3 => Model -> Base.Context -> z3 Model 
-modelTranslate = liftFun2 Base.modelTranslate 
+modelTranslate :: MonadZ3 z3 => Model -> Base.Context -> z3 Model
+modelTranslate = liftFun2 Base.modelTranslate
 
 hasInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 Bool
 hasInterp = liftFun2 Base.hasInterp
@@ -2237,8 +2237,8 @@ getFuncs = liftFun1 Base.getFuncs
 
 -- | The (_ as-array f) AST node is a construct for assigning interpretations
 -- for arrays in Z3. It is the array such that forall indices i we have that
--- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE
--- if the a is an as-array AST node.
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns True if
+-- the a is an as-array AST node.
 --
 -- Reference: <http://research.microsoft.com/en-us/um/redmond/projects/z3/group__capi.html#ga4674da67d226bfb16861829b9f129cfa>
 isAsArray :: MonadZ3 z3 => AST -> z3 Bool
@@ -2437,7 +2437,7 @@ goalToString :: MonadZ3 z3 => Goal -> z3 String
 goalToString = liftFun1 Base.goalToString
 
 convertModel :: MonadZ3 z3 => Goal -> Model -> z3 Model
-convertModel = liftFun2 Base.convertModel 
+convertModel = liftFun2 Base.convertModel
 
 ---------------------------------------------------------------------
 -- String Conversion
@@ -2642,7 +2642,7 @@ mkFpaInf :: MonadZ3 z3
 mkFpaInf = liftFun2 Base.mkFpaInf
 
 -- | Create a floating-point zero of sort @s@.
-mkFpaZero :: MonadZ3 z3 
+mkFpaZero :: MonadZ3 z3
           => Sort    -- ^ Target sort
           -> Bool    -- ^ Indicates whether the result should be negative
           -> z3 AST

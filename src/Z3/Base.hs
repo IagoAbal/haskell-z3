@@ -647,7 +647,7 @@ import Data.Traversable ( Traversable )
 import qualified Data.Traversable as T
 import Data.Typeable ( Typeable )
 import Data.Word
-import Foreign hiding ( toBool, newForeignPtr )
+import Foreign hiding ( newForeignPtr )
 import Foreign.Storable ( peek )
 import Foreign.C
   ( CFloat, CDouble, CInt, CUInt, CLong, CULong, CLLong, CULLong, CString
@@ -877,7 +877,7 @@ globalParamGet :: String -> IO (Maybe String)
 globalParamGet param =
   withCString param $ \cParam ->
     alloca $ \cValuePtr ->
-      do success <- toBool <$> z3_global_param_get cParam cValuePtr
+      do success <- z3_global_param_get cParam cValuePtr
          returnValueToMaybe success $ peekCString =<< peek cValuePtr
 
 ---------------------------------------------------------------------
@@ -2355,7 +2355,7 @@ getFiniteDomainSortSize :: Context -> Sort -> IO (Maybe Word64)
 getFiniteDomainSortSize ctx sort = alloca $ \sizePtr ->
   withContext ctx $ \ctxPtr ->
     h2c sort $ \sortPtr ->
-      do success <- toBool <$> (z3_get_finite_domain_sort_size ctxPtr sortPtr sizePtr)
+      do success <- z3_get_finite_domain_sort_size ctxPtr sortPtr sizePtr
          returnValueToMaybe success $ (fromIntegral <$> peek sizePtr)
 
 
@@ -2756,7 +2756,7 @@ modelEval ctx m a b =
     h2c m $ \mPtr ->
     h2c b $ \b' ->
     checkError ctxPtr
-      (z3_model_eval ctxPtr mPtr astPtr b' aptr2) >>= peekAST aptr2 . toBool
+      (z3_model_eval ctxPtr mPtr astPtr b' aptr2) >>= peekAST aptr2
   where peekAST :: Ptr (Ptr Z3_ast) -> Bool -> IO (Maybe AST)
         peekAST _p False = return Nothing
         peekAST  p True  = fmap Just . c2h ctx =<< peek p
@@ -2818,8 +2818,8 @@ getAsArrayFuncDecl = liftFun1 z3_get_as_array_func_decl
 
 -- | The (_ as-array f) AST node is a construct for assigning interpretations
 -- for arrays in Z3. It is the array such that forall indices i we have that
--- (select (_ as-array f) i) is equal to (f i). This procedure returns Z3_TRUE
--- if the a is an as-array AST node.
+-- (select (_ as-array f) i) is equal to (f i). This procedure returns True if
+-- the a is an as-array AST node.
 isAsArray :: Context -> AST -> IO Bool
 isAsArray = liftFun1 z3_is_as_array
 
@@ -3340,7 +3340,7 @@ mkFpaRtz :: Context -> IO AST
 mkFpaRtz = liftFun0 z3_mk_fpa_rtz
 
 -- | Create a FloatingPoint sort.
-mkFpaSort :: Integral int 
+mkFpaSort :: Integral int
           => Context -- ^ Context
           -> int -- ^ Number of exponent bits
           -> int -- ^ Number of significand bits
@@ -3428,7 +3428,7 @@ mkFpaNumeralInt = liftFun2 z3_mk_fpa_numeral_int
 
 -- | Create a numeral of FLoatingPoint sort from a sign bit and
 -- two integers.
-mkFpaNumeralIntUInt :: Integral int 
+mkFpaNumeralIntUInt :: Integral int
                     => Context -- ^ Context
                     -> Bool    -- ^ Sign bit (true == negative)
                     -> int     -- ^ Significand
@@ -3439,7 +3439,7 @@ mkFpaNumeralIntUInt = liftFun4 z3_mk_fpa_numeral_int_uint
 
 -- | Create a numeral of FloatingPoint sort from a sign bit and
 -- two 64-bit integers.
-mkFpaNumeralInt64UInt64 :: Integral int 
+mkFpaNumeralInt64UInt64 :: Integral int
                         => Context -- ^ Context
                         -> Bool    -- ^ Sign bit (true == negative)
                         -> int     -- ^ Significand
@@ -4130,9 +4130,9 @@ instance Marshal () () where
   c2h _ = return
   h2c x f = f x
 
-instance Marshal Bool Z3_bool where
-  c2h _ = return . toBool
-  h2c b f = f (unBool b)
+instance Marshal Bool Bool where
+  c2h _ = return
+  h2c x f = f x
 
 instance Marshal Result Z3_lbool where
   c2h _ = return . toResult
@@ -4175,7 +4175,7 @@ instance Marshal String CString where
   h2c   = withCString
 
 instance Marshal Context (Ptr Z3_context) where
-  c2h _ ctx = withConfig $ mkContextWith (const (return ctx)) 
+  c2h _ ctx = withConfig $ mkContextWith (const (return ctx))
   h2c ctx = withForeignPtr (unContext ctx)
 
 instance Marshal App (Ptr Z3_app) where
@@ -4312,23 +4312,7 @@ toResult lb
     | lb == z3_l_undef = Undef
     | otherwise        = error "Z3.Base.toResult: illegal `Z3_lbool' value"
 
--- | Convert 'Z3_bool' to 'Bool'.
---
--- 'Foreign.toBool' should be OK but this is more convenient.
-toBool :: Z3_bool -> Bool
-toBool b
-    | b == z3_false = False
-    -- As of March 2019, OS X has an issue where z3 uses other
-    -- values than 'z3_true' as truthy. Our work around is to be permissive.
-    | otherwise = True
-
--- | Convert 'Bool' to 'Z3_bool'.
-unBool :: Bool -> Z3_bool
-unBool True  = z3_true
-unBool False = z3_false
-
 -- | Wraps a non-null pointer with 'Just', or else returns 'Nothing'.
 ptrToMaybe :: Ptr a -> Maybe (Ptr a)
 ptrToMaybe ptr | ptr == nullPtr = Nothing
                | otherwise      = Just ptr
-

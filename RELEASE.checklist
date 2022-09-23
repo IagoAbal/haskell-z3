@@ -12,4 +12,3 @@
 10. Upload: `cabal upload dist/*.tar.gz`.
 11. Upload docs: `cabal upload -d`.
 12. Push: `git push --tags origin master`.
-
