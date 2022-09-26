@@ -394,6 +394,7 @@ module Z3.Monad
   -- * Parser interface
   , parseSMTLib2String
   , parseSMTLib2File
+  , evalSMTLib2String
 
   -- * Error Handling
   , Base.Z3Error(..)
@@ -2502,6 +2503,11 @@ parseSMTLib2File :: MonadZ3 z3 =>
                  -> [FuncDecl] -- ^ declarations
                  -> z3 [AST]
 parseSMTLib2File = liftFun5 Base.parseSMTLib2File
+
+evalSMTLib2String :: MonadZ3 z3 =>
+                     String     -- ^ string to parse
+                  -> z3 String
+evalSMTLib2String = liftFun1 Base.evalSMTLib2String
 
 ---------------------------------------------------------------------
 -- Miscellaneous
