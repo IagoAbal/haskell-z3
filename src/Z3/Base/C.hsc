@@ -1934,7 +1934,7 @@ foreign import ccall unsafe "Z3_parse_smtlib2_string"
                           -> Ptr (Ptr Z3_func_decl)
                           -> IO (Ptr Z3_ast_vector)
 
--- | Referece <http://z3prover.github.io/api/html/group__capi.html#ga6168be4babb03fbbccff1fa7df451300>
+-- | Reference <http://z3prover.github.io/api/html/group__capi.html#ga6168be4babb03fbbccff1fa7df451300>
 foreign import ccall unsafe "Z3_parse_smtlib2_file"
   z3_parse_smtlib2_file :: Ptr Z3_context
                         -> Z3_string
