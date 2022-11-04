@@ -305,6 +305,8 @@ module Z3.Base (
   , mkSeqPrefix
   , mkSeqSuffix
   , mkSeqContains
+  , mkStrLt
+  , mkStrLe
   , mkSeqExtract
   , mkSeqReplace
   , mkSeqAt
@@ -2009,6 +2011,20 @@ mkSeqContains :: Context
               -> AST -- ^ containee
               -> IO AST
 mkSeqContains = liftFun2 z3_mk_seq_contains
+
+-- | Check if s1 is equal or lexicographically strictly less than s2.
+mkStrLt :: Context
+        -> AST -- ^ s1
+        -> AST -- ^ s2
+        -> IO AST
+mkStrLt = liftFun2 z3_mk_str_lt
+
+-- | Check if s1 is lexicographically strictly less than s2.
+mkStrLe :: Context
+        -> AST -- ^ s1
+        -> AST -- ^ s2
+        -> IO AST
+mkStrLe = liftFun2 z3_mk_str_le
 
 -- | Extract subsequence starting at offset of length.
 mkSeqExtract :: Context
