@@ -321,6 +321,7 @@ module Z3.Monad
   , substitute
 
   -- * Models
+  , modelTranslate
   , modelEval
   , evalArray
   , getConstInterp
@@ -364,6 +365,7 @@ module Z3.Monad
   , orElseTactic
   , skipTactic
   , tryForTactic
+  , tacticUsingParams
   , repeatTactic
   , mkQuantifierEliminationTactic
   , mkAndInverterGraphTactic
@@ -378,6 +380,7 @@ module Z3.Monad
   , getGoalFormula
   , getGoalFormulas
   , goalToString
+  , convertModel
 
   -- * String Conversion
   , ASTPrintMode(..)
@@ -534,6 +537,7 @@ module Z3.Monad
   , solverGetUnsatCore
   , solverGetReasonUnknown
   , solverToString
+  , solverFromString
   -- ** Helpers
   , assert
   , check
@@ -580,6 +584,8 @@ import Z3.Base
 import qualified Z3.Base as Base
 
 import Data.Fixed ( Fixed, HasResolution )
+import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad.Fail
 import Control.Monad.IO.Class ( MonadIO, liftIO )
 import Control.Monad.Trans.Class ( lift )
 import Control.Monad.Trans.Reader ( ReaderT(..), runReaderT, asks )
@@ -591,6 +597,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Word ( Word64 )
 import qualified Data.Traversable as T
 
+
 ---------------------------------------------------------------------
 -- The Z3 monad-class
 
@@ -599,6 +606,10 @@ class (Applicative m, Monad m, MonadIO m) => MonadZ3 m where
   getContext :: m Base.Context
 
 instance MonadZ3 m => MonadZ3 (ReaderT r m) where
+  getSolver = lift getSolver
+  getContext = lift getContext
+
+instance MonadZ3 m => MonadZ3 (ExceptT e m) where
   getSolver = lift getSolver
   getContext = lift getContext
 
@@ -2197,6 +2208,9 @@ getConstInterp = liftFun2 Base.getConstInterp
 getFuncInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 (Maybe FuncInterp)
 getFuncInterp = liftFun2 Base.getFuncInterp
 
+modelTranslate :: MonadZ3 z3 => Model -> Base.Context -> z3 Model 
+modelTranslate = liftFun2 Base.modelTranslate 
+
 hasInterp :: MonadZ3 z3 => Model -> FuncDecl -> z3 Bool
 hasInterp = liftFun2 Base.hasInterp
 
@@ -2374,6 +2388,9 @@ skipTactic = liftScalar Base.skipTactic
 tryForTactic :: MonadZ3 z3 => Tactic -> Int -> z3 Tactic
 tryForTactic = liftFun2 Base.tryForTactic
 
+tacticUsingParams :: MonadZ3 z3 => Tactic -> Params -> z3 Tactic
+tacticUsingParams = liftFun2 Base.tacticUsingParams
+
 repeatTactic :: MonadZ3 z3 => Tactic -> Int -> z3 Tactic
 repeatTactic = liftFun2 Base.repeatTactic
 
@@ -2415,6 +2432,9 @@ getGoalFormulas = liftFun1 Base.getGoalFormulas
 
 goalToString :: MonadZ3 z3 => Goal -> z3 String
 goalToString = liftFun1 Base.goalToString
+
+convertModel :: MonadZ3 z3 => Goal -> Model -> z3 Model
+convertModel = liftFun2 Base.convertModel 
 
 ---------------------------------------------------------------------
 -- String Conversion
@@ -3084,6 +3104,9 @@ solverGetReasonUnknown = liftSolver0 Base.solverGetReasonUnknown
 -- | Convert the given solver into a string.
 solverToString :: MonadZ3 z3 => z3 String
 solverToString = liftSolver0 Base.solverToString
+
+solverFromString :: MonadZ3 z3 => String -> z3 ()
+solverFromString = liftSolver1 Base.solverFromString
 
 -------------------------------------------------
 -- ** Helpers
