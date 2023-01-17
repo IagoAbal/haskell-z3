@@ -2383,7 +2383,7 @@ andThenTactic :: MonadZ3 z3 => Tactic -> Tactic -> z3 Tactic
 andThenTactic = liftFun2 Base.andThenTactic
 
 orElseTactic :: MonadZ3 z3 => Tactic -> Tactic -> z3 Tactic
-orElseTactic = liftFun2 Base.andThenTactic
+orElseTactic = liftFun2 Base.orElseTactic
 
 skipTactic :: MonadZ3 z3 => z3 Tactic
 skipTactic = liftScalar Base.skipTactic
