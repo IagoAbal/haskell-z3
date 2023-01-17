@@ -226,6 +226,8 @@ module Z3.Monad
   , mkSeqPrefix
   , mkSeqSuffix
   , mkSeqContains
+  , mkStrLt
+  , mkStrLe
   , mkSeqExtract
   , mkSeqReplace
   , mkSeqAt
@@ -1782,6 +1784,20 @@ mkSeqContains :: MonadZ3 z3
               -> AST -- ^ containee
               -> z3 AST
 mkSeqContains = liftFun2 Base.mkSeqContains
+
+-- | Check if s1 is equal or lexicographically strictly less than s2.
+mkStrLt :: MonadZ3 z3
+        => AST -- ^ s1
+        -> AST -- ^ s2
+        -> z3 AST
+mkStrLt = liftFun2 Base.mkStrLt
+
+-- | Check if s1 is lexicographically strictly less than s2.
+mkStrLe :: MonadZ3 z3
+        => AST -- ^ s1
+        -> AST -- ^ s2
+        -> z3 AST
+mkStrLe = liftFun2 Base.mkStrLe
 
 -- | Extract subsequence starting at offset of length.
 mkSeqExtract :: MonadZ3 z3
