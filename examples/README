@@ -1,0 +1,28 @@
+# Examples of Haskell-Z3
+
+## Available examples
+
+To list the name of the available examples, run
+
+```
+cabal run --flags examples examples
+```
+
+## Run all examples
+
+To run all examples, run
+
+```
+cabal run --flags examples examples -- all
+```
+
+## Run one examples
+
+To run the example named `my-example`, run
+
+```
+cabal run --flags examples examples -- my-example
+```
+
+Note that the name of the example is the name of the file containing it,
+but with a lower-case first letter.
