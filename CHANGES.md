@@ -1,4 +1,3 @@
-
 # Release Notes
 
 ## 411.0.1
@@ -13,6 +12,7 @@ Made to compile with Z3 4.11.2.
 Tested (sort of) with Z3 4.8.8.
 
 * Added Optimization API. (David Cao)
+* Added Generic Instances on AST, FuncDecl, Z3Error, Z3ErrorCode. (Jeffrey Young)
 * Added Sequences and regular expressions API. (Carlo Nucera)
 * Added z3_solver_get_proof. ("0xd34df00d")
 * Added MonadZ3 instance for ReaderT. ("0xd34df00d")
