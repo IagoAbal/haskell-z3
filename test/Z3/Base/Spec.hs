@@ -77,6 +77,30 @@ spec = around withContext $ do
         Z3.getNumeralString ctx r
       ) `shouldReturn` "25/12"
 
+    specify "getNumeralStringAlgebraic" $ \ctx ->
+      (do
+        sol <- Z3.mkSolver ctx
+        two <- Z3.mkReal ctx 2 1
+        zero <- Z3.mkReal ctx 0 1
+        rs <- Z3.mkRealSort ctx
+        xsym <- Z3.mkStringSymbol ctx "x"
+        xvar <- Z3.mkVar ctx xsym rs
+        x2 <- Z3.mkMul ctx [xvar, xvar]
+        Z3.solverAssertCnstr ctx sol =<< Z3.mkEq ctx x2 two
+        Z3.solverAssertCnstr ctx sol =<< Z3.mkGe ctx xvar zero
+        (Z3.Sat, Just m) <- Z3.solverCheckAndGetModel ctx sol
+        Just r <- Z3.modelEval ctx m xvar False
+        astKind <- Z3.getAstKind ctx r
+        isNumeral <- Z3.isNumeralAst ctx r
+        isAlgebraic <- Z3.isAlgebraicNumber ctx r
+        decString <- Z3.getNumeralDecimalString ctx r 5
+        lowerAst <- Z3.getAlgebraicNumberLower ctx r 10
+        lowerDouble <- Z3.getNumeralDouble ctx lowerAst
+        upperAst <- Z3.getAlgebraicNumberUpper ctx r 10
+        upperDouble <- Z3.getNumeralDouble ctx upperAst
+        return (astKind, isNumeral, isAlgebraic, decString, lowerDouble, upperDouble)
+      ) `shouldReturn` (Z3.Z3_APP_AST, True, True, "1.41421?", 1.414213562372879, 1.4142135623733338)
+
   context "Global Parameters" $ do
     specify "globalParamSet / globalParamGet" $ \_ ->
       (do
@@ -288,6 +312,13 @@ spec = around withContext $ do
           (_, Just model) <- Z3.solverCheckAndGetModel ctx sol
           Z3.evalInt ctx model p
         assert $ x == Just (z3powerDef i j)
+
+    specify "getNumeralInteger" $ \ctx ->
+      (do
+        n <- Z3.mkIntNum ctx (42 :: Int)
+        binary <- Z3.getNumeralBinaryString ctx n
+        return (binary)
+      ) `shouldReturn` ("101010")
 
   context "AST Equality and Substitution" $ do
     specify "isEqAST" $ \ctx ->

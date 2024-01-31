@@ -292,10 +292,17 @@ module Z3.Monad
   , getBoolValue
   , getAstKind
   , isApp
+  , isNumeralAst
+  , isAlgebraicNumber
   , toApp
   , getNumeralString
+  , getNumeralBinaryString
+  , getNumeralDecimalString
+  , getNumeralDouble
   , getNumerator
   , getDenominator
+  , getAlgebraicNumberLower
+  , getAlgebraicNumberUpper
   , simplify
   , simplifyEx
   , getIndexValue
@@ -2096,13 +2103,40 @@ getAstKind = liftFun1 Base.getAstKind
 isApp :: MonadZ3 z3 => AST -> z3 Bool
 isApp = liftFun1 Base.isApp
 
+isNumeralAst ::  MonadZ3 z3 => AST -> z3 Bool
+isNumeralAst = liftFun1 Base.isNumeralAst
+
+-- | Return True if an ast represents an algebraic number, False otherwise.
+isAlgebraicNumber :: MonadZ3 z3 => AST -> z3 Bool
+isAlgebraicNumber = liftFun1 Base.isAlgebraicNumber
+
 -- | Cast AST into an App.
 toApp :: MonadZ3 z3 => AST -> z3 App
 toApp = liftFun1 Base.toApp
 
 -- | Return numeral value, as a string of a numeric constant term.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gae0ffdaa5b0d9c2deb3bbb8d78ac9f4c9>
 getNumeralString :: MonadZ3 z3 => AST -> z3 String
 getNumeralString = liftFun1 Base.getNumeralString
+
+-- | Return numeral value, as a binary string of a numeric constant term.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gae959d9267eb1567887e5ed665a947d5a>
+getNumeralBinaryString :: MonadZ3 z3 => AST -> z3 String
+getNumeralBinaryString = liftFun1 Base.getNumeralBinaryString
+
+-- | Return numeral as a string in decimal notation. The result has at most precision decimal places.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf8e1ec34d62bb2c45a8aa7394593d7fb>
+getNumeralDecimalString :: MonadZ3 z3 => AST -> Int -> z3 String
+getNumeralDecimalString = liftFun2 Base.getNumeralDecimalString
+
+-- | Return numeral as a double.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf48e7b61664c0273a4ec77649f0a00cd>
+getNumeralDouble :: MonadZ3 z3 => AST -> z3 Double
+getNumeralDouble = liftFun1 Base.getNumeralDouble
 
 -- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
 --
@@ -2115,6 +2149,22 @@ getNumerator = liftFun1 Base.getNumerator
 -- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga07549939888e8fdfc8e0fde1776c31a7>
 getDenominator :: MonadZ3 z3 => AST -> z3 AST
 getDenominator = liftFun1 Base.getDenominator
+
+-- | Return a lower bound for the given real algebraic number.
+--   The interval isolating the number is smaller than 1/10^precision.
+--   The result is a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga40775ed34e6fcf184b7a0a30deaf2a03>
+getAlgebraicNumberLower :: MonadZ3 z3 => AST -> Int -> z3 AST
+getAlgebraicNumberLower = liftFun2 Base.getAlgebraicNumberLower
+
+-- | Return a upper bound for the given real algebraic number.
+--   The interval isolating the number is smaller than 1/10^precision.
+--   The result is a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga84019f84e6a2e69d3bdfc80441ca0f7d>
+getAlgebraicNumberUpper :: MonadZ3 z3 => AST -> Int -> z3 AST
+getAlgebraicNumberUpper = liftFun2 Base.getAlgebraicNumberUpper
 
 getIndexValue :: MonadZ3 z3 => AST -> z3 Int
 getIndexValue = liftFun1 Base.getIndexValue
