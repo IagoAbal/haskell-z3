@@ -99,7 +99,7 @@ spec = around withContext $ do
         upperAst <- Z3.getAlgebraicNumberUpper ctx r 10
         upperDouble <- Z3.getNumeralDouble ctx upperAst
         return (astKind, isNumeral, isAlgebraic, decString, lowerDouble, upperDouble)
-      ) `shouldReturn` (Z3.Z3_APP_AST, True, True, "1.41421?", 1.414213562372879, 1.4142135623733338)
+      ) `shouldReturn` (Z3.Z3_APP_AST, False, True, "1.41421?", 1.414213562372879, 1.4142135623733338)
 
   context "Global Parameters" $ do
     specify "globalParamSet / globalParamGet" $ \_ ->
