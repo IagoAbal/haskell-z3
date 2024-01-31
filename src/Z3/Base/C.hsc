@@ -1498,11 +1498,13 @@ foreign import ccall unsafe "Z3_get_ast_kind"
 foreign import ccall unsafe "Z3_is_app"
     z3_is_app :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga5488eba2e207d6e18cfe5b5a41b1c235>
 foreign import ccall unsafe "Z3_is_numeral_ast"
-    z3_is_numeral_ast :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
+  z3_is_numeral_ast :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaff8b2c4087e628c51c713315cc0ed861>
 foreign import ccall unsafe "Z3_is_algebraic_number"
-    z3_is_algebraic_number :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
+  z3_is_algebraic_number :: Ptr Z3_context -> Ptr Z3_ast -> IO Bool
 
 -- | Reference: <http://z3prover.github.io/api/html/group__capi.html#gaf9345fd0822d7e9928dd4ab14a09765b>
 foreign import ccall unsafe "Z3_to_app"
@@ -1515,12 +1517,15 @@ foreign import ccall unsafe "Z3_to_func_decl"
 foreign import ccall unsafe "Z3_get_numeral_string"
     z3_get_numeral_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gae959d9267eb1567887e5ed665a947d5a>
 foreign import ccall unsafe "Z3_get_numeral_binary_string"
   z3_get_numeral_binary_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf8e1ec34d62bb2c45a8aa7394593d7fb>
 foreign import ccall unsafe "Z3_get_numeral_decimal_string"
-  z3_get_numeral_decimal_string :: Ptr Z3_context -> Ptr Z3_ast -> IO Z3_string
+  z3_get_numeral_decimal_string :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO Z3_string
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf48e7b61664c0273a4ec77649f0a00cd>
 foreign import ccall unsafe "Z3_get_numeral_double"
   z3_get_numeral_double :: Ptr Z3_context -> Ptr Z3_ast -> IO CDouble
 
@@ -1550,9 +1555,11 @@ foreign import ccall unsafe "Z3_get_numeral_int64"
 foreign import ccall unsafe "Z3_get_numeral_rational_int64"
   z3_get_numeral_rational_int64 :: Ptr Z3_context -> Ptr Z3_ast -> Ptr CLong -> Ptr CLong -> IO Bool
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga40775ed34e6fcf184b7a0a30deaf2a03>
 foreign import ccall unsafe "Z3_get_algebraic_number_lower"
   z3_get_algebraic_number_lower :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
 
+-- | Reference: <https://z3prover.github.io/api/html/group__capi.html#ga84019f84e6a2e69d3bdfc80441ca0f7d>
 foreign import ccall unsafe "Z3_get_algebraic_number_upper"
   z3_get_algebraic_number_upper :: Ptr Z3_context -> Ptr Z3_ast -> CUInt -> IO (Ptr Z3_ast)
 

@@ -374,10 +374,17 @@ module Z3.Base (
   , getBoolValue
   , getAstKind
   , isApp
+  , isNumeralAst
+  , isAlgebraicNumber
   , toApp
   , getNumeralString
+  , getNumeralBinaryString
+  , getNumeralDecimalString
+  , getNumeralDouble
   , getNumerator
   , getDenominator
+  , getAlgebraicNumberLower
+  , getAlgebraicNumberUpper
   , simplify
   , simplifyEx
   , getIndexValue
@@ -2585,9 +2592,12 @@ getAstKind ctx ast = toAstKind <$> liftFun1 z3_get_ast_kind ctx ast
 isApp :: Context -> AST -> IO Bool
 isApp = liftFun1 z3_is_app
 
--- TODO: Z3_is_numeral_ast
+isNumeralAst :: Context -> AST -> IO Bool
+isNumeralAst = liftFun1 z3_is_numeral_ast
 
--- TODO: Z3_is_algebraic_number
+-- | Return True if an ast represents an algebraic number, False otherwise.
+isAlgebraicNumber :: Context -> AST -> IO Bool
+isAlgebraicNumber = liftFun1 z3_is_algebraic_number
 
 -- | Convert an ast into an APP_AST. This is just type casting.
 toApp :: Context -> AST -> IO App
@@ -2596,10 +2606,28 @@ toApp = liftFun1 z3_to_app
 -- TODO: Z3_to_func_decl
 
 -- | Return numeral value, as a string of a numeric constant term.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gae0ffdaa5b0d9c2deb3bbb8d78ac9f4c9>
 getNumeralString :: Context -> AST -> IO String
 getNumeralString = liftFun1 z3_get_numeral_string
 
--- TODO: Z3_get_numeral_decimal_string
+-- | Return numeral value, as a binary string of a numeric constant term.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gae959d9267eb1567887e5ed665a947d5a>
+getNumeralBinaryString :: Context -> AST -> IO String
+getNumeralBinaryString = liftFun1 z3_get_numeral_binary_string
+
+-- | Return numeral as a string in decimal notation. The result has at most precision decimal places.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf8e1ec34d62bb2c45a8aa7394593d7fb>
+getNumeralDecimalString :: Context -> AST -> Int -> IO String
+getNumeralDecimalString = liftFun2 z3_get_numeral_decimal_string
+
+-- | Return numeral as a double.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#gaf48e7b61664c0273a4ec77649f0a00cd>
+getNumeralDouble :: Context -> AST -> IO Double
+getNumeralDouble = liftFun1 z3_get_numeral_double
 
 -- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
 --
@@ -2627,9 +2655,21 @@ getDenominator = liftFun1 z3_get_denominator
 
 -- TODO: Z3_get_numeral_rational_int64
 
--- TODO: Z3_get_algebraic_number_lower
+-- | Return a lower bound for the given real algebraic number.
+--   The interval isolating the number is smaller than 1/10^precision.
+--   The result is a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga40775ed34e6fcf184b7a0a30deaf2a03>
+getAlgebraicNumberLower :: Context -> AST -> Int -> IO AST
+getAlgebraicNumberLower = liftFun2 z3_get_algebraic_number_lower
 
--- TODO: Z3_get_algebraic_number_upper
+-- | Return a upper bound for the given real algebraic number.
+--   The interval isolating the number is smaller than 1/10^precision.
+--   The result is a numeral AST of sort Real.
+--
+-- Reference: <https://z3prover.github.io/api/html/group__capi.html#ga84019f84e6a2e69d3bdfc80441ca0f7d>
+getAlgebraicNumberUpper :: Context -> AST -> Int -> IO AST
+getAlgebraicNumberUpper = liftFun2 z3_get_algebraic_number_upper
 
 -- TODO: Z3_pattern_to_ast
 
