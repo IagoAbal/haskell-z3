@@ -112,6 +112,7 @@ Executable examples
 
   Other-Modules:       Example.Monad.Queens4
                        Example.Monad.Queens4All
+                       Example.Monad.LinearProgramming
                        Example.Monad.DataTypes
                        Example.Monad.FuncModel
                        Example.Monad.MutuallyRecursive
